@@ -262,6 +262,12 @@ if (in_array('exam_name', $reportColumns, true)) {
         }
         $pdo->prepare('UPDATE academic_reports SET exam_id = :exam_id WHERE id = :id')->execute(['exam_id' => (int) $examId, 'id' => (int) $report['id']]);
     }
+    // Older installs used a composite unique key on the legacy columns; drop
+    // it before removing the columns it references.
+    $legacyUnique = $pdo->query("SHOW INDEX FROM academic_reports WHERE Key_name = 'academic_reports_unique'")->fetchAll();
+    if ($legacyUnique !== []) {
+        $pdo->exec('ALTER TABLE academic_reports DROP INDEX academic_reports_unique');
+    }
     $pdo->exec('ALTER TABLE academic_reports DROP COLUMN exam_name');
     $pdo->exec('ALTER TABLE academic_reports DROP COLUMN academic_year');
 }
