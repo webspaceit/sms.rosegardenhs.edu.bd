@@ -1,0 +1,7 @@
+/config/database.php
+/.env
+/storage/logs/*.log
+/storage/backups/*.sql
+/storage/uploads/*
+/storage/sessions/*
+!/storage/sessions/.gitkeep

@@ -1,0 +1,12 @@
+Options -Indexes
+RewriteEngine On
+
+# A shared host may require the repository folder itself as document root.
+# Never expose source, configuration, scripts, runtime state, or VCS metadata.
+RewriteRule ^(?:app|config|database|scripts|storage|tmp|\.git|\.agents|\.codex)(?:/|$) - [F,L,NC]
+RewriteRule (^|/)\.(?!well-known/) - [F,L]
+
+# Keep the normal public/ deployment working and route root-folder installs
+# through the same public front controller without exposing private folders.
+RewriteRule ^public(?:/|$) - [L]
+RewriteRule ^(.*)$ public/$1 [QSA,L]
