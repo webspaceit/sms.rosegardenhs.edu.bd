@@ -124,8 +124,6 @@ final class ResultController
             $fields = [
                 'student_id' => $studentId,
                 'exam_id' => $examId,
-                'exam_name' => $examName,
-                'academic_year' => $academicYear,
                 'class_position' => (int) $request->input('class_position', 0) ?: null,
                 'working_days' => (int) $request->input('working_days', 0),
                 'present_days' => (int) $request->input('present_days', 0),
@@ -157,16 +155,16 @@ final class ResultController
             $delete->execute(['report_id' => $reportId, 'branch' => BranchContext::id()]);
 
             $insert = $db->prepare(
-                    'INSERT INTO academic_report_marks (academic_report_id, subject_name, full_marks, highest_marks,'
+                    'INSERT INTO academic_report_marks (academic_report_id, subject_id, full_marks, highest_marks,'
                 . ' written_marks, mcq_marks, practical_marks, ca_marks, obtained, branch_id)'
-                . ' VALUES (:report_id, :subject_name, :full_marks, :highest_marks, :written_marks, :mcq_marks, :practical_marks, :ca_marks, :obtained, :branch)'
+                . ' VALUES (:report_id, :subject_id, :full_marks, :highest_marks, :written_marks, :mcq_marks, :practical_marks, :ca_marks, :obtained, :branch)'
             );
 
-            foreach ($marks as $subjectName => $values) {
+            foreach ($marks as $subjectId => $values) {
                 $values = is_array($values) ? $values : [];
                 $insert->execute([
                     'report_id' => $reportId,
-                    'subject_name' => (string) $subjectName,
+                    'subject_id' => (int) $subjectId,
                     'full_marks' => (int) ($values['full_marks'] ?? 100),
                     'highest_marks' => (int) ($values['highest_marks'] ?? 0),
                     'written_marks' => (int) ($values['written_marks'] ?? 0),
@@ -540,7 +538,7 @@ final class ResultController
     /** @return array<int, string> */
     private function examNames(): array
     {
-        $rows = Database::connection()->query('SELECT name AS exam_name FROM exams WHERE branch_id=' . BranchContext::id() . ' UNION SELECT DISTINCT exam_name FROM academic_reports WHERE branch_id=' . BranchContext::id() . ' ORDER BY exam_name DESC')->fetchAll();
+        $rows = Database::connection()->query('SELECT name AS exam_name FROM exams WHERE branch_id=' . BranchContext::id() . ' ORDER BY exam_name DESC')->fetchAll();
         $names = [];
         foreach ($rows as $row) {
             $names[] = (string) $row['exam_name'];
@@ -551,7 +549,7 @@ final class ResultController
     /** @return array<int, string> */
     private function yearNames(): array
     {
-        $rows = Database::connection()->query('SELECT name AS academic_year FROM academic_years WHERE branch_id=' . BranchContext::id() . ' UNION SELECT DISTINCT academic_year FROM academic_reports WHERE branch_id=' . BranchContext::id() . ' ORDER BY academic_year DESC')->fetchAll();
+        $rows = Database::connection()->query('SELECT name AS academic_year FROM academic_years WHERE branch_id=' . BranchContext::id() . ' ORDER BY academic_year DESC')->fetchAll();
         $years = [];
         foreach ($rows as $row) {
             $years[] = (string) $row['academic_year'];

@@ -41,6 +41,27 @@ if (!is_dir($sessionPath)) {
     mkdir($sessionPath, 0775, true);
 }
 session_save_path($sessionPath);
-session_start();
+
+// Shared sessions make the app horizontally scalable. When the database is
+// reachable and has the sessions table, sessions live in MySQL; otherwise the
+// file handler is used so the installer and single-server deployments keep
+// working.
+$started = false;
+if (($config['session_driver'] ?? 'db') === 'db') {
+    try {
+        session_set_save_handler(new \App\Core\DatabaseSessionHandler(), true);
+        session_start();
+        $started = true;
+    } catch (\Throwable $error) {
+        error_log('Database sessions unavailable, falling back to file sessions: ' . $error->getMessage());
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+    }
+}
+if (!$started) {
+    session_set_save_handler(new SessionHandler(), true);
+    session_start();
+}
 
 (new Application($config))->run();

@@ -54,7 +54,7 @@ foreach ($rows as $row) {
                         <span class="block text-[10px] text-slate-500"><?= View::escape((string) $row['student']['student_id']) ?></span>
                     </td>
                     <?php foreach ($subjects as $subject): ?>
-                        <?php $obtained = (int) ($row['marks'][(string) $subject['name']] ?? 0); ?>
+                        <?php $obtained = (int) ($row['marks'][(int) $subject['id']] ?? 0); ?>
                         <td class="px-3 py-2 text-center"><?= $obtained === 0 ? '<span class="text-slate-300">—</span>' : $obtained ?></td>
                     <?php endforeach; ?>
                     <td class="px-4 py-2 text-right font-semibold"><?= (int) $row['total'] ?></td>

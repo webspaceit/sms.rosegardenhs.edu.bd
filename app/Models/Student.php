@@ -297,12 +297,13 @@ final class Student
     public static function recentReports(int $studentId): array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT COALESCE(e.name, ar.exam_name) AS exam_name, ar.academic_year, ar.class_position,'
+            'SELECT e.name AS exam_name, ay.name AS academic_year, ar.class_position,'
             . ' COALESCE(SUM(m.obtained), 0) AS obtained, COALESCE(SUM(m.full_marks), 0) AS full_marks'
             . ' FROM academic_reports ar LEFT JOIN academic_report_marks m ON m.academic_report_id = ar.id'
             . ' LEFT JOIN exams e ON e.id = ar.exam_id'
+            . ' LEFT JOIN academic_years ay ON ay.id = e.academic_year_id'
             . ' WHERE ar.student_id = :student_id AND ar.branch_id=:branch'
-            . ' GROUP BY ar.id, ar.exam_name, ar.academic_year, ar.class_position, ar.created_at'
+            . ' GROUP BY ar.id, e.name, ay.name, ar.class_position, ar.created_at'
             . ' ORDER BY ar.created_at DESC, ar.id DESC LIMIT 6'
         );
         $stmt->execute(['student_id' => $studentId, 'branch' => BranchContext::id()]);

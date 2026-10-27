@@ -61,7 +61,7 @@ final class ResultSet
      */
     public static function forClass(int $classId, string $section, string $examName, string $academicYear, bool $includeStudentDetails = false): array
     {
-        $examLookup = Database::connection()->prepare('SELECT e.id FROM exams e LEFT JOIN academic_years ay ON ay.id = e.academic_year_id AND ay.branch_id=e.branch_id WHERE e.name = :name AND e.branch_id=:branch AND (e.academic_year_id IS NULL OR ay.name = :year) ORDER BY (e.academic_year_id IS NULL), e.id LIMIT 1');
+        $examLookup = Database::read()->prepare('SELECT e.id FROM exams e LEFT JOIN academic_years ay ON ay.id = e.academic_year_id AND ay.branch_id=e.branch_id WHERE e.name = :name AND e.branch_id=:branch AND (e.academic_year_id IS NULL OR ay.name = :year) ORDER BY (e.academic_year_id IS NULL), e.id LIMIT 1');
         $examLookup->execute(['name' => $examName, 'year' => $academicYear, 'branch' => BranchContext::id()]);
         $examId = (int) ($examLookup->fetchColumn() ?: 0);
         $sql = 'SELECT ar.id, ar.student_id, ar.class_position, ar.working_days, ar.present_days, ar.absent_days,'
@@ -82,14 +82,11 @@ final class ResultSet
             . ' JOIN students s ON s.id = ar.student_id AND s.branch_id=ar.branch_id'
             . ' JOIN classes c ON c.id = s.class_id AND c.branch_id=s.branch_id'
             . ' LEFT JOIN sections sec ON sec.id = s.section_id AND sec.branch_id=s.branch_id'
-            . ' WHERE ar.branch_id=:branch AND ((:exam_id_check > 0 AND ar.exam_id = :exam_id) OR (ar.exam_id IS NULL AND ar.exam_name = :exam_name AND ar.academic_year = :academic_year))'
+            . ' WHERE ar.branch_id=:branch AND ar.exam_id = :exam_id'
             . ' AND s.class_id = :class_id';
 
         $bindings = [
-            'exam_id_check' => $examId,
             'exam_id' => $examId,
-            'exam_name' => $examName,
-            'academic_year' => $academicYear,
             'class_id' => $classId,
             'branch' => BranchContext::id(),
         ];
@@ -101,7 +98,7 @@ final class ResultSet
 
         $sql .= ' ORDER BY s.roll_no ASC';
 
-        $statement = Database::connection()->prepare($sql);
+        $statement = Database::read()->prepare($sql);
         $statement->execute($bindings);
         $rows = $statement->fetchAll();
 
@@ -226,8 +223,10 @@ final class ResultSet
 
         $placeholders = implode(', ', array_fill(0, count($reportIds), '?'));
 
-        $statement = Database::connection()->prepare(
-            'SELECT * FROM academic_report_marks WHERE branch_id=' . BranchContext::id() . ' AND academic_report_id IN (' . $placeholders . ') ORDER BY id ASC'
+        $statement = Database::read()->prepare(
+            'SELECT arm.*, s.name AS subject_name FROM academic_report_marks arm'
+            . ' LEFT JOIN subjects s ON s.id = arm.subject_id AND s.branch_id = arm.branch_id'
+            . ' WHERE arm.branch_id=' . BranchContext::id() . ' AND arm.academic_report_id IN (' . $placeholders . ') ORDER BY arm.id ASC'
         );
         $statement->execute($reportIds);
 
@@ -236,7 +235,8 @@ final class ResultSet
             $reportId = (int) $row['academic_report_id'];
             $marks[$reportId][(int) $row['id']] = [
                 'id' => (int) $row['id'],
-                'subject_name' => (string) $row['subject_name'],
+                'subject_id' => (int) ($row['subject_id'] ?? 0),
+                'subject_name' => (string) ($row['subject_name'] ?? ''),
                 'full_marks' => (int) $row['full_marks'],
                 'highest_marks' => (int) $row['highest_marks'],
                 'written_marks' => (int) $row['written_marks'],

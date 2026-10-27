@@ -62,7 +62,7 @@ final class PortalController
             'fees' => PortalData::studentFees((int) $student['id']),
             'exams' => PortalData::availableExams((int) $student['id']),
             'routine' => PortalData::routineForClass((int) $student['class_id'], date('l')),
-            'notices' => PortalData::latestNotices(),
+            'notices' => PortalData::latestNotices(5, 'student'),
         ]);
     }
 
@@ -169,10 +169,14 @@ final class PortalController
 
         $questions = $statement->fetchAll();
         $options = [];
-        foreach ($questions as $question) {
-            $options[$question['id']] = $question['options'] !== null
-                ? (array) json_decode((string) $question['options'], true)
-                : [];
+        $optionStatement = Database::connection()->prepare(
+            'SELECT o.exam_question_id, o.option_text FROM exam_question_options o'
+            . ' JOIN exam_questions q ON q.id = o.exam_question_id AND q.branch_id = :branch'
+            . ' WHERE q.online_exam_id = :exam_id ORDER BY o.sort_order, o.id'
+        );
+        $optionStatement->execute(['exam_id' => (int) $exam['id'], 'branch' => BranchContext::id()]);
+        foreach ($optionStatement->fetchAll() as $option) {
+            $options[(int) $option['exam_question_id']][] = (string) $option['option_text'];
         }
 
         $submission = $this->submission((int) $exam['id'], (int) $student['id']);
@@ -223,6 +227,17 @@ final class PortalController
         $statement->execute(['exam_id' => $examId, 'branch' => BranchContext::id()]);
         $questions = $statement->fetchAll();
 
+        $correctOptions = [];
+        $optionStatement = Database::connection()->prepare(
+            'SELECT o.exam_question_id, o.option_text FROM exam_question_options o'
+            . ' JOIN exam_questions q ON q.id = o.exam_question_id AND q.branch_id = :branch'
+            . ' WHERE q.online_exam_id = :exam_id AND o.is_correct = 1'
+        );
+        $optionStatement->execute(['exam_id' => $examId, 'branch' => BranchContext::id()]);
+        foreach ($optionStatement->fetchAll() as $option) {
+            $correctOptions[(int) $option['exam_question_id']] = (string) $option['option_text'];
+        }
+
         // Only the multiple choice answers can be marked, a written answer is
         // left for a teacher to mark.
         $score = 0.0;
@@ -233,8 +248,8 @@ final class PortalController
                 continue;
             }
             $given = trim((string) ($answers[$question['id']] ?? ''));
-            $correct = trim((string) ($question['correct_answer'] ?? ''));
-            if ($given !== '' && strcasecmp($given, $correct) === 0) {
+            $correct = trim((string) ($correctOptions[$question['id']] ?? ''));
+            if ($given !== '' && $correct !== '' && strcasecmp($given, $correct) === 0) {
                 $score += (float) $question['marks'];
             }
         }
@@ -282,7 +297,7 @@ final class PortalController
             'students' => $classId > 0 ? PortalData::teacherStudents((int) $teacher['id'], $classId) : [],
             'routine' => PortalData::routineForTeacher((int) $teacher['id'], date('l')),
             'leaves' => PortalData::pendingLeaveRequests(),
-            'notices' => PortalData::latestNotices(),
+            'notices' => PortalData::latestNotices(5, 'teacher'),
         ]);
     }
 
@@ -326,7 +341,7 @@ final class PortalController
             'fees' => $fees,
             'reports' => $reports,
             'due' => $due,
-            'notices' => PortalData::latestNotices(),
+            'notices' => PortalData::latestNotices(5, 'parent'),
         ]);
     }
 

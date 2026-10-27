@@ -176,6 +176,134 @@ if ($uniqueExam === [] && $duplicateExamLinks === 0) {
     echo 'Existing duplicate student/exam report cards were preserved; unique exam key was not added.', PHP_EOL;
 }
 
+// ---------------------------------------------------------------------------
+// Normalization migrations: replace denormalized columns with relationships.
+// ---------------------------------------------------------------------------
+
+// teachers.designation -> designation_id
+$teacherColumns = $pdo->query('SHOW COLUMNS FROM teachers')->fetchAll(PDO::FETCH_COLUMN);
+if (!in_array('designation_id', $teacherColumns, true)) {
+    $pdo->exec('ALTER TABLE teachers ADD COLUMN designation_id BIGINT UNSIGNED NULL AFTER department');
+}
+if (in_array('designation', $teacherColumns, true)) {
+    $legacyTeachers = $pdo->query("SELECT id, designation, branch_id FROM teachers WHERE designation IS NOT NULL AND designation <> '' AND designation_id IS NULL")->fetchAll();
+    $findDesignation = $pdo->prepare('SELECT id FROM designations WHERE name = :name AND branch_id = :branch LIMIT 1');
+    $insertDesignation = $pdo->prepare('INSERT INTO designations (name, branch_id, is_active, created_at) VALUES (:name, :branch, 1, NOW())');
+    $updateTeacher = $pdo->prepare('UPDATE teachers SET designation_id = :designation_id WHERE id = :id');
+    foreach ($legacyTeachers as $teacher) {
+        $findDesignation->execute(['name' => $teacher['designation'], 'branch' => $teacher['branch_id']]);
+        $designationId = $findDesignation->fetchColumn();
+        if ($designationId === false) {
+            $insertDesignation->execute(['name' => $teacher['designation'], 'branch' => $teacher['branch_id']]);
+            $designationId = $pdo->lastInsertId();
+        }
+        $updateTeacher->execute(['designation_id' => (int) $designationId, 'id' => (int) $teacher['id']]);
+    }
+    $pdo->exec('ALTER TABLE teachers DROP COLUMN designation');
+}
+if ($pdo->query("SHOW INDEX FROM teachers WHERE Key_name = 'teachers_designation_index'")->fetchAll() === []) {
+    $pdo->exec('ALTER TABLE teachers ADD INDEX teachers_designation_index (designation_id)');
+}
+if ($pdo->query("SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'teachers' AND CONSTRAINT_NAME = 'teachers_designation_fk'")->fetchColumn() === false) {
+    $pdo->exec('ALTER TABLE teachers ADD CONSTRAINT teachers_designation_fk FOREIGN KEY (designation_id) REFERENCES designations (id) ON DELETE SET NULL');
+}
+
+// academic_report_marks.subject_name -> subject_id
+$markColumns = $pdo->query('SHOW COLUMNS FROM academic_report_marks')->fetchAll(PDO::FETCH_COLUMN);
+if (!in_array('subject_id', $markColumns, true)) {
+    $pdo->exec('ALTER TABLE academic_report_marks ADD COLUMN subject_id BIGINT UNSIGNED NULL AFTER academic_report_id');
+}
+if (in_array('subject_name', $markColumns, true)) {
+    $legacyMarks = $pdo->query("SELECT id, subject_name, branch_id FROM academic_report_marks WHERE subject_name IS NOT NULL AND subject_name <> '' AND subject_id IS NULL")->fetchAll();
+    $findSubject = $pdo->prepare('SELECT id FROM subjects WHERE name = :name AND branch_id = :branch LIMIT 1');
+    $insertSubject = $pdo->prepare("INSERT INTO subjects (name, type, branch_id, created_at) VALUES (:name, 'core', :branch, NOW())");
+    $updateMark = $pdo->prepare('UPDATE academic_report_marks SET subject_id = :subject_id WHERE id = :id');
+    foreach ($legacyMarks as $mark) {
+        $findSubject->execute(['name' => $mark['subject_name'], 'branch' => $mark['branch_id']]);
+        $subjectId = $findSubject->fetchColumn();
+        if ($subjectId === false) {
+            $insertSubject->execute(['name' => $mark['subject_name'], 'branch' => $mark['branch_id']]);
+            $subjectId = $pdo->lastInsertId();
+        }
+        $updateMark->execute(['subject_id' => (int) $subjectId, 'id' => (int) $mark['id']]);
+    }
+    $pdo->exec('ALTER TABLE academic_report_marks DROP COLUMN subject_name');
+}
+if ($pdo->query("SHOW INDEX FROM academic_report_marks WHERE Key_name = 'academic_report_marks_subject_index'")->fetchAll() === []) {
+    $pdo->exec('ALTER TABLE academic_report_marks ADD INDEX academic_report_marks_subject_index (subject_id)');
+}
+if ($pdo->query("SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'academic_report_marks' AND CONSTRAINT_NAME = 'academic_report_marks_subject_fk'")->fetchColumn() === false) {
+    $pdo->exec('ALTER TABLE academic_report_marks ADD CONSTRAINT academic_report_marks_subject_fk FOREIGN KEY (subject_id) REFERENCES subjects (id) ON DELETE SET NULL');
+}
+
+// academic_reports.exam_name/academic_year -> exam_id (linked above)
+$reportColumns = $pdo->query('SHOW COLUMNS FROM academic_reports')->fetchAll(PDO::FETCH_COLUMN);
+if (in_array('exam_name', $reportColumns, true)) {
+    $orphans = $pdo->query('SELECT id, exam_name, academic_year, branch_id FROM academic_reports WHERE exam_id IS NULL')->fetchAll();
+    foreach ($orphans as $report) {
+        $name = trim((string) ($report['exam_name'] ?? ''));
+        if ($name === '') {
+            continue;
+        }
+        $yearName = trim((string) ($report['academic_year'] ?? ''));
+        $yearId = null;
+        if ($yearName !== '') {
+            $stmt = $pdo->prepare('SELECT id FROM academic_years WHERE name = :name AND branch_id = :branch LIMIT 1');
+            $stmt->execute(['name' => $yearName, 'branch' => $report['branch_id']]);
+            $yearId = $stmt->fetchColumn() ?: null;
+        }
+        $stmt = $pdo->prepare('SELECT id FROM exams WHERE name = :name AND branch_id = :branch AND ((academic_year_id IS NULL AND :year_id IS NULL) OR academic_year_id = :year_id2) ORDER BY id LIMIT 1');
+        $stmt->execute(['name' => $name, 'branch' => $report['branch_id'], 'year_id' => $yearId, 'year_id2' => $yearId]);
+        $examId = $stmt->fetchColumn();
+        if ($examId === false) {
+            $stmt = $pdo->prepare('INSERT INTO exams (name, type, academic_year_id, branch_id, created_at) VALUES (:name, "other", :year_id, :branch, NOW())');
+            $stmt->execute(['name' => $name, 'year_id' => $yearId, 'branch' => $report['branch_id']]);
+            $examId = $pdo->lastInsertId();
+        }
+        $pdo->prepare('UPDATE academic_reports SET exam_id = :exam_id WHERE id = :id')->execute(['exam_id' => (int) $examId, 'id' => (int) $report['id']]);
+    }
+    $pdo->exec('ALTER TABLE academic_reports DROP COLUMN exam_name');
+    $pdo->exec('ALTER TABLE academic_reports DROP COLUMN academic_year');
+}
+
+// notices.target_roles -> notice_roles
+$noticeColumns = $pdo->query('SHOW COLUMNS FROM notices')->fetchAll(PDO::FETCH_COLUMN);
+if (in_array('target_roles', $noticeColumns, true)) {
+    $legacyNotices = $pdo->query("SELECT id, target_roles FROM notices WHERE target_roles IS NOT NULL AND target_roles <> ''")->fetchAll();
+    $insertRole = $pdo->prepare('INSERT IGNORE INTO notice_roles (notice_id, role) VALUES (:notice_id, :role)');
+    foreach ($legacyNotices as $notice) {
+        foreach (array_filter(array_map('trim', explode(',', (string) $notice['target_roles']))) as $role) {
+            $insertRole->execute(['notice_id' => (int) $notice['id'], 'role' => (string) $role]);
+        }
+    }
+    $pdo->exec('ALTER TABLE notices DROP COLUMN target_roles');
+}
+
+// exam_questions.options -> exam_question_options
+$questionColumns = $pdo->query('SHOW COLUMNS FROM exam_questions')->fetchAll(PDO::FETCH_COLUMN);
+if (in_array('options', $questionColumns, true)) {
+    $legacyQuestions = $pdo->query("SELECT id, options, correct_answer FROM exam_questions WHERE options IS NOT NULL AND options <> ''")->fetchAll();
+    $insertOption = $pdo->prepare('INSERT INTO exam_question_options (exam_question_id, option_text, is_correct, sort_order) VALUES (:question_id, :option_text, :is_correct, :sort_order)');
+    foreach ($legacyQuestions as $question) {
+        $decoded = json_decode((string) $question['options'], true);
+        $options = is_array($decoded) ? array_values($decoded) : array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', (string) $question['options']))));
+        $correct = trim((string) ($question['correct_answer'] ?? ''));
+        foreach ($options as $index => $option) {
+            $option = trim((string) $option);
+            if ($option === '') {
+                continue;
+            }
+            $insertOption->execute([
+                'question_id' => (int) $question['id'],
+                'option_text' => $option,
+                'is_correct' => ($correct !== '' && strcasecmp($option, $correct) === 0) ? 1 : 0,
+                'sort_order' => $index,
+            ]);
+        }
+    }
+    $pdo->exec('ALTER TABLE exam_questions DROP COLUMN options');
+}
+
 $tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
 
 echo 'Schema applied. ', $applied, ' statement(s) executed';

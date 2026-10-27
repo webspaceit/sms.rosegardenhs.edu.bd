@@ -76,7 +76,16 @@ final class Person
             return null;
         }
 
-        $stmt = Database::connection()->prepare('SELECT * FROM ' . $table . ' WHERE id = :id AND branch_id=:branch LIMIT 1');
+        if ($table === 'teachers') {
+            $stmt = Database::connection()->prepare(
+                'SELECT t.*, d.name AS designation_name FROM teachers t'
+                . ' LEFT JOIN designations d ON d.id = t.designation_id AND d.branch_id = t.branch_id'
+                . ' WHERE t.id = :id AND t.branch_id=:branch LIMIT 1'
+            );
+        } else {
+            $stmt = Database::connection()->prepare('SELECT * FROM ' . $table . ' WHERE id = :id AND branch_id=:branch LIMIT 1');
+        }
+
         $stmt->execute(['id' => $id, 'branch' => BranchContext::id()]);
         $row = $stmt->fetch();
         return $row === false ? null : $row;

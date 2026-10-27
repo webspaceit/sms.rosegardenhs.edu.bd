@@ -124,7 +124,6 @@ CREATE TABLE IF NOT EXISTS notices (
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,
     type VARCHAR(50) NOT NULL DEFAULT 'general',
-    target_roles VARCHAR(255) NULL,
     published_date DATE NOT NULL,
     expires_date DATE NULL,
     is_published TINYINT(1) NOT NULL DEFAULT 1,
@@ -274,7 +273,7 @@ CREATE TABLE IF NOT EXISTS teachers (
     name VARCHAR(150) NOT NULL,
     name_bn VARCHAR(150) NULL,
     department VARCHAR(100) NULL,
-    designation VARCHAR(100) NULL,
+    designation_id BIGINT UNSIGNED NULL,
     phone VARCHAR(20) NULL,
     email VARCHAR(190) NULL,
     district VARCHAR(100) NULL,
@@ -292,6 +291,7 @@ CREATE TABLE IF NOT EXISTS teachers (
     PRIMARY KEY (id),
     UNIQUE KEY teachers_employee_id_unique (employee_id),
     KEY teachers_name_index (name),
+    KEY teachers_designation_index (designation_id),
     CONSTRAINT teachers_user_fk FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -840,8 +840,6 @@ CREATE TABLE IF NOT EXISTS academic_reports (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     student_id BIGINT UNSIGNED NOT NULL,
     exam_id BIGINT UNSIGNED NOT NULL,
-    exam_name VARCHAR(150) NULL,
-    academic_year VARCHAR(20) NULL,
     class_position INT UNSIGNED NULL,
     working_days INT UNSIGNED NOT NULL DEFAULT 0,
     present_days INT UNSIGNED NOT NULL DEFAULT 0,
@@ -861,7 +859,7 @@ CREATE TABLE IF NOT EXISTS academic_reports (
 CREATE TABLE IF NOT EXISTS academic_report_marks (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     academic_report_id BIGINT UNSIGNED NOT NULL,
-    subject_name VARCHAR(100) NOT NULL,
+    subject_id BIGINT UNSIGNED NULL,
     full_marks SMALLINT UNSIGNED NOT NULL DEFAULT 100,
     highest_marks SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     written_marks SMALLINT UNSIGNED NOT NULL DEFAULT 0,
@@ -873,7 +871,9 @@ CREATE TABLE IF NOT EXISTS academic_report_marks (
     updated_at DATETIME NULL,
     PRIMARY KEY (id),
     KEY academic_report_marks_report_index (academic_report_id),
-    CONSTRAINT academic_report_marks_report_fk FOREIGN KEY (academic_report_id) REFERENCES academic_reports (id) ON DELETE CASCADE
+    KEY academic_report_marks_subject_index (subject_id),
+    CONSTRAINT academic_report_marks_report_fk FOREIGN KEY (academic_report_id) REFERENCES academic_reports (id) ON DELETE CASCADE,
+    CONSTRAINT academic_report_marks_subject_fk FOREIGN KEY (subject_id) REFERENCES subjects (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS report_configs (
@@ -918,7 +918,6 @@ CREATE TABLE IF NOT EXISTS exam_questions (
     online_exam_id BIGINT UNSIGNED NOT NULL,
     question TEXT NOT NULL,
     type ENUM('mcq','written') NOT NULL DEFAULT 'mcq',
-    options TEXT NULL,
     correct_answer VARCHAR(255) NULL,
     marks SMALLINT UNSIGNED NOT NULL DEFAULT 1,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1054,4 +1053,46 @@ CREATE TABLE IF NOT EXISTS lesson_plans (
     CONSTRAINT lesson_plans_class_fk FOREIGN KEY (class_id) REFERENCES classes (id) ON DELETE SET NULL,
     CONSTRAINT lesson_plans_subject_fk FOREIGN KEY (subject_id) REFERENCES subjects (id) ON DELETE SET NULL,
     CONSTRAINT lesson_plans_teacher_fk FOREIGN KEY (teacher_id) REFERENCES teachers (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- Notice audiences (normalized from the former notices.target_roles CSV)
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS notice_roles (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    notice_id BIGINT UNSIGNED NOT NULL,
+    role VARCHAR(30) NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY notice_roles_unique (notice_id, role),
+    CONSTRAINT notice_roles_notice_fk FOREIGN KEY (notice_id) REFERENCES notices (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- Online exam MCQ options (normalized from the former exam_questions.options)
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS exam_question_options (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    exam_question_id BIGINT UNSIGNED NOT NULL,
+    option_text VARCHAR(255) NOT NULL,
+    is_correct TINYINT(1) NOT NULL DEFAULT 0,
+    sort_order SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL,
+    PRIMARY KEY (id),
+    KEY exam_question_options_question_index (exam_question_id),
+    CONSTRAINT exam_question_options_question_fk FOREIGN KEY (exam_question_id) REFERENCES exam_questions (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- Shared database sessions (for horizontal scaling)
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS sessions (
+    id VARCHAR(191) NOT NULL,
+    payload MEDIUMTEXT NOT NULL,
+    last_activity INT UNSIGNED NOT NULL,
+    PRIMARY KEY (id),
+    KEY sessions_last_activity_index (last_activity)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

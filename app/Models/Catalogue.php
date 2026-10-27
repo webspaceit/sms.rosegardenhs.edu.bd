@@ -33,6 +33,12 @@ final class Catalogue
     }
 
     /** @return array<int, string> id => label */
+    public static function designations(): array
+    {
+        return self::options('SELECT id, name FROM designations WHERE is_active = 1 ORDER BY name', 'name');
+    }
+
+    /** @return array<int, string> id => label */
     public static function students(): array
     {
         return self::options('SELECT id, CONCAT(name, " (", student_id, ")") AS label FROM students ORDER BY name', 'label');

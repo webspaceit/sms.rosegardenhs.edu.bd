@@ -13,7 +13,7 @@ use App\Core\View;
 
 $markBySubject = [];
 foreach ($marks as $mark) {
-    $markBySubject[(string) $mark['subject_name']] = $mark;
+    $markBySubject[(int) $mark['subject_id']] = $mark;
 }
 ?>
 <div class="mx-auto max-w-5xl">
@@ -52,26 +52,26 @@ foreach ($marks as $mark) {
                     <?php if ($subjects === []): ?>
                         <tr><td colspan="7" class="px-3 py-6 text-center text-slate-500">No subjects have been mapped to this class yet.</td></tr>
                     <?php else: foreach ($subjects as $subject): ?>
-                        <?php $existing = $markBySubject[(string) $subject['name']] ?? null; ?>
+                        <?php $existing = $markBySubject[(int) $subject['id']] ?? null; ?>
                         <tr>
                             <td class="px-3 py-2 font-medium"><?= View::escape((string) $subject['name']) ?></td>
                             <td class="px-3 py-2">
-                                <input type="number" name="marks[<?= View::escape((string) $subject['name']) ?>][full_marks]" value="<?= (int) ($existing['full_marks'] ?? $subject['full_marks'] ?? 100) ?>" class="w-20 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm">
+                                <input type="number" name="marks[<?= (int) $subject['id'] ?>][full_marks]" value="<?= (int) ($existing['full_marks'] ?? $subject['full_marks'] ?? 100) ?>" class="w-20 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm">
                             </td>
                             <td class="px-3 py-2">
-                                <input type="number" name="marks[<?= View::escape((string) $subject['name']) ?>][written_marks]" value="<?= (int) ($existing['written_marks'] ?? 0) ?>" class="w-20 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm">
+                                <input type="number" name="marks[<?= (int) $subject['id'] ?>][written_marks]" value="<?= (int) ($existing['written_marks'] ?? 0) ?>" class="w-20 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm">
                             </td>
                             <td class="px-3 py-2">
-                                <input type="number" name="marks[<?= View::escape((string) $subject['name']) ?>][mcq_marks]" value="<?= (int) ($existing['mcq_marks'] ?? 0) ?>" class="w-20 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm">
+                                <input type="number" name="marks[<?= (int) $subject['id'] ?>][mcq_marks]" value="<?= (int) ($existing['mcq_marks'] ?? 0) ?>" class="w-20 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm">
                             </td>
                             <td class="px-3 py-2">
-                                <input type="number" name="marks[<?= View::escape((string) $subject['name']) ?>][practical_marks]" value="<?= (int) ($existing['practical_marks'] ?? 0) ?>" class="w-20 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm">
+                                <input type="number" name="marks[<?= (int) $subject['id'] ?>][practical_marks]" value="<?= (int) ($existing['practical_marks'] ?? 0) ?>" class="w-20 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm">
                             </td>
                             <td class="px-3 py-2">
-                                <input type="number" name="marks[<?= View::escape((string) $subject['name']) ?>][ca_marks]" value="<?= (int) ($existing['ca_marks'] ?? 0) ?>" class="w-20 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm">
+                                <input type="number" name="marks[<?= (int) $subject['id'] ?>][ca_marks]" value="<?= (int) ($existing['ca_marks'] ?? 0) ?>" class="w-20 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm">
                             </td>
                             <td class="px-3 py-2">
-                                <input type="number" name="marks[<?= View::escape((string) $subject['name']) ?>][highest_marks]" value="<?= (int) ($existing['highest_marks'] ?? 0) ?>" class="w-20 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm">
+                                <input type="number" name="marks[<?= (int) $subject['id'] ?>][highest_marks]" value="<?= (int) ($existing['highest_marks'] ?? 0) ?>" class="w-20 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm">
                             </td>
                         </tr>
                     <?php endforeach; endif; ?>

@@ -66,12 +66,16 @@ use App\Core\View;
                     <p class="font-medium"><?= (int) $index + 1 ?>. <?= View::escape((string) $question['question']) ?></p>
                     <p class="mt-1 text-xs text-slate-500">
                         <?= $question['type'] === 'mcq' ? 'Multiple choice' : 'Written' ?> · <?= (int) $question['marks'] ?> mark(s)
-                        <?php if ((string) ($question['correct_answer'] ?? '') !== ''): ?>
+                        <?php $optionList = $question['options_list'] ?? []; ?>
+                        <?php if ($question['type'] === 'written' && (string) ($question['correct_answer'] ?? '') !== ''): ?>
                             · answer: <?= View::escape((string) $question['correct_answer']) ?>
                         <?php endif; ?>
+                        <?php if ($question['type'] === 'mcq'): $correctOption = ''; foreach ($optionList as $opt) { if ((int) ($opt['is_correct'] ?? 0) === 1) { $correctOption = (string) $opt['option_text']; break; } } ?>
+                            <?php if ($correctOption !== ''): ?> · answer: <?= View::escape($correctOption) ?><?php endif; ?>
+                        <?php endif; ?>
                     </p>
-                    <?php if ((string) ($question['options'] ?? '') !== ''): ?>
-                        <p class="mt-1 text-xs text-white"><?= View::escape(implode('  ·  ', array_map('strval', (array) json_decode((string) $question['options'], true)))) ?></p>
+                    <?php if ($optionList !== []): ?>
+                        <p class="mt-1 text-xs text-white"><?= View::escape(implode('  ·  ', array_map(static fn (array $opt): string => (string) $opt['option_text'], $optionList))) ?></p>
                     <?php endif; ?>
                 </div>
                 <form method="post" action="<?= Url::to('/online-exams/questions/delete') ?>" data-confirm="Remove this question?">

@@ -106,22 +106,20 @@ final class BulkMarkController
 
                 if ($reportId === 0) {
                     $insert = $db->prepare(
-                        'INSERT INTO academic_reports (student_id, exam_id, exam_name, academic_year, working_days, present_days, absent_days, created_at, branch_id)'
-                        . ' VALUES (:student_id, :exam_id, :exam_name, :academic_year, 0, 0, 0, NOW(), :branch)'
+                        'INSERT INTO academic_reports (student_id, exam_id, working_days, present_days, absent_days, created_at, branch_id)'
+                        . ' VALUES (:student_id, :exam_id, 0, 0, 0, NOW(), :branch)'
                     );
                     $insert->execute([
                         'student_id' => $studentId,
                         'exam_id' => $examId,
-                        'exam_name' => $examName,
-                        'academic_year' => $academicYear,
                         'branch' => BranchContext::id(),
                     ]);
                     $reportId = (int) $db->lastInsertId();
                 }
 
                 foreach ($subjects as $subject) {
-                    $subjectName = (string) $subject['name'];
-                    $values = $input[$studentId][$subjectName] ?? [];
+                    $subjectId = (int) $subject['id'];
+                    $values = $input[$studentId][$subjectId] ?? [];
                     $values = is_array($values) ? $values : [];
 
                     $written = (int) ($values['written_marks'] ?? 0);
@@ -144,21 +142,21 @@ final class BulkMarkController
                     $full = (int) ($values['full_marks'] ?? $subject['full_marks'] ?? 100);
 
                     $find = $db->prepare(
-                        'SELECT id FROM academic_report_marks WHERE academic_report_id = :report_id AND subject_name = :subject_name AND branch_id=:branch LIMIT 1'
+                        'SELECT id FROM academic_report_marks WHERE academic_report_id = :report_id AND subject_id = :subject_id AND branch_id=:branch LIMIT 1'
                     );
-                    $find->execute(['report_id' => $reportId, 'subject_name' => $subjectName, 'branch' => BranchContext::id()]);
+                    $find->execute(['report_id' => $reportId, 'subject_id' => $subjectId, 'branch' => BranchContext::id()]);
                     $markId = $find->fetchColumn();
 
                     if ($markId === false) {
                         $insert = $db->prepare(
-                            'INSERT INTO academic_report_marks (academic_report_id, subject_name, full_marks, highest_marks,'
+                            'INSERT INTO academic_report_marks (academic_report_id, subject_id, full_marks, highest_marks,'
                             . ' written_marks, mcq_marks, practical_marks, ca_marks, obtained, created_at, branch_id)'
-                            . ' VALUES (:report_id, :subject_name, :full_marks, :highest_marks, :written_marks, :mcq_marks,'
+                            . ' VALUES (:report_id, :subject_id, :full_marks, :highest_marks, :written_marks, :mcq_marks,'
                             . ' :practical_marks, :ca_marks, :obtained, NOW(), :branch)'
                         );
                         $insert->execute([
                             'report_id' => $reportId,
-                            'subject_name' => $subjectName,
+                            'subject_id' => $subjectId,
                             'full_marks' => $full,
                             'highest_marks' => (int) ($values['highest_marks'] ?? 0),
                             'written_marks' => $written,
@@ -227,12 +225,12 @@ final class BulkMarkController
             $total = 0;
             $row = [];
             foreach ($subjects as $subject) {
-                $mark = $marks[$studentId][(string) $subject['name']] ?? null;
+                $mark = $marks[$studentId][(int) $subject['id']] ?? null;
                 $obtained = $mark === null
                     ? 0
                     : (int) $mark['written_marks'] + (int) $mark['mcq_marks'] + (int) $mark['practical_marks']
                         + (int) $mark['ca_marks'] + (int) ($mark['obtained'] ?? 0);
-                $row[(string) $subject['name']] = $obtained;
+                $row[(int) $subject['id']] = $obtained;
                 $total += $obtained;
             }
             $rows[] = ['student' => $student, 'marks' => $row, 'total' => $total];
@@ -302,22 +300,21 @@ final class BulkMarkController
         if ($examId <= 0) return [];
 
         $statement = Database::connection()->prepare(
-            'SELECT ar.student_id, m.* FROM academic_reports ar'
+            'SELECT ar.student_id, m.*, sub.name AS subject_name FROM academic_reports ar'
             . ' JOIN academic_report_marks m ON m.academic_report_id = ar.id AND m.branch_id=ar.branch_id'
-            . ' JOIN students s ON s.id = ar.student_id AND s.branch_id=ar.branch_id'
-            . ' WHERE ar.branch_id=:branch AND ((ar.exam_id = :exam_id) OR (ar.exam_id IS NULL AND ar.exam_name = :exam_name AND ar.academic_year = :academic_year)) AND s.class_id = :class_id'
+            . ' JOIN students st ON st.id = ar.student_id AND st.branch_id=ar.branch_id'
+            . ' LEFT JOIN subjects sub ON sub.id = m.subject_id AND sub.branch_id = m.branch_id'
+            . ' WHERE ar.branch_id=:branch AND ar.exam_id = :exam_id AND st.class_id = :class_id'
         );
         $statement->execute([
             'exam_id' => $examId,
-            'exam_name' => $examName,
-            'academic_year' => $academicYear,
             'class_id' => $classId,
             'branch' => BranchContext::id(),
         ]);
 
         $marks = [];
         foreach ($statement->fetchAll() as $row) {
-            $marks[(int) $row['student_id']][(string) $row['subject_name']] = $row;
+            $marks[(int) $row['student_id']][(int) $row['subject_id']] = $row;
         }
         return $marks;
     }
@@ -346,13 +343,11 @@ final class BulkMarkController
     {
         $examId = $this->examId($examName, $academicYear);
         $statement = Database::connection()->prepare(
-            'SELECT id FROM academic_reports WHERE student_id = :student_id AND branch_id=:branch AND ((exam_id = :exam_id) OR (exam_id IS NULL AND exam_name = :exam_name AND academic_year = :academic_year)) LIMIT 1'
+            'SELECT id FROM academic_reports WHERE student_id = :student_id AND branch_id=:branch AND exam_id = :exam_id LIMIT 1'
         );
         $statement->execute([
             'student_id' => $studentId,
             'exam_id' => $examId,
-            'exam_name' => $examName,
-            'academic_year' => $academicYear,
             'branch' => BranchContext::id(),
         ]);
         $id = $statement->fetchColumn();

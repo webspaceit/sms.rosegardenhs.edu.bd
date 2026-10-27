@@ -10,7 +10,7 @@ final class DashboardData
 {
     public static function summary(): array
     {
-        $database = Database::connection();
+        $database = Database::read();
         $branch = BranchContext::id();
         $year = $database->query('SELECT id, name FROM academic_years WHERE is_current = 1 AND branch_id=' . $branch . ' ORDER BY id DESC LIMIT 1')->fetch();
         $students = (int) $database->query("SELECT COUNT(*) FROM students WHERE status = 'active' AND branch_id=" . $branch)->fetchColumn();

@@ -50,11 +50,11 @@ final class Crud
             $bindings['__branch_id'] = $branch['id'];
         }
 
-        $countStatement = Database::connection()->prepare('SELECT COUNT(*) FROM ' . $from . $where);
+        $countStatement = Database::read()->prepare('SELECT COUNT(*) FROM ' . $from . $where);
         $countStatement->execute($bindings);
         $total = (int) $countStatement->fetchColumn();
 
-        $stmt = Database::connection()->prepare(
+        $stmt = Database::read()->prepare(
             'SELECT ' . $select . ' FROM ' . $from . $where . ' ORDER BY ' . ($this->module['order'] ?? 'id DESC') . ' LIMIT ' . $perPage . ' OFFSET ' . (($page - 1) * $perPage)
         );
         $stmt->execute($bindings);
@@ -106,7 +106,9 @@ final class Crud
             exit;
         }
 
-        AuditLog::record('record.created', $this->table(), (int) Database::connection()->lastInsertId(), ['route' => $this->route()]);
+        $id = (int) Database::connection()->lastInsertId();
+        AuditLog::record('record.created', $this->table(), $id, ['route' => $this->route()]);
+        $this->afterSave($id, $data, $request);
 
         Toast::flash(ucfirst($this->module['singular']) . ' saved successfully.');
         header('Location: ' . Url::to($this->route()));
@@ -121,6 +123,10 @@ final class Crud
             Toast::flash(ucfirst($this->module['singular']) . ' not found.', 'error');
             header('Location: ' . Url::to($this->route()));
             exit;
+        }
+        $recordForEdit = $this->module['recordForEdit'] ?? null;
+        if (is_callable($recordForEdit)) {
+            $record = $recordForEdit($record) ?? $record;
         }
         View::render('crud/form', [
             'title' => 'Edit ' . $this->module['singular'],
@@ -159,6 +165,7 @@ final class Crud
         }
 
         AuditLog::record('record.updated', $this->table(), $id, ['route' => $this->route()]);
+        $this->afterSave($id, $data, $request);
 
         Toast::flash(ucfirst($this->module['singular']) . ' updated.');
         header('Location: ' . Url::to($this->route()));
@@ -275,6 +282,10 @@ final class Crud
         $errors = [];
 
         foreach ($this->module['fields'] as $field) {
+            if (($field['virtual'] ?? false) === true) {
+                continue;
+            }
+
             $name = (string) $field['name'];
             $type = (string) ($field['type'] ?? 'text');
             $required = (bool) ($field['required'] ?? false);
@@ -440,6 +451,20 @@ final class Crud
         }
         $values = $defaults();
         return is_array($values) ? $values : [];
+    }
+
+    /**
+     * Run a module hook after a record is created or updated, so modules can
+     * write related rows such as junction tables.
+     *
+     * @param array<string, mixed> $data
+     */
+    private function afterSave(int $id, array $data, Request $request): void
+    {
+        $hook = $this->module['afterSave'] ?? null;
+        if (is_callable($hook)) {
+            $hook($id, $data, $request);
+        }
     }
 
     /** @param array<string, mixed> $data */

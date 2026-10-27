@@ -188,15 +188,19 @@ foreach ($teachers as $teacher) {
     $id = $find->fetchColumn();
     if ($id === false) {
         $nextEmployee++;
+        $findDesignation = $pdo->prepare('SELECT id FROM designations WHERE name = :name LIMIT 1');
+        $findDesignation->execute(['name' => $teacher['designation']]);
+        $designationId = $findDesignation->fetchColumn();
+
         $statement = $pdo->prepare(
-            'INSERT INTO teachers (employee_id, name, department, designation, phone, email, gender, joining_date, qualification, experience_years, district, created_at)
-             VALUES (:employee_id, :name, :department, :designation, :phone, :email, :gender, :joining_date, :qualification, :experience_years, :district, :created_at)'
+            'INSERT INTO teachers (employee_id, name, department, designation_id, phone, email, gender, joining_date, qualification, experience_years, district, created_at)
+             VALUES (:employee_id, :name, :department, :designation_id, :phone, :email, :gender, :joining_date, :qualification, :experience_years, :district, :created_at)'
         );
         $statement->execute([
             'employee_id' => 'TCH-' . str_pad((string) $nextEmployee, 3, '0', STR_PAD_LEFT),
             'name' => $teacher['name'],
             'department' => $teacher['department'],
-            'designation' => $teacher['designation'],
+            'designation_id' => $designationId === false ? null : (int) $designationId,
             'phone' => '017' . str_pad((string) (20000000 + $nextEmployee), 8, '0', STR_PAD_LEFT),
             'email' => null,
             'gender' => str_starts_with($teacher['name'], 'Mrs.') || str_starts_with($teacher['name'], 'Prof.') ? 'Female' : 'Male',

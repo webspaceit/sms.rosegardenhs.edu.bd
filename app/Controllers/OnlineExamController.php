@@ -60,22 +60,37 @@ final class OnlineExamController
             exit;
         }
 
-        $options = trim((string) $request->input('options', ''));
-        $options = $options === '' ? null : json_encode(array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $options)))));
+        $correctAnswer = trim((string) $request->input('correct_answer', '')) ?: null;
 
         $statement = Database::connection()->prepare(
-            'INSERT INTO exam_questions (online_exam_id, question, type, options, correct_answer, marks, branch_id)'
-            . ' VALUES (:exam_id, :question, :type, :options, :correct_answer, :marks, :branch)'
+            'INSERT INTO exam_questions (online_exam_id, question, type, correct_answer, marks, branch_id)'
+            . ' VALUES (:exam_id, :question, :type, :correct_answer, :marks, :branch)'
         );
         $statement->execute([
             'exam_id' => $examId,
             'question' => $question,
             'type' => $type,
-            'options' => $options,
-            'correct_answer' => trim((string) $request->input('correct_answer', '')) ?: null,
+            'correct_answer' => $type === 'written' ? $correctAnswer : null,
             'marks' => (int) $request->input('marks', 1),
             'branch' => BranchContext::id(),
         ]);
+
+        if ($type === 'mcq') {
+            $questionId = (int) Database::connection()->lastInsertId();
+            $lines = preg_split('/\r\n|\r|\n/', trim((string) $request->input('options', '')));
+            $options = array_values(array_filter(array_map('trim', $lines)));
+            $insertOption = Database::connection()->prepare(
+                'INSERT INTO exam_question_options (exam_question_id, option_text, is_correct, sort_order) VALUES (:question_id, :option_text, :is_correct, :sort_order)'
+            );
+            foreach ($options as $index => $option) {
+                $insertOption->execute([
+                    'question_id' => $questionId,
+                    'option_text' => $option,
+                    'is_correct' => ($correctAnswer !== null && $correctAnswer !== '' && strcasecmp($option, $correctAnswer) === 0) ? 1 : 0,
+                    'sort_order' => $index,
+                ]);
+            }
+        }
 
         Toast::flash('Question added.');
         header('Location: ' . Url::to('/online-exams/questions?exam=' . $examId));
@@ -145,6 +160,23 @@ final class OnlineExamController
     {
         $statement = Database::connection()->prepare('SELECT * FROM exam_questions WHERE online_exam_id = :id AND branch_id=:branch ORDER BY id');
         $statement->execute(['id' => $examId, 'branch' => BranchContext::id()]);
-        return $statement->fetchAll();
+        $questions = $statement->fetchAll();
+
+        $optionStatement = Database::connection()->prepare(
+            'SELECT o.* FROM exam_question_options o'
+            . ' JOIN exam_questions q ON q.id = o.exam_question_id AND q.branch_id = :branch'
+            . ' WHERE q.online_exam_id = :id ORDER BY o.sort_order, o.id'
+        );
+        $optionStatement->execute(['id' => $examId, 'branch' => BranchContext::id()]);
+
+        $byQuestion = [];
+        foreach ($optionStatement->fetchAll() as $option) {
+            $byQuestion[(int) $option['exam_question_id']][] = $option;
+        }
+        foreach ($questions as $index => $question) {
+            $questions[$index]['options_list'] = $byQuestion[(int) $question['id']] ?? [];
+        }
+
+        return $questions;
     }
 }

@@ -111,18 +111,18 @@ use App\Core\View;
                             </td>
                             <?php foreach ($subjects as $subject): ?>
                                 <?php
-                                $subjectName = (string) $subject['name'];
-                                $mark = $marks[$studentId][$subjectName] ?? null;
+                                $subjectId = (int) $subject['id'];
+                                $mark = $marks[$studentId][$subjectId] ?? null;
                                 ?>
                                 <?php if ($mode === 'total'): ?>
                                     <td class="px-2 py-2">
-                                        <input type="number" min="0" max="<?= (int) $subject['full_marks'] ?>" name="marks[<?= $studentId ?>][<?= View::escape($subjectName) ?>][obtained]" value="<?= $mark === null ? '' : (int) ($mark['obtained'] ?? 0) + (int) $mark['written_marks'] + (int) $mark['mcq_marks'] + (int) $mark['practical_marks'] + (int) $mark['ca_marks'] ?>" class="w-16 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-center text-sm outline-none focus:border-teal-400">
+                                        <input type="number" min="0" max="<?= (int) $subject['full_marks'] ?>" name="marks[<?= $studentId ?>][<?= (int) $subject['id'] ?>][obtained]" value="<?= $mark === null ? '' : (int) ($mark['obtained'] ?? 0) + (int) $mark['written_marks'] + (int) $mark['mcq_marks'] + (int) $mark['practical_marks'] + (int) $mark['ca_marks'] ?>" class="w-16 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-center text-sm outline-none focus:border-teal-400">
                                     </td>
                                 <?php else: ?>
-                                    <td class="px-1 py-2"><input type="number" min="0" name="marks[<?= $studentId ?>][<?= View::escape($subjectName) ?>][written_marks]" value="<?= (int) ($mark['written_marks'] ?? 0) ?>" class="w-12 rounded border border-slate-700 bg-slate-950 px-1 py-1 text-center text-xs outline-none focus:border-teal-400"></td>
-                                    <td class="px-1 py-2"><input type="number" min="0" name="marks[<?= $studentId ?>][<?= View::escape($subjectName) ?>][mcq_marks]" value="<?= (int) ($mark['mcq_marks'] ?? 0) ?>" class="w-12 rounded border border-slate-700 bg-slate-950 px-1 py-1 text-center text-xs outline-none focus:border-teal-400"></td>
-                                    <td class="px-1 py-2"><input type="number" min="0" name="marks[<?= $studentId ?>][<?= View::escape($subjectName) ?>][practical_marks]" value="<?= (int) ($mark['practical_marks'] ?? 0) ?>" class="w-12 rounded border border-slate-700 bg-slate-950 px-1 py-1 text-center text-xs outline-none focus:border-teal-400"></td>
-                                    <td class="px-1 py-2"><input type="number" min="0" name="marks[<?= $studentId ?>][<?= View::escape($subjectName) ?>][ca_marks]" value="<?= (int) ($mark['ca_marks'] ?? 0) ?>" class="w-12 rounded border border-slate-700 bg-slate-950 px-1 py-1 text-center text-xs outline-none focus:border-teal-400"></td>
+                                    <td class="px-1 py-2"><input type="number" min="0" name="marks[<?= $studentId ?>][<?= (int) $subject['id'] ?>][written_marks]" value="<?= (int) ($mark['written_marks'] ?? 0) ?>" class="w-12 rounded border border-slate-700 bg-slate-950 px-1 py-1 text-center text-xs outline-none focus:border-teal-400"></td>
+                                    <td class="px-1 py-2"><input type="number" min="0" name="marks[<?= $studentId ?>][<?= (int) $subject['id'] ?>][mcq_marks]" value="<?= (int) ($mark['mcq_marks'] ?? 0) ?>" class="w-12 rounded border border-slate-700 bg-slate-950 px-1 py-1 text-center text-xs outline-none focus:border-teal-400"></td>
+                                    <td class="px-1 py-2"><input type="number" min="0" name="marks[<?= $studentId ?>][<?= (int) $subject['id'] ?>][practical_marks]" value="<?= (int) ($mark['practical_marks'] ?? 0) ?>" class="w-12 rounded border border-slate-700 bg-slate-950 px-1 py-1 text-center text-xs outline-none focus:border-teal-400"></td>
+                                    <td class="px-1 py-2"><input type="number" min="0" name="marks[<?= $studentId ?>][<?= (int) $subject['id'] ?>][ca_marks]" value="<?= (int) ($mark['ca_marks'] ?? 0) ?>" class="w-12 rounded border border-slate-700 bg-slate-950 px-1 py-1 text-center text-xs outline-none focus:border-teal-400"></td>
                                 <?php endif; ?>
                             <?php endforeach; ?>
                             <td class="px-4 py-2 text-right font-medium text-white"><?= (int) ($totals[$studentId] ?? 0) ?></td>

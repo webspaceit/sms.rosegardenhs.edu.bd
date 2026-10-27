@@ -17,10 +17,12 @@ final class Teacher
             'singular' => 'teacher',
             'permission' => 'teachers.view',
             'managePermission' => 'teachers.create',
+            'from' => 'teachers t LEFT JOIN designations d ON d.id = t.designation_id AND d.branch_id = t.branch_id',
+            'select' => 't.*, d.name AS designation_name',
             'columns' => [
                 ['name' => 'employee_id', 'label' => 'Employee ID', 'format' => 'muted'],
                 ['name' => 'name', 'label' => 'Name'],
-                ['name' => 'designation', 'label' => 'Designation', 'format' => 'badge'],
+                ['name' => 'designation_name', 'label' => 'Designation', 'format' => 'badge'],
                 ['name' => 'department', 'label' => 'Department', 'format' => 'muted'],
                 ['name' => 'phone', 'label' => 'Phone', 'format' => 'muted'],
                 ['name' => 'joining_date', 'label' => 'Joined'],
@@ -29,7 +31,7 @@ final class Teacher
                 ['name' => 'employee_id', 'label' => 'Employee ID', 'type' => 'text', 'required' => true, 'max' => 30],
                 ['name' => 'name', 'label' => 'Full name', 'type' => 'text', 'required' => true, 'max' => 150],
                 ['name' => 'name_bn', 'label' => 'Name in Bangla', 'type' => 'text', 'max' => 150],
-                ['name' => 'designation', 'label' => 'Designation', 'type' => 'text', 'max' => 100],
+                ['name' => 'designation_id', 'label' => 'Designation', 'type' => 'select', 'options' => static fn (): array => Catalogue::designations()],
                 ['name' => 'department', 'label' => 'Department', 'type' => 'text', 'max' => 100, 'hint' => 'For example Bangla, English, Mathematics, ICT.'],
                 ['name' => 'phone', 'label' => 'Phone', 'type' => 'text', 'max' => 20],
                 ['name' => 'email', 'label' => 'Email', 'type' => 'text', 'max' => 190],
@@ -42,8 +44,8 @@ final class Teacher
                 ['name' => 'district', 'label' => 'District', 'type' => 'text', 'max' => 100],
                 ['name' => 'address', 'label' => 'Address', 'type' => 'textarea', 'rows' => 2],
             ],
-            'search' => ['name', 'name_bn', 'employee_id', 'designation', 'department'],
-            'order' => 'name ASC',
+            'search' => ['t.name', 't.name_bn', 't.employee_id', 'd.name', 't.department'],
+            'order' => 't.name ASC',
         ];
     }
 }

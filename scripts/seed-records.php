@@ -649,14 +649,12 @@ foreach ($studentRows as $index => $student) {
         'SELECT subject_id FROM class_subject WHERE class_id = ' . (int) $student['class_id'] . ' ORDER BY sort_order'
     )->fetchAll(PDO::FETCH_COLUMN);
 
-    $reportId = putWhere('academic_reports', 'student_id = :student_id AND exam_name = :exam_name AND academic_year = :academic_year', [
+    $reportId = putWhere('academic_reports', 'student_id = :student_id AND exam_id = :exam_id', [
         'student_id' => (int) $student['id'],
-        'exam_name' => $examName,
-        'academic_year' => $yearName,
+        'exam_id' => $examId,
     ], [
         'student_id' => (int) $student['id'],
-        'exam_name' => $examName,
-        'academic_year' => $yearName,
+        'exam_id' => $examId,
         'class_position' => null,
         'working_days' => 120,
         'present_days' => 110 + ($index % 8),
@@ -668,7 +666,6 @@ foreach ($studentRows as $index => $student) {
     ]);
 
     foreach ($classSubjects as $subjectIndex => $subjectId) {
-        $subject = $pdo->query('SELECT name FROM subjects WHERE id = ' . (int) $subjectId)->fetchColumn();
         // A spread of results, with a few students failing one subject.
         $base = 45 + (($index * 7 + $subjectIndex * 11) % 50);
         if ($index % 9 === 0 && $subjectIndex === 1) {
@@ -678,12 +675,12 @@ foreach ($studentRows as $index => $student) {
         $mcq = min(30, (int) round($base * 0.3));
         $ca = (int) min(10, $base - $written - $mcq);
 
-        putWhere('academic_report_marks', 'academic_report_id = :report_id AND subject_name = :subject_name', [
+        putWhere('academic_report_marks', 'academic_report_id = :report_id AND subject_id = :subject_id', [
             'report_id' => $reportId,
-            'subject_name' => (string) $subject,
+            'subject_id' => (int) $subjectId,
         ], [
             'academic_report_id' => $reportId,
-            'subject_name' => (string) $subject,
+            'subject_id' => (int) $subjectId,
             'full_marks' => 100,
             'highest_marks' => 95,
             'written_marks' => $written,
@@ -795,18 +792,28 @@ $questions = [
 ];
 
 foreach ($questions as $index => $question) {
-    putWhere('exam_questions', 'online_exam_id = :exam_id AND question = :question', [
+    $questionId = putWhere('exam_questions', 'online_exam_id = :exam_id AND question = :question', [
         'exam_id' => $onlineExamId,
         'question' => $question[0],
     ], [
         'online_exam_id' => $onlineExamId,
         'question' => $question[0],
         'type' => 'mcq',
-        'options' => json_encode(array_values(array_filter(explode("\n", $question[1])))),
-        'correct_answer' => $question[2],
+        'correct_answer' => null,
         'marks' => 2,
         'created_at' => now(),
     ]);
+
+    $options = array_values(array_filter(array_map('trim', explode("\n", $question[1]))));
+    $insertOption = $pdo->prepare('INSERT INTO exam_question_options (exam_question_id, option_text, is_correct, sort_order) VALUES (:question_id, :option_text, :is_correct, :sort_order)');
+    foreach ($options as $optionIndex => $option) {
+        $insertOption->execute([
+            'question_id' => $questionId,
+            'option_text' => $option,
+            'is_correct' => strcasecmp($option, (string) $question[2]) === 0 ? 1 : 0,
+            'sort_order' => $optionIndex,
+        ]);
+    }
 }
 
 foreach (array_slice($students, 0, 5) as $index => $student) {
