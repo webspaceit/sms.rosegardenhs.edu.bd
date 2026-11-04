@@ -13,6 +13,7 @@ use App\Core\Toast;
 use App\Core\Url;
 use App\Core\View;
 use App\Models\Catalogue;
+use App\Models\ResultSet;
 
 /**
  * Mark entry for a whole class at once.
@@ -186,6 +187,14 @@ final class BulkMarkController
                     }
                     $saved++;
                 }
+
+                $summaryMarks = [];
+                foreach ($db->query('SELECT written_marks, mcq_marks, practical_marks, ca_marks, obtained FROM academic_report_marks WHERE academic_report_id = ' . (int) $reportId)->fetchAll() as $mark) {
+                    $summaryMarks[] = ['total' => (int) $mark['written_marks'] + (int) $mark['mcq_marks'] + (int) $mark['practical_marks'] + (int) $mark['ca_marks'] + (int) $mark['obtained']];
+                }
+                $summary = ResultSet::computeSummary($summaryMarks);
+                $db->prepare('UPDATE academic_reports SET total_marks = :total, gpa = :gpa, overall_grade = :grade, has_failed = :failed, updated_at = NOW() WHERE id = :id')
+                    ->execute(['total' => $summary['total'], 'gpa' => $summary['gpa'], 'grade' => $summary['grade'], 'failed' => $summary['has_failed'] ? 1 : 0, 'id' => $reportId]);
             }
 
             $db->commit();
@@ -199,6 +208,7 @@ final class BulkMarkController
             exit;
         }
 
+        ResultSet::clearCache();
         Toast::flash('Saved ' . $saved . ' mark(s) for ' . count($students) . ' student(s).');
         header('Location: ' . Url::to('/marks?class_id=' . $classId . '&exam=' . urlencode($examName) . '&year=' . urlencode($academicYear) . '&mode=' . $mode));
         exit;
@@ -260,7 +270,7 @@ final class BulkMarkController
         if ($classId <= 0) {
             return [];
         }
-        $statement = Database::connection()->prepare(
+        $statement = Database::read()->prepare(
             'SELECT id, student_id, name, roll_no FROM students WHERE class_id = :class_id AND branch_id=:branch ORDER BY roll_no'
         );
         $statement->execute(['class_id' => $classId, 'branch' => BranchContext::id()]);
@@ -277,7 +287,7 @@ final class BulkMarkController
         if ($classId <= 0) {
             return [];
         }
-        $statement = Database::connection()->prepare(
+        $statement = Database::read()->prepare(
             'SELECT s.id, s.name, cs.full_marks FROM class_subject cs JOIN subjects s ON s.id = cs.subject_id AND s.branch_id=cs.branch_id'
             . ' WHERE cs.class_id = :class_id AND cs.branch_id=:branch ORDER BY cs.sort_order, s.name'
         );
@@ -299,7 +309,7 @@ final class BulkMarkController
         $examId = $this->examId($examName, $academicYear);
         if ($examId <= 0) return [];
 
-        $statement = Database::connection()->prepare(
+        $statement = Database::read()->prepare(
             'SELECT ar.student_id, m.*, sub.name AS subject_name FROM academic_reports ar'
             . ' JOIN academic_report_marks m ON m.academic_report_id = ar.id AND m.branch_id=ar.branch_id'
             . ' JOIN students st ON st.id = ar.student_id AND st.branch_id=ar.branch_id'
@@ -342,7 +352,7 @@ final class BulkMarkController
     private function reportId(int $studentId, string $examName, string $academicYear): int
     {
         $examId = $this->examId($examName, $academicYear);
-        $statement = Database::connection()->prepare(
+        $statement = Database::read()->prepare(
             'SELECT id FROM academic_reports WHERE student_id = :student_id AND branch_id=:branch AND exam_id = :exam_id LIMIT 1'
         );
         $statement->execute([
@@ -356,7 +366,7 @@ final class BulkMarkController
 
     private function examId(string $examName, string $academicYear): int
     {
-        $statement = Database::connection()->prepare('SELECT e.id FROM exams e LEFT JOIN academic_years ay ON ay.id = e.academic_year_id AND ay.branch_id=e.branch_id WHERE e.name = :name AND e.branch_id=:branch AND (e.academic_year_id IS NULL OR ay.name = :year) ORDER BY (e.academic_year_id IS NULL), e.id LIMIT 1');
+        $statement = Database::read()->prepare('SELECT e.id FROM exams e LEFT JOIN academic_years ay ON ay.id = e.academic_year_id AND ay.branch_id=e.branch_id WHERE e.name = :name AND e.branch_id=:branch AND (e.academic_year_id IS NULL OR ay.name = :year) ORDER BY (e.academic_year_id IS NULL), e.id LIMIT 1');
         $statement->execute(['name' => $examName, 'year' => $academicYear, 'branch' => BranchContext::id()]);
         return (int) ($statement->fetchColumn() ?: 0);
     }
@@ -366,7 +376,7 @@ final class BulkMarkController
         if ($classId <= 0) {
             return '';
         }
-        $statement = Database::connection()->prepare('SELECT name FROM classes WHERE id = :id AND branch_id=:branch LIMIT 1');
+        $statement = Database::read()->prepare('SELECT name FROM classes WHERE id = :id AND branch_id=:branch LIMIT 1');
         $statement->execute(['id' => $classId, 'branch' => BranchContext::id()]);
         $name = $statement->fetchColumn();
         return $name === false ? '' : (string) $name;

@@ -37,7 +37,7 @@ final class Cache
 
         return (bool) @file_put_contents(
             self::path($key),
-            json_encode(['expires_at' => time() + max(1, $ttl), 'value' => $value], JSON_UNESCAPED_UNICODE)
+            json_encode(['key' => $key, 'expires_at' => time() + max(1, $ttl), 'value' => $value], JSON_UNESCAPED_UNICODE)
         );
     }
 
@@ -51,6 +51,27 @@ final class Cache
         $value = $resolver();
         self::put($key, $value, $ttl);
         return $value;
+    }
+
+    /**
+     * Forget every cached entry whose original key starts with the prefix,
+     * for example "result:" clears all cached result sets.
+     */
+    public static function forgetPrefix(string $prefix): void
+    {
+        $directory = self::directory();
+        if (!is_dir($directory)) {
+            return;
+        }
+        foreach ((array) scandir($directory) as $file) {
+            if (!str_ends_with($file, '.json')) {
+                continue;
+            }
+            $data = json_decode((string) file_get_contents($directory . '/' . $file), true);
+            if (is_array($data) && is_string($data['key'] ?? null) && str_starts_with($data['key'], $prefix)) {
+                @unlink($directory . '/' . $file);
+            }
+        }
     }
 
     public static function forget(string $key): void

@@ -162,7 +162,10 @@ foreach ($columns as $table => $tableColumns) {
 }
 
 // Link legacy report cards to their exam records when a matching exam exists.
-$pdo->exec("UPDATE academic_reports ar SET ar.exam_id = (SELECT e.id FROM exams e LEFT JOIN academic_years ay ON ay.id = e.academic_year_id WHERE e.name = ar.exam_name AND (e.academic_year_id IS NULL OR ay.name = ar.academic_year) ORDER BY (e.academic_year_id IS NULL), e.id LIMIT 1) WHERE ar.exam_id IS NULL");
+$reportCols = $pdo->query('SHOW COLUMNS FROM academic_reports')->fetchAll(PDO::FETCH_COLUMN);
+if (in_array('exam_name', $reportCols, true)) {
+    $pdo->exec("UPDATE academic_reports ar SET ar.exam_id = (SELECT e.id FROM exams e LEFT JOIN academic_years ay ON ay.id = e.academic_year_id WHERE e.name = ar.exam_name AND (e.academic_year_id IS NULL OR ay.name = ar.academic_year) ORDER BY (e.academic_year_id IS NULL), e.id LIMIT 1) WHERE ar.exam_id IS NULL");
+}
 $indexes = $pdo->query("SHOW INDEX FROM academic_reports WHERE Key_name = 'academic_reports_exam_index'")->fetchAll();
 if ($indexes === []) $pdo->exec('ALTER TABLE academic_reports ADD INDEX academic_reports_exam_index (exam_id)');
 $constraints = $pdo->query("SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'academic_reports' AND CONSTRAINT_NAME = 'academic_reports_exam_fk'")->fetchAll();
@@ -308,6 +311,146 @@ if (in_array('options', $questionColumns, true)) {
         }
     }
     $pdo->exec('ALTER TABLE exam_questions DROP COLUMN options');
+}
+
+// ---------------------------------------------------------------------------
+// High-traffic result management: materialized totals, GPA and position.
+// ---------------------------------------------------------------------------
+
+$columns = [
+    'academic_reports' => [
+        'total_marks' => 'INT UNSIGNED NOT NULL DEFAULT 0 AFTER class_position',
+        'gpa' => 'DECIMAL(4,2) NOT NULL DEFAULT 0.00 AFTER total_marks',
+        'overall_grade' => "VARCHAR(5) NOT NULL DEFAULT 'F' AFTER gpa",
+        'has_failed' => 'TINYINT(1) NOT NULL DEFAULT 1 AFTER overall_grade',
+    ],
+];
+foreach ($columns as $table => $tableColumns) {
+    $existing = $pdo->query('SHOW COLUMNS FROM `' . $table . '`')->fetchAll(PDO::FETCH_COLUMN);
+    foreach ($tableColumns as $column => $definition) {
+        if (in_array($column, $existing, true)) {
+            continue;
+        }
+        $pdo->exec('ALTER TABLE `' . $table . '` ADD COLUMN `' . $column . '` ' . $definition);
+        $added++;
+    }
+}
+foreach ([
+    'academic_reports_exam_position_index' => 'ALTER TABLE academic_reports ADD INDEX academic_reports_exam_position_index (exam_id, class_position)',
+    'academic_reports_gpa_index' => 'ALTER TABLE academic_reports ADD INDEX academic_reports_gpa_index (exam_id, gpa)',
+    'students_class_status_index' => 'ALTER TABLE students ADD INDEX students_class_status_index (class_id, status)',
+    'students_class_exam_index' => 'ALTER TABLE students ADD INDEX students_class_exam_index (class_id, academic_year_id)',
+] as $name => $sql) {
+    $table = strpos($name, 'students_') === 0 ? 'students' : 'academic_reports';
+    if ($pdo->query("SHOW INDEX FROM {$table} WHERE Key_name = '{$name}'")->fetchAll() === []) {
+        $pdo->exec($sql);
+    }
+}
+
+// The (academic_report_id, subject_id) uniqueness enforces exactly one mark
+// per subject on a student's report card.
+if ($pdo->query("SHOW INDEX FROM academic_report_marks WHERE Key_name = 'academic_report_marks_report_subject_unique'")->fetchAll() === []) {
+    $duplicates = (int) $pdo->query('SELECT COUNT(*) FROM (SELECT academic_report_id, subject_id FROM academic_report_marks WHERE subject_id IS NOT NULL GROUP BY academic_report_id, subject_id HAVING COUNT(*) > 1) duplicate_marks')->fetchColumn();
+    if ($duplicates === 0) {
+        $pdo->exec('ALTER TABLE academic_report_marks ADD UNIQUE KEY academic_report_marks_report_subject_unique (academic_report_id, subject_id)');
+    } else {
+        echo 'Duplicate academic_report_marks rows were preserved; the unique subject key was not added.', PHP_EOL;
+    }
+}
+
+// Backfill total, GPA, grade and position for every existing report card.
+function gradeForMarks(float $marks): array
+{
+    if ($marks >= 80) return ['A+', 5.0];
+    if ($marks >= 70) return ['A', 4.0];
+    if ($marks >= 60) return ['A-', 3.5];
+    if ($marks >= 50) return ['B', 3.0];
+    if ($marks >= 40) return ['C', 2.0];
+    if ($marks >= 33) return ['D', 1.0];
+    return ['F', 0.0];
+}
+function overallGradeFor(float $average, bool $hasFailed): string
+{
+    if ($hasFailed || $average < 1.0) return 'F';
+    if ($average >= 5.0) return 'A+';
+    if ($average >= 4.0) return 'A';
+    if ($average >= 3.5) return 'A-';
+    if ($average >= 3.0) return 'B';
+    if ($average >= 2.0) return 'C';
+    return 'D';
+}
+$reportRows = $pdo->query(
+    'SELECT ar.id, ar.exam_id, ar.student_id, s.class_id, s.roll_no'
+    . ' FROM academic_reports ar JOIN students s ON s.id = ar.student_id AND s.branch_id = ar.branch_id'
+)->fetchAll();
+$markRows = $pdo->query(
+    'SELECT academic_report_id, written_marks, mcq_marks, practical_marks, ca_marks, obtained'
+    . ' FROM academic_report_marks'
+)->fetchAll();
+$marksByReport = [];
+foreach ($markRows as $mark) {
+    $marksByReport[(int) $mark['academic_report_id']][] = (int) $mark['written_marks'] + (int) $mark['mcq_marks']
+        + (int) $mark['practical_marks'] + (int) $mark['ca_marks'] + (int) $mark['obtained'];
+}
+$computed = [];
+foreach ($reportRows as $report) {
+    $total = 0.0;
+    $gradePoints = 0.0;
+    $hasFailed = false;
+    $subjects = $marksByReport[(int) $report['id']] ?? [];
+    foreach ($subjects as $subjectTotal) {
+        $total += (float) $subjectTotal;
+        [$letter, $point] = gradeForMarks((float) $subjectTotal);
+        if ($letter === 'F') {
+            $hasFailed = true;
+        } else {
+            $gradePoints += $point;
+        }
+    }
+    $average = $subjects === [] ? 0.0 : round($gradePoints / count($subjects), 2);
+    $computed[(int) $report['id']] = [
+        'total' => (int) round($total),
+        'gpa' => $hasFailed ? 0.0 : $average,
+        'grade' => overallGradeFor($average, $hasFailed),
+        'has_failed' => $hasFailed ? 1 : 0,
+        'class_id' => (int) $report['class_id'],
+        'exam_id' => (int) $report['exam_id'],
+        'roll_no' => (int) $report['roll_no'],
+    ];
+}
+$groups = [];
+foreach ($computed as $reportId => $values) {
+    $groups[$values['exam_id']][$values['class_id']][] = $reportId;
+}
+$updateReport = $pdo->prepare('UPDATE academic_reports SET total_marks = :total, gpa = :gpa, overall_grade = :grade, has_failed = :failed, class_position = :position WHERE id = :id');
+foreach ($groups as $examGroup) {
+  foreach ($examGroup as $group) {
+    usort($group, static function (int $a, int $b) use ($computed): int {
+        if ($computed[$a]['total'] !== $computed[$b]['total']) {
+            return $computed[$b]['total'] <=> $computed[$a]['total'];
+        }
+        return $computed[$a]['roll_no'] <=> $computed[$b]['roll_no'];
+    });
+    $position = 0;
+    $previousTotal = null;
+    $previousPosition = 0;
+    foreach ($group as $reportId) {
+        $position++;
+        $entryPosition = ($previousTotal !== null && $computed[$reportId]['total'] === $previousTotal) ? $previousPosition : $position;
+        if ($entryPosition === $position) {
+            $previousPosition = $position;
+        }
+        $previousTotal = $computed[$reportId]['total'];
+        $updateReport->execute([
+            'total' => $computed[$reportId]['total'],
+            'gpa' => $computed[$reportId]['gpa'],
+            'grade' => $computed[$reportId]['grade'],
+            'failed' => $computed[$reportId]['has_failed'],
+            'position' => $entryPosition,
+            'id' => $reportId,
+        ]);
+    }
+  }
 }
 
 $tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);

@@ -5,6 +5,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\BranchContext;
+use App\Core\Cache;
 use App\Core\Csrf;
 use App\Core\Database;
 use App\Core\Request;
@@ -71,7 +72,7 @@ final class PortalController
         $student = $this->requireStudent();
         $reportId = (int) $request->input('report', 0);
 
-        $reports = PortalData::studentReports((int) $student['id']);
+        $reports = Cache::remember('portal_reports:' . BranchContext::id() . ':' . (int) $student['id'], 300, static fn (): array => PortalData::studentReports((int) $student['id']));
         $selected = null;
         foreach ($reports as $report) {
             if ((int) $report['id'] === $reportId) {
@@ -87,7 +88,7 @@ final class PortalController
             'portalMenu' => $this->menu('student'),
             'reports' => $reports,
             'selected' => $selected,
-            'marks' => $selected === null ? [] : PortalData::reportMarks((int) $selected['id']),
+            'marks' => $selected === null ? [] : Cache::remember('portal_marks:' . BranchContext::id() . ':' . (int) $selected['id'], 300, static fn (): array => PortalData::reportMarks((int) $selected['id'])),
         ]);
     }
 

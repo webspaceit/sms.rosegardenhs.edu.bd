@@ -62,7 +62,7 @@ final class ResultController
         $examName = trim((string) $request->input('exam', ''));
         $academicYear = trim((string) $request->input('year', ''));
 
-        $student = Database::connection()
+        $student = Database::read()
             ->query('SELECT s.*, c.name AS class_name, sec.name AS section_name FROM students s'
                 . ' JOIN classes c ON c.id = s.class_id AND c.branch_id=s.branch_id JOIN sections sec ON sec.id = s.section_id AND sec.branch_id=s.branch_id WHERE s.id = ' . $studentId . ' AND s.branch_id=' . BranchContext::id())
             ->fetch();
@@ -176,6 +176,14 @@ final class ResultController
                 ]);
             }
 
+            $summaryMarks = [];
+            foreach ($db->query('SELECT written_marks, mcq_marks, practical_marks, ca_marks, obtained FROM academic_report_marks WHERE academic_report_id = ' . (int) $reportId)->fetchAll() as $mark) {
+                $summaryMarks[] = ['total' => (int) $mark['written_marks'] + (int) $mark['mcq_marks'] + (int) $mark['practical_marks'] + (int) $mark['ca_marks'] + (int) $mark['obtained']];
+            }
+            $summary = ResultSet::computeSummary($summaryMarks);
+            $summaryStatement = $db->prepare('UPDATE academic_reports SET total_marks = :total, gpa = :gpa, overall_grade = :grade, has_failed = :failed, updated_at = NOW() WHERE id = :id');
+            $summaryStatement->execute(['total' => $summary['total'], 'gpa' => $summary['gpa'], 'grade' => $summary['grade'], 'failed' => $summary['has_failed'] ? 1 : 0, 'id' => $reportId]);
+
             $db->commit();
         } catch (\Throwable $error) {
             if ($db->inTransaction()) {
@@ -187,6 +195,7 @@ final class ResultController
             exit;
         }
 
+        ResultSet::clearCache();
         Toast::flash('Report card saved.');
         header('Location: ' . Url::to('/reports?exam=' . urlencode($examName) . '&year=' . urlencode($academicYear) . '&class_id=' . (int) $request->input('class_id', 0)));
         exit;
@@ -238,7 +247,7 @@ final class ResultController
         $totalPages = max(1, (int) ceil($total / $perPage));
         $page = min($totalPages, max(1, (int) $request->input('page', 1)));
         $settings = [];
-        foreach (Database::connection()->query('SELECT `key`, value FROM school_settings WHERE branch_id=' . BranchContext::id())->fetchAll() as $setting) {
+        foreach (Database::read()->query('SELECT `key`, value FROM school_settings WHERE branch_id=' . BranchContext::id())->fetchAll() as $setting) {
             $settings[(string) $setting['key']] = (string) ($setting['value'] ?? '');
         }
 
@@ -269,7 +278,7 @@ final class ResultController
             exit;
         }
 
-        $statement = Database::connection()->prepare(
+        $statement = Database::read()->prepare(
             'SELECT e.name AS exam_name, s.name AS subject_name, es.date, es.start_time, es.end_time, es.hall'
             . ' FROM exam_schedules es JOIN exams e ON e.id = es.exam_id AND e.branch_id=es.branch_id JOIN subjects s ON s.id = es.subject_id AND s.branch_id=es.branch_id'
             . ' WHERE es.branch_id=:branch AND (e.academic_year_id IS NULL OR e.academic_year_id = :year_id)'
@@ -282,7 +291,7 @@ final class ResultController
         $examName = count($examNames) === 1 ? $examNames[0] : 'Scheduled Examinations';
         $schedule = $scheduleRows;
         $schoolSettings = [];
-        foreach (Database::connection()->query('SELECT `key`, value FROM school_settings WHERE branch_id=' . BranchContext::id())->fetchAll() as $setting) {
+        foreach (Database::read()->query('SELECT `key`, value FROM school_settings WHERE branch_id=' . BranchContext::id())->fetchAll() as $setting) {
             $schoolSettings[(string) $setting['key']] = (string) ($setting['value'] ?? '');
         }
 
@@ -327,12 +336,12 @@ final class ResultController
         }
 
         if ($type === 'admit-card') {
-            foreach (Database::connection()->query('SELECT `key`, value FROM school_settings WHERE branch_id=' . BranchContext::id())->fetchAll() as $setting) {
+            foreach (Database::read()->query('SELECT `key`, value FROM school_settings WHERE branch_id=' . BranchContext::id())->fetchAll() as $setting) {
                 $schoolSettings[(string) $setting['key']] = (string) ($setting['value'] ?? '');
             }
 
             if ($config !== null && $classId > 0) {
-                $scheduleStatement = Database::connection()->prepare(
+                $scheduleStatement = Database::read()->prepare(
                     'SELECT s.name AS subject_name, es.date, es.start_time, es.end_time, es.hall'
                     . ' FROM exam_schedules es'
                     . ' JOIN exams e ON e.id = es.exam_id AND e.branch_id=es.branch_id'
@@ -485,7 +494,7 @@ final class ResultController
         if ($examId <= 0) {
             return null;
         }
-        $statement = Database::connection()->prepare(
+        $statement = Database::read()->prepare(
             'SELECT * FROM academic_reports WHERE student_id = :student_id AND branch_id=:branch AND exam_id = :exam_id LIMIT 1'
         );
         $statement->execute([
@@ -499,7 +508,7 @@ final class ResultController
 
     private function examId(string $examName, string $academicYear): int
     {
-        $statement = Database::connection()->prepare('SELECT e.id FROM exams e LEFT JOIN academic_years ay ON ay.id = e.academic_year_id AND ay.branch_id=e.branch_id WHERE e.name = :name AND e.branch_id=:branch AND (e.academic_year_id IS NULL OR ay.name = :year) ORDER BY (e.academic_year_id IS NULL), e.id LIMIT 1');
+        $statement = Database::read()->prepare('SELECT e.id FROM exams e LEFT JOIN academic_years ay ON ay.id = e.academic_year_id AND ay.branch_id=e.branch_id WHERE e.name = :name AND e.branch_id=:branch AND (e.academic_year_id IS NULL OR ay.name = :year) ORDER BY (e.academic_year_id IS NULL), e.id LIMIT 1');
         $statement->execute(['name' => $examName, 'year' => $academicYear, 'branch' => BranchContext::id()]);
         return (int) ($statement->fetchColumn() ?: 0);
     }
@@ -515,7 +524,7 @@ final class ResultController
      */
     private function marks(int $reportId): array
     {
-        $statement = Database::connection()->prepare('SELECT * FROM academic_report_marks WHERE academic_report_id = :id AND branch_id=:branch ORDER BY id');
+        $statement = Database::read()->prepare('SELECT * FROM academic_report_marks WHERE academic_report_id = :id AND branch_id=:branch ORDER BY id');
         $statement->execute(['id' => $reportId, 'branch' => BranchContext::id()]);
         return $statement->fetchAll();
     }
@@ -527,7 +536,7 @@ final class ResultController
      */
     private function classSubjects(int $classId): array
     {
-        $statement = Database::connection()->prepare(
+        $statement = Database::read()->prepare(
             'SELECT s.id, s.name, cs.full_marks FROM class_subject cs JOIN subjects s ON s.id = cs.subject_id AND s.branch_id=cs.branch_id'
             . ' WHERE cs.class_id = :class_id AND cs.branch_id=:branch ORDER BY cs.sort_order, s.name'
         );
@@ -538,7 +547,7 @@ final class ResultController
     /** @return array<int, string> */
     private function examNames(): array
     {
-        $rows = Database::connection()->query('SELECT name AS exam_name FROM exams WHERE branch_id=' . BranchContext::id() . ' ORDER BY exam_name DESC')->fetchAll();
+        $rows = Database::read()->query('SELECT name AS exam_name FROM exams WHERE branch_id=' . BranchContext::id() . ' ORDER BY exam_name DESC')->fetchAll();
         $names = [];
         foreach ($rows as $row) {
             $names[] = (string) $row['exam_name'];
@@ -549,7 +558,7 @@ final class ResultController
     /** @return array<int, string> */
     private function yearNames(): array
     {
-        $rows = Database::connection()->query('SELECT name AS academic_year FROM academic_years WHERE branch_id=' . BranchContext::id() . ' ORDER BY academic_year DESC')->fetchAll();
+        $rows = Database::read()->query('SELECT name AS academic_year FROM academic_years WHERE branch_id=' . BranchContext::id() . ' ORDER BY academic_year DESC')->fetchAll();
         $years = [];
         foreach ($rows as $row) {
             $years[] = (string) $row['academic_year'];

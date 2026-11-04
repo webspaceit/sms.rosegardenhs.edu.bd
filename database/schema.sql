@@ -90,6 +90,8 @@ CREATE TABLE IF NOT EXISTS students (
     UNIQUE KEY students_student_id_unique (student_id),
     UNIQUE KEY students_roll_unique (class_id, section_id, academic_year_id, roll_no),
     KEY students_year_status_index (academic_year_id, status),
+    KEY students_class_status_index (class_id, status),
+    KEY students_class_exam_index (class_id, academic_year_id),
     CONSTRAINT students_class_fk FOREIGN KEY (class_id) REFERENCES classes (id),
     CONSTRAINT students_section_fk FOREIGN KEY (section_id) REFERENCES sections (id),
     CONSTRAINT students_academic_year_fk FOREIGN KEY (academic_year_id) REFERENCES academic_years (id)
@@ -841,6 +843,10 @@ CREATE TABLE IF NOT EXISTS academic_reports (
     student_id BIGINT UNSIGNED NOT NULL,
     exam_id BIGINT UNSIGNED NOT NULL,
     class_position INT UNSIGNED NULL,
+    total_marks INT UNSIGNED NOT NULL DEFAULT 0,
+    gpa DECIMAL(4,2) NOT NULL DEFAULT 0.00,
+    overall_grade VARCHAR(5) NOT NULL DEFAULT 'F',
+    has_failed TINYINT(1) NOT NULL DEFAULT 1,
     working_days INT UNSIGNED NOT NULL DEFAULT 0,
     present_days INT UNSIGNED NOT NULL DEFAULT 0,
     absent_days INT UNSIGNED NOT NULL DEFAULT 0,
@@ -852,6 +858,8 @@ CREATE TABLE IF NOT EXISTS academic_reports (
     PRIMARY KEY (id),
     UNIQUE KEY academic_reports_student_exam_unique (student_id, exam_id),
     KEY academic_reports_exam_index (exam_id),
+    KEY academic_reports_exam_position_index (exam_id, class_position),
+    KEY academic_reports_gpa_index (exam_id, gpa),
     CONSTRAINT academic_reports_student_fk FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,
     CONSTRAINT academic_reports_exam_fk FOREIGN KEY (exam_id) REFERENCES exams (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -870,6 +878,7 @@ CREATE TABLE IF NOT EXISTS academic_report_marks (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NULL,
     PRIMARY KEY (id),
+    UNIQUE KEY academic_report_marks_report_subject_unique (academic_report_id, subject_id),
     KEY academic_report_marks_report_index (academic_report_id),
     KEY academic_report_marks_subject_index (subject_id),
     CONSTRAINT academic_report_marks_report_fk FOREIGN KEY (academic_report_id) REFERENCES academic_reports (id) ON DELETE CASCADE,

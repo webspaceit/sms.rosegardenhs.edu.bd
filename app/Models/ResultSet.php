@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Core\Cache;
 use App\Core\Database;
 use App\Core\BranchContext;
 
@@ -54,12 +55,36 @@ final class ResultSet
         };
     }
 
+    /** Cache lifetime in seconds for a computed class result set. */
+    private const CACHE_TTL = 300;
+
+    /**
+     * Forget every cached result set. Called after marks change.
+     */
+    public static function clearCache(): void
+    {
+        Cache::forgetPrefix('result:');
+    }
+
     /**
      * Load the results of a class for an exam.
+     *
+     * The computed class result set is cached, so repeated high-traffic
+     * requests do not re-run the grading engine.
      *
      * @return array<int, array<string, mixed>> One entry per student.
      */
     public static function forClass(int $classId, string $section, string $examName, string $academicYear, bool $includeStudentDetails = false): array
+    {
+        $key = 'result:' . BranchContext::id() . ':' . $classId . ':' . md5($section . '|' . $examName . '|' . $academicYear . '|' . ($includeStudentDetails ? '1' : '0'));
+
+        return Cache::remember($key, self::CACHE_TTL, static fn (): array => self::computeClass($classId, $section, $examName, $academicYear, $includeStudentDetails));
+    }
+
+    /**
+     * @return array<int, array<string, mixed>> One entry per student.
+     */
+    private static function computeClass(int $classId, string $section, string $examName, string $academicYear, bool $includeStudentDetails = false): array
     {
         $examLookup = Database::read()->prepare('SELECT e.id FROM exams e LEFT JOIN academic_years ay ON ay.id = e.academic_year_id AND ay.branch_id=e.branch_id WHERE e.name = :name AND e.branch_id=:branch AND (e.academic_year_id IS NULL OR ay.name = :year) ORDER BY (e.academic_year_id IS NULL), e.id LIMIT 1');
         $examLookup->execute(['name' => $examName, 'year' => $academicYear, 'branch' => BranchContext::id()]);
@@ -210,8 +235,40 @@ final class ResultSet
     }
 
     /**
-     * The subject marks of the given reports, keyed by report id.
+     * Compute a report card's total, GPA, grade and pass/fail from its
+     * subject marks. Used when marks are saved so the figures are stored.
      *
+     * @param array<int, array<string, mixed>> $marks
+     * @return array{total: int, gpa: float, grade: string, has_failed: bool}
+     */
+    public static function computeSummary(array $marks): array
+    {
+        $total = 0.0;
+        $gradePoints = 0.0;
+        $hasFailed = false;
+
+        foreach ($marks as $subject) {
+            $subjectTotal = (float) $subject['total'];
+            $total += $subjectTotal;
+            [$letter, $point] = self::gradeFor($subjectTotal);
+            if ($letter === 'F') {
+                $hasFailed = true;
+            } else {
+                $gradePoints += $point;
+            }
+        }
+
+        $average = $marks === [] ? 0.0 : round($gradePoints / count($marks), 2);
+
+        return [
+            'total' => (int) round($total),
+            'gpa' => $hasFailed ? 0.0 : $average,
+            'grade' => self::overallGrade($average, $hasFailed),
+            'has_failed' => $hasFailed,
+        ];
+    }
+
+    /**
      * @param array<int, int> $reportIds
      * @return array<int, array<int, array<string, mixed>>>
      */
