@@ -1,5 +1,6 @@
 /config/database.php
 /.env
+/push-project.bat
 /storage/logs/*.log
 /storage/backups/*.sql
 /storage/uploads/*
