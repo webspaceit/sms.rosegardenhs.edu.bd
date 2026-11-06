@@ -87,7 +87,57 @@ $appUser = Auth::user();
             body:has(#admit-cards-print) .admit-card-signatures{margin-top:3mm}
             body:has(#admit-cards-print) .admit-card-signature{font-size:6.5pt}
             body:has(#admit-cards-print) .admit-card-toolbar{display:none!important}
+            body:has(#student-detail-print) *{visibility:hidden!important}
+            body:has(#student-detail-print) #student-detail-print,body:has(#student-detail-print) #student-detail-print *{visibility:visible!important}
+            body:has(#student-detail-print) #student-detail-print{position:absolute!important;top:0!important;left:0!important;width:210mm!important;max-width:none!important;margin:0!important;padding:10mm!important;box-sizing:border-box!important;background:#fff!important;color:#111827!important}
+            body:has(#student-detail-print) #student-detail-print *{color:#111827!important;box-shadow:none!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-status{background:transparent!important;background-color:transparent!important;border-color:transparent!important;color:#111827!important}
+            body:has(#student-detail-print) .student-detail-web-header,body:has(#student-detail-print) .student-detail-actions,body:has(#student-detail-print) .student-detail-back,body:has(#student-detail-print) .student-detail-pdf-hint{display:none!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-pdf-heading{display:flex!important;align-items:center!important;gap:5mm!important;margin:0 0 5mm!important;padding:0 0 4mm!important;border-bottom:2px solid #047857!important;break-inside:avoid!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-pdf-logo{display:block!important;width:17mm!important;height:17mm!important;object-fit:contain!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-pdf-heading-copy{flex:1!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-pdf-heading-copy>p{margin:0 0 1mm!important;color:#047857!important;font-size:8pt!important;font-weight:700!important;letter-spacing:.16em!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-pdf-heading-copy h1{margin:0!important;color:#0f172a!important;font-size:20pt!important;line-height:1.15!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-pdf-issued{display:grid!important;gap:1mm!important;text-align:right!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-pdf-issued span{color:#64748b!important;font-size:7pt!important;font-weight:700!important;letter-spacing:.1em!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-pdf-issued strong{color:#0f172a!important;font-size:9pt!important}
+            body:has(#student-detail-print) #student-detail-print h1,body:has(#student-detail-print) #student-detail-print h2,body:has(#student-detail-print) #student-detail-print h3{color:#0f172a!important}
+            body:has(#student-detail-print) #student-detail-print p,body:has(#student-detail-print) #student-detail-print dt{color:#334155!important}
+            body:has(#student-detail-print) #student-detail-print dt{font-size:10pt!important;font-weight:700!important}
+            body:has(#student-detail-print) #student-detail-print dd,body:has(#student-detail-print) #student-detail-print td{color:#111827!important}
+            body:has(#student-detail-print) #student-detail-print section{break-inside:avoid!important;border:1px solid #cbd5e1!important;border-radius:8px!important;background:#fff!important;box-shadow:none!important;color:#111827!important}
+            body:has(#student-detail-print) #student-detail-print .dashboard-gradient{background:#fff!important}
+            body:has(#student-detail-print) #student-detail-print .overflow-x-auto{overflow:visible!important}
+            body:has(#student-detail-print) #student-detail-print table{min-width:0!important;width:100%!important;border:1px solid #cbd5e1!important;border-radius:0!important;background:#fff!important;box-shadow:none!important;break-inside:auto!important}
+            body:has(#student-detail-print) #student-detail-print table tr{break-inside:avoid!important}
+            body:has(#student-detail-print) #student-detail-print table tbody tr{background:#fff!important}
+            body:has(#student-detail-print) #student-detail-print table th,body:has(#student-detail-print) #student-detail-print table td{border-color:#cbd5e1!important;color:#111827!important}
+            body:has(#student-detail-print) #student-detail-print table th{background:#ecfdf5!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-print-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5mm!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-screen-summary{display:none!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-pdf-summary{display:block!important;margin-top:0!important;border:0!important;border-radius:0!important;padding:0!important;background:transparent!important;break-inside:avoid!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-pdf-table{width:100%!important;table-layout:fixed!important;border:1.5px solid #94a3b8!important;border-collapse:collapse!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-pdf-table th,body:has(#student-detail-print) #student-detail-print .student-detail-pdf-table td{border:1px solid #cbd5e1!important;padding:2.4mm!important;text-align:left!important;vertical-align:top!important;font-size:9pt!important;line-height:1.4!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-pdf-table thead th{border-color:#064e3b!important;background:#065f46!important;color:#fff!important;font-size:11pt!important;letter-spacing:.025em!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-pdf-table tbody th{width:18%;background:#f1f5f9!important;color:#334155!important;font-weight:700!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-pdf-table tbody td{width:32%;background:#fff!important;overflow-wrap:anywhere}
+            body:has(#student-detail-print) #student-detail-print .student-detail-pdf-table .student-detail-pdf-section th{border-top:1.5px solid #047857!important;background:#ecfdf5!important;color:#065f46!important;font-size:9.5pt!important;letter-spacing:.035em!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-print-history{display:block!important;margin-top:6mm!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-print-history section{overflow:visible!important;margin:0 0 5mm!important;border:0!important;border-radius:0!important;padding:0!important;background:transparent!important;break-inside:auto!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-print-history section.student-detail-enrollment-page-break{break-before:page!important;page-break-before:always!important;padding-top:12mm!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-print-history section>div:first-child{padding:0 0 2mm!important;border-bottom:1px solid #94a3b8!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-print-history section>div:first-child h2{font-size:12pt!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-print-history section>div:first-child p{margin-top:1mm!important;font-size:8.5pt!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-print-history table{table-layout:auto!important;border-collapse:collapse!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-print-history table th,body:has(#student-detail-print) #student-detail-print .student-detail-print-history table td{padding:1.8mm!important;font-size:8.5pt!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-print-history table th{background:#065f46!important;color:#fff!important;font-weight:700!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-print-history table tbody tr:nth-child(even){background:#f8fafc!important}
+            body:has(#student-detail-print) #student-detail-print .student-detail-print-history table tbody tr:nth-child(odd){background:#fff!important}
         }
+        .student-detail-print dt{font-size:.875rem;font-weight:600;color:#d1fae5}
+        .student-detail-pdf-hint strong{color:#d1fae5}
+        .student-detail-pdf-summary{display:none}
+        .student-detail-pdf-heading{display:none}
         .dashboard-shell main form button:not([class*="text-red-200"]):not([class*="text-rose-200"]){display:inline-flex;min-height:44px;align-items:center;gap:.7rem;border:1px solid rgba(187,247,208,.28);border-radius:.85rem;background:rgba(2,44,34,.5);padding:.4rem .85rem;color:#f0fdf4;font-size:.875rem;font-weight:600;transition:background-color .18s,border-color .18s,box-shadow .18s}
         .dashboard-shell main form button:not([class*="text-red-200"]):not([class*="text-rose-200"])::before{content:"＋";display:grid;height:2rem;width:2rem;flex:none;place-items:center;border:1px solid rgba(187,247,208,.24);border-radius:.65rem;background:rgba(134,239,172,.08);color:#bbf7d0;font-size:1rem}
         .dashboard-shell main form button:not([class*="text-red-200"]):not([class*="text-rose-200"])::after{content:"";height:.5rem;width:.5rem;flex:none;border-radius:999px;background:#f87171;box-shadow:0 0 9px rgba(239,35,60,.65)}

@@ -96,7 +96,7 @@ final class StudentController
         }
         $studentId = (int) $student['id'];
         View::render('students/show', [
-            'title' => 'Student details',
+            'title' => 'Student details - ' . (string) $student['name'],
             'user' => Auth::user(),
             'student' => $student,
             'attendanceSummary' => Student::attendanceSummary($studentId),
