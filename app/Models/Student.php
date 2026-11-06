@@ -325,7 +325,7 @@ final class Student
 
     public static function classes(): array
     {
-        return Database::connection()->query('SELECT id, name, numeric_level FROM classes WHERE branch_id=' . BranchContext::id() . ' ORDER BY numeric_level')->fetchAll();
+        return Database::connection()->query('SELECT id, name, numeric_level, shift FROM classes WHERE branch_id=' . BranchContext::id() . ' ORDER BY numeric_level')->fetchAll();
     }
 
     public static function sections(int $classId): array
@@ -372,8 +372,8 @@ final class Student
     public static function create(array $data): int
     {
         $stmt = Database::connection()->prepare(
-            'INSERT INTO students (student_id, name, name_bn, class_id, section_id, academic_year_id, roll_no, gender, status, photo, date_of_birth, birth_registration_no, admission_date, previous_school, address, '
-            . implode(', ', self::EXTRA_COLUMNS) . ', branch_id) VALUES (:student_id, :name, :name_bn, :class_id, :section_id, :year_id, :roll_no, :gender, :status, :photo, :date_of_birth, :birth_registration_no, :admission_date, :previous_school, :address, :'
+            'INSERT INTO students (student_id, name, name_bn, class_id, section_id, shift, academic_year_id, roll_no, gender, status, photo, date_of_birth, birth_registration_no, admission_date, previous_school, address, '
+            . implode(', ', self::EXTRA_COLUMNS) . ', branch_id) VALUES (:student_id, :name, :name_bn, :class_id, :section_id, :shift, :year_id, :roll_no, :gender, :status, :photo, :date_of_birth, :birth_registration_no, :admission_date, :previous_school, :address, :'
             . implode(', :', self::EXTRA_COLUMNS) . ', :branch_id)'
         );
         $stmt->execute($data + ['branch_id' => BranchContext::id()]);
@@ -384,7 +384,7 @@ final class Student
     {
         $data['id'] = $id;
         $assignments = array_merge(
-            ['name', 'name_bn', 'class_id', 'section_id', 'academic_year_id', 'roll_no', 'gender', 'status', 'photo', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'address'],
+            ['name', 'name_bn', 'class_id', 'section_id', 'shift', 'academic_year_id', 'roll_no', 'gender', 'status', 'photo', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'address'],
             self::EXTRA_COLUMNS
         );
         $set = implode(', ', array_map(static fn (string $c): string => $c . ' = :' . $c, $assignments));

@@ -75,6 +75,7 @@ CREATE TABLE IF NOT EXISTS students (
     name_bn VARCHAR(150) NULL,
     class_id BIGINT UNSIGNED NOT NULL,
     section_id BIGINT UNSIGNED NOT NULL,
+    shift VARCHAR(10) NULL,
     academic_year_id BIGINT UNSIGNED NOT NULL,
     roll_no SMALLINT UNSIGNED NOT NULL,
     gender VARCHAR(20) NULL,

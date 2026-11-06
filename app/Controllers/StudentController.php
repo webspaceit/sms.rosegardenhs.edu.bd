@@ -272,6 +272,7 @@ final class StudentController
         $nameBn = trim((string) $request->input('name_bn', ''));
         $classId = (int) $request->input('class_id', 0);
         $sectionId = (int) $request->input('section_id', 0);
+        $shift = (string) $request->input('shift', '');
         $yearId = (int) $request->input('academic_year_id', 0);
         $roll = (int) $request->input('roll_no', 0);
         $gender = (string) $request->input('gender', '');
@@ -313,6 +314,7 @@ final class StudentController
         $nameLength = isset($nameCharacters[0]) ? count($nameCharacters[0]) : strlen($name);
         if ($name === '' || $nameLength > 150 || $roll < 1 || $roll > 65535 || !$year || !$sectionIsValid
             || !in_array($gender, ['', 'Male', 'Female', 'Other'], true)
+            || !in_array($shift, ['', 'Morning', 'Day'], true)
             || !in_array($status, ['active', 'inactive', 'graduated'], true)
             || !$this->validDate($dateOfBirth, true) || !$this->validDate($admissionDate, false) || !$this->validDate($measurementDate, false)
             || ($email !== '' && (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 190))
@@ -327,6 +329,7 @@ final class StudentController
             'name_bn' => $nameBn !== '' ? $nameBn : null,
             'class_id' => $classId,
             'section_id' => $sectionId,
+            'shift' => $shift !== '' ? $shift : null,
             'year_id' => $yearId,
             'roll_no' => $roll,
             'gender' => $gender !== '' ? $gender : null,
@@ -418,7 +421,7 @@ final class StudentController
 
     private function rememberForm(): void
     {
-        $allowed = ['name', 'name_bn', 'class_id', 'section_id', 'roll_no', 'gender', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'address', 'religion', 'caste', 'mobile_number', 'email', 'blood_group', 'height', 'weight', 'measurement_date', 'medical_history', 'current_address', 'permanent_address', 'national_id', 'local_id', 'note', 'house_id', 'transport_route_id', 'transport_stop_id', 'transport_fees_month', 'hostel_room_id', 'father_name', 'father_phone', 'father_occupation', 'mother_name', 'mother_phone', 'mother_occupation', 'guardian_mode', 'guardian_id', 'guardian_name', 'guardian_name_bn', 'guardian_relation', 'guardian_phone', 'guardian_email', 'guardian_occupation', 'guardian_address', 'document_title_0', 'document_title_1', 'document_title_2', 'document_title_3'];
+        $allowed = ['name', 'name_bn', 'class_id', 'section_id', 'shift', 'roll_no', 'gender', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'address', 'religion', 'caste', 'mobile_number', 'email', 'blood_group', 'height', 'weight', 'measurement_date', 'medical_history', 'current_address', 'permanent_address', 'national_id', 'local_id', 'note', 'house_id', 'transport_route_id', 'transport_stop_id', 'transport_fees_month', 'hostel_room_id', 'father_name', 'father_phone', 'father_occupation', 'mother_name', 'mother_phone', 'mother_occupation', 'guardian_mode', 'guardian_id', 'guardian_name', 'guardian_name_bn', 'guardian_relation', 'guardian_phone', 'guardian_email', 'guardian_occupation', 'guardian_address', 'document_title_0', 'document_title_1', 'document_title_2', 'document_title_3'];
         $old = [];
         foreach ($allowed as $key) {
             if (isset($_POST[$key]) && is_scalar($_POST[$key])) $old[$key] = (string) $_POST[$key];

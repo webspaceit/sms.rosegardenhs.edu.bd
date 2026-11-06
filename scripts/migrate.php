@@ -460,6 +460,7 @@ foreach ($groups as $examGroup) {
 
 $newColumns = [
     'students' => [
+        'shift' => 'VARCHAR(10) NULL AFTER section_id',
         'religion' => 'VARCHAR(50) NULL AFTER address',
         'caste' => 'VARCHAR(100) NULL AFTER religion',
         'mobile_number' => 'VARCHAR(20) NULL AFTER caste',

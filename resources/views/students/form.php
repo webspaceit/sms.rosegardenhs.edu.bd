@@ -26,8 +26,9 @@ $relationOptions = ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'O
             <h2 class="text-lg font-semibold">Student Admission</h2>
             <div class="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
                 <label class="block"><span class="mb-2 block text-sm font-medium">Admission No <span class="text-red-300">*</span></span><input readonly name="student_id" value="<?= View::escape((string) $fieldValue('student_id', $nextStudentId)) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2.5 text-sm text-slate-300"></label>
-                <label class="block"><span class="mb-2 block text-sm font-medium">Class <span class="text-red-300">*</span></span><select required id="student-class-field" name="class_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach ($classes as $class): ?><option value="<?= (int) $class['id'] ?>" <?= $selectedClassId === (int) $class['id'] ? 'selected' : '' ?>><?= View::escape($class['name']) ?></option><?php endforeach; ?></select></label>
+                <label class="block"><span class="mb-2 block text-sm font-medium">Class <span class="text-red-300">*</span></span><select required id="student-class-field" name="class_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach ($classes as $class): ?><option value="<?= (int) $class['id'] ?>" data-shift="<?= View::escape((string) ($class['shift'] ?? 'Day')) ?>" <?= $selectedClassId === (int) $class['id'] ? 'selected' : '' ?>><?= View::escape($class['name']) ?></option><?php endforeach; ?></select></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Section <span class="text-red-300">*</span></span><select required id="student-section-field" name="section_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><?php foreach ($sections as $section): ?><option data-class-id="<?= (int) $section['class_id'] ?>" value="<?= (int) $section['id'] ?>" <?= (int) $fieldValue('section_id', $student['section_id'] ?? 0) === (int) $section['id'] ? 'selected' : '' ?>><?= View::escape($section['class_name'] . ' · ' . $section['name']) ?></option><?php endforeach; ?></select></label>
+                <label class="block"><span class="mb-2 block text-sm font-medium">Shift</span><select id="student-shift-field" name="shift" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach (['Morning', 'Day'] as $shiftOpt): ?><option value="<?= $shiftOpt ?>" <?= $fieldValue('shift') === $shiftOpt ? 'selected' : '' ?>><?= $shiftOpt ?></option><?php endforeach; ?></select></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Roll Number <span class="text-red-300">*</span></span><input required min="1" max="65535" type="number" name="roll_no" placeholder="Roll Number" value="<?= View::escape((string) $fieldValue('roll_no')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
 
                 <label class="block"><span class="mb-2 block text-sm font-medium">First Name <span class="text-red-300">*</span></span><input required maxlength="150" name="name" placeholder="First Name" value="<?= View::escape((string) $fieldValue('name')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
@@ -145,6 +146,7 @@ $relationOptions = ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'O
 (() => {
   const classField = document.getElementById('student-class-field');
   const sectionField = document.getElementById('student-section-field');
+  const shiftField = document.getElementById('student-shift-field');
   if (classField && sectionField) {
     const syncSections = () => {
       const classId = classField.value;
@@ -158,8 +160,20 @@ $relationOptions = ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'O
         if (firstVisible) sectionField.value = firstVisible.value;
       }
     };
-    classField.addEventListener('change', syncSections);
+    const syncShift = () => {
+      if (!shiftField) return;
+      const selected = classField.selectedOptions[0];
+      const classShift = selected?.dataset.shift || '';
+      if (classShift === 'Morning' || classShift === 'Day') {
+        shiftField.value = classShift;
+        shiftField.disabled = true;
+      } else {
+        shiftField.disabled = false;
+      }
+    };
+    classField.addEventListener('change', () => { syncSections(); syncShift(); });
     syncSections();
+    syncShift();
   }
 })();
 </script>
