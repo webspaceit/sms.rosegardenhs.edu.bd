@@ -453,6 +453,56 @@ foreach ($groups as $examGroup) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Expanded admission form: additional student attributes, guardian photo and
+// admission documents.
+// ---------------------------------------------------------------------------
+
+$newColumns = [
+    'students' => [
+        'religion' => 'VARCHAR(50) NULL AFTER address',
+        'caste' => 'VARCHAR(100) NULL AFTER religion',
+        'mobile_number' => 'VARCHAR(20) NULL AFTER caste',
+        'email' => 'VARCHAR(190) NULL AFTER mobile_number',
+        'blood_group' => 'VARCHAR(5) NULL AFTER email',
+        'height' => 'DECIMAL(5,2) NULL AFTER blood_group',
+        'weight' => 'DECIMAL(5,2) NULL AFTER height',
+        'measurement_date' => 'DATE NULL AFTER weight',
+        'medical_history' => 'TEXT NULL AFTER measurement_date',
+        'current_address' => 'TEXT NULL AFTER medical_history',
+        'permanent_address' => 'TEXT NULL AFTER current_address',
+        'national_id' => 'VARCHAR(50) NULL AFTER permanent_address',
+        'local_id' => 'VARCHAR(50) NULL AFTER national_id',
+        'note' => 'TEXT NULL AFTER local_id',
+        'house_id' => 'BIGINT UNSIGNED NULL AFTER note',
+        'transport_route_id' => 'BIGINT UNSIGNED NULL AFTER house_id',
+        'transport_stop_id' => 'BIGINT UNSIGNED NULL AFTER transport_route_id',
+        'transport_fees_month' => 'VARCHAR(20) NULL AFTER transport_stop_id',
+        'hostel_room_id' => 'BIGINT UNSIGNED NULL AFTER transport_fees_month',
+        'father_name' => 'VARCHAR(150) NULL AFTER hostel_room_id',
+        'father_phone' => 'VARCHAR(20) NULL AFTER father_name',
+        'father_occupation' => 'VARCHAR(100) NULL AFTER father_phone',
+        'father_photo' => 'VARCHAR(255) NULL AFTER father_occupation',
+        'mother_name' => 'VARCHAR(150) NULL AFTER father_photo',
+        'mother_phone' => 'VARCHAR(20) NULL AFTER mother_name',
+        'mother_occupation' => 'VARCHAR(100) NULL AFTER mother_phone',
+        'mother_photo' => 'VARCHAR(255) NULL AFTER mother_occupation',
+    ],
+    'guardians' => [
+        'photo' => 'VARCHAR(255) NULL AFTER nid',
+    ],
+];
+foreach ($newColumns as $table => $tableColumns) {
+    $existing = $pdo->query('SHOW COLUMNS FROM `' . $table . '`')->fetchAll(PDO::FETCH_COLUMN);
+    foreach ($tableColumns as $column => $definition) {
+        if (in_array($column, $existing, true)) {
+            continue;
+        }
+        $pdo->exec('ALTER TABLE `' . $table . '` ADD COLUMN `' . $column . '` ' . $definition);
+        $added++;
+    }
+}
+
 $tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
 
 echo 'Schema applied. ', $applied, ' statement(s) executed';

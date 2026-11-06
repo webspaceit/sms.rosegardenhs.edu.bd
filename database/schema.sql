@@ -84,6 +84,33 @@ CREATE TABLE IF NOT EXISTS students (
     admission_date DATE NULL,
     previous_school VARCHAR(190) NULL,
     address TEXT NULL,
+    religion VARCHAR(50) NULL,
+    caste VARCHAR(100) NULL,
+    mobile_number VARCHAR(20) NULL,
+    email VARCHAR(190) NULL,
+    blood_group VARCHAR(5) NULL,
+    height DECIMAL(5,2) NULL,
+    weight DECIMAL(5,2) NULL,
+    measurement_date DATE NULL,
+    medical_history TEXT NULL,
+    current_address TEXT NULL,
+    permanent_address TEXT NULL,
+    national_id VARCHAR(50) NULL,
+    local_id VARCHAR(50) NULL,
+    note TEXT NULL,
+    house_id BIGINT UNSIGNED NULL,
+    transport_route_id BIGINT UNSIGNED NULL,
+    transport_stop_id BIGINT UNSIGNED NULL,
+    transport_fees_month VARCHAR(20) NULL,
+    hostel_room_id BIGINT UNSIGNED NULL,
+    father_name VARCHAR(150) NULL,
+    father_phone VARCHAR(20) NULL,
+    father_occupation VARCHAR(100) NULL,
+    father_photo VARCHAR(255) NULL,
+    mother_name VARCHAR(150) NULL,
+    mother_phone VARCHAR(20) NULL,
+    mother_occupation VARCHAR(100) NULL,
+    mother_photo VARCHAR(255) NULL,
     status ENUM('active','inactive','graduated') NOT NULL DEFAULT 'active',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
@@ -334,6 +361,7 @@ CREATE TABLE IF NOT EXISTS guardians (
     address TEXT NULL,
     district VARCHAR(100) NULL,
     nid VARCHAR(50) NULL,
+    photo VARCHAR(255) NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NULL,
     PRIMARY KEY (id),
@@ -1104,4 +1132,20 @@ CREATE TABLE IF NOT EXISTS sessions (
     last_activity INT UNSIGNED NOT NULL,
     PRIMARY KEY (id),
     KEY sessions_last_activity_index (last_activity)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- Admission documents (uploaded with a student application)
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS student_documents (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    student_id BIGINT UNSIGNED NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    file_path VARCHAR(255) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL,
+    PRIMARY KEY (id),
+    KEY student_documents_student_index (student_id),
+    CONSTRAINT student_documents_student_fk FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

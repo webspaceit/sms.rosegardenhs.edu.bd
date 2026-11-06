@@ -92,7 +92,7 @@ final class Student
     /** Create a guardian record and return its id. */
     public static function createGuardian(array $data): int
     {
-        $statement = Database::connection()->prepare('INSERT INTO guardians (name, name_bn, relation, phone, email, created_at, branch_id) VALUES (:name, :name_bn, :relation, :phone, :email, NOW(), :branch_id)');
+        $statement = Database::connection()->prepare('INSERT INTO guardians (name, name_bn, relation, phone, email, occupation, address, photo, created_at, branch_id) VALUES (:name, :name_bn, :relation, :phone, :email, :occupation, :address, :photo, NOW(), :branch_id)');
         $statement->execute($data + ['branch_id' => BranchContext::id()]);
         return (int) Database::connection()->lastInsertId();
     }
@@ -361,9 +361,21 @@ final class Student
         return sprintf('STU-%s-%03d', $year, (int) $stmt->fetchColumn());
     }
 
+    private const EXTRA_COLUMNS = [
+        'religion', 'caste', 'mobile_number', 'email', 'blood_group', 'height', 'weight',
+        'measurement_date', 'medical_history', 'current_address', 'permanent_address',
+        'national_id', 'local_id', 'note', 'house_id', 'transport_route_id', 'transport_stop_id',
+        'transport_fees_month', 'hostel_room_id', 'father_name', 'father_phone', 'father_occupation',
+        'father_photo', 'mother_name', 'mother_phone', 'mother_occupation', 'mother_photo',
+    ];
+
     public static function create(array $data): int
     {
-        $stmt = Database::connection()->prepare('INSERT INTO students (student_id, name, name_bn, class_id, section_id, academic_year_id, roll_no, gender, status, photo, date_of_birth, birth_registration_no, admission_date, previous_school, address, branch_id) VALUES (:student_id, :name, :name_bn, :class_id, :section_id, :year_id, :roll_no, :gender, :status, :photo, :date_of_birth, :birth_registration_no, :admission_date, :previous_school, :address, :branch_id)');
+        $stmt = Database::connection()->prepare(
+            'INSERT INTO students (student_id, name, name_bn, class_id, section_id, academic_year_id, roll_no, gender, status, photo, date_of_birth, birth_registration_no, admission_date, previous_school, address, '
+            . implode(', ', self::EXTRA_COLUMNS) . ', branch_id) VALUES (:student_id, :name, :name_bn, :class_id, :section_id, :year_id, :roll_no, :gender, :status, :photo, :date_of_birth, :birth_registration_no, :admission_date, :previous_school, :address, :'
+            . implode(', :', self::EXTRA_COLUMNS) . ', :branch_id)'
+        );
         $stmt->execute($data + ['branch_id' => BranchContext::id()]);
         return (int) Database::connection()->lastInsertId();
     }
@@ -371,8 +383,19 @@ final class Student
     public static function update(int $id, array $data): void
     {
         $data['id'] = $id;
-        $stmt = Database::connection()->prepare('UPDATE students SET name = :name, name_bn = :name_bn, class_id = :class_id, section_id = :section_id, academic_year_id = :year_id, roll_no = :roll_no, gender = :gender, status = :status, photo = :photo, date_of_birth = :date_of_birth, birth_registration_no = :birth_registration_no, admission_date = :admission_date, previous_school = :previous_school, address = :address WHERE id = :id AND branch_id=:branch_id');
+        $assignments = array_merge(
+            ['name', 'name_bn', 'class_id', 'section_id', 'academic_year_id', 'roll_no', 'gender', 'status', 'photo', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'address'],
+            self::EXTRA_COLUMNS
+        );
+        $set = implode(', ', array_map(static fn (string $c): string => $c . ' = :' . $c, $assignments));
+        $stmt = Database::connection()->prepare('UPDATE students SET ' . $set . ' WHERE id = :id AND branch_id=:branch_id');
         $stmt->execute($data + ['branch_id' => BranchContext::id()]);
+    }
+
+    public static function addDocument(int $studentId, string $title, string $filePath): void
+    {
+        $stmt = Database::connection()->prepare('INSERT INTO student_documents (student_id, title, file_path, created_at) VALUES (:student_id, :title, :file_path, NOW())');
+        $stmt->execute(['student_id' => $studentId, 'title' => $title, 'file_path' => $filePath]);
     }
 
     public static function archive(int $id): void

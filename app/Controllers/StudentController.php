@@ -13,6 +13,7 @@ use App\Core\Toast;
 use App\Core\Url;
 use App\Core\View;
 use App\Core\Upload;
+use App\Models\Catalogue;
 use App\Models\Student;
 use PDOException;
 
@@ -120,8 +121,28 @@ final class StudentController
         if ($data === null) { header('Location: ' . Url::to('/students/new')); exit; }
         $guardian = $data['_registration_guardian'] ?? ['mode' => 'none'];
         unset($data['_registration_guardian']);
-        try { $data['photo'] = Upload::store('photo', 'student-photos', ['jpg', 'jpeg', 'png', 'webp'], 5242880); }
-        catch (\RuntimeException $error) { $this->rememberForm(); Toast::flash($error->getMessage(), 'error'); header('Location: ' . Url::to('/students/new')); exit; }
+
+        $photoExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+        $documentExtensions = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'webp', 'mp4'];
+        $uploaded = [];
+        try {
+            $data['photo'] = Upload::store('photo', 'student-photos', $photoExtensions, 5242880);
+            $data['father_photo'] = Upload::store('father_photo', 'student-photos', $photoExtensions, 5242880);
+            $data['mother_photo'] = Upload::store('mother_photo', 'student-photos', $photoExtensions, 5242880);
+            if ($guardian['mode'] === 'new') {
+                $guardian['data']['photo'] = Upload::store('guardian_photo', 'student-photos', $photoExtensions, 5242880);
+            }
+            foreach ([$data['photo'] ?? null, $data['father_photo'] ?? null, $data['mother_photo'] ?? null, $guardian['data']['photo'] ?? null] as $path) {
+                if ($path !== null) $uploaded[] = $path;
+            }
+        } catch (\RuntimeException $error) {
+            foreach ($uploaded as $path) Upload::delete($path);
+            $this->rememberForm();
+            Toast::flash($error->getMessage(), 'error');
+            header('Location: ' . Url::to('/students/new')); exit;
+        }
+
+        $documentPaths = [];
         $db = Database::connection();
         $db->beginTransaction();
         try {
@@ -132,20 +153,36 @@ final class StudentController
                 $guardianId = Student::createGuardian($guardian['data']);
                 Student::linkGuardian($studentId, $guardianId, true);
             }
+            for ($i = 0; $i < 4; $i++) {
+                $title = trim((string) $request->input('document_title_' . $i, ''));
+                try {
+                    $path = Upload::store('document_file_' . $i, 'student-documents', $documentExtensions, 10485760);
+                } catch (\RuntimeException $error) {
+                    throw new \RuntimeException('Document ' . ($i + 1) . ': ' . $error->getMessage());
+                }
+                if ($path !== null) {
+                    if ($title !== '') {
+                        Student::addDocument($studentId, $title, $path);
+                        $documentPaths[] = $path;
+                    } else {
+                        Upload::delete($path);
+                    }
+                }
+            }
             $db->commit();
         } catch (PDOException $error) {
             if ($db->inTransaction()) $db->rollBack();
-            Upload::delete($data['photo'] ?? null);
+            foreach (array_merge($uploaded, $documentPaths) as $path) Upload::delete($path);
             $this->rememberForm();
             error_log((string) $error);
             Toast::flash('The student or guardian could not be saved. Check for a duplicate roll number or invalid details.', 'error');
             header('Location: ' . Url::to('/students/new')); exit;
         } catch (\Throwable $error) {
             if ($db->inTransaction()) $db->rollBack();
-            Upload::delete($data['photo'] ?? null);
+            foreach (array_merge($uploaded, $documentPaths) as $path) Upload::delete($path);
             $this->rememberForm();
             error_log((string) $error);
-            Toast::flash('The student registration could not be completed. Please try again.', 'error');
+            Toast::flash($error instanceof \RuntimeException ? $error->getMessage() : 'The student registration could not be completed. Please try again.', 'error');
             header('Location: ' . Url::to('/students/new')); exit;
         }
         AuditLog::record('student.created', 'students', $studentId);
@@ -175,7 +212,12 @@ final class StudentController
         }
         $data = $this->validatedInput($request, false);
         if ($data === null) { header('Location: ' . Url::to('/students/edit?id=' . $id)); exit; }
-        try { $data['photo'] = Upload::store('photo', 'student-photos', ['jpg', 'jpeg', 'png', 'webp'], 5242880) ?? (Student::find($id)['photo'] ?? null); }
+        $existing = Student::find($id);
+        try {
+            $data['photo'] = Upload::store('photo', 'student-photos', ['jpg', 'jpeg', 'png', 'webp'], 5242880) ?? ($existing['photo'] ?? null);
+            $data['father_photo'] = Upload::store('father_photo', 'student-photos', ['jpg', 'jpeg', 'png', 'webp'], 5242880) ?? ($existing['father_photo'] ?? null);
+            $data['mother_photo'] = Upload::store('mother_photo', 'student-photos', ['jpg', 'jpeg', 'png', 'webp'], 5242880) ?? ($existing['mother_photo'] ?? null);
+        }
         catch (\RuntimeException $error) { Toast::flash($error->getMessage(), 'error'); header('Location: ' . Url::to('/students/edit?id=' . $id)); exit; }
         try {
             Student::update($id, $data);
@@ -215,6 +257,11 @@ final class StudentController
             'sections' => Student::allSections(),
             'guardians' => Student::guardianOptions(),
             'year' => $year,
+            'houses' => Catalogue::houses(),
+            'transportRoutes' => Catalogue::transportRoutes(),
+            'transportStops' => Catalogue::transportStops(),
+            'hostelRooms' => Catalogue::hostelRooms(),
+            'nextStudentId' => $student ? ($student['student_id'] ?? '') : Student::nextStudentId($year['name'] ?? date('Y')),
         ]);
         unset($_SESSION['_student_old']);
     }
@@ -233,6 +280,31 @@ final class StudentController
         $admissionDate = trim((string) $request->input('admission_date', ''));
         $previousSchool = trim((string) $request->input('previous_school', ''));
         $address = trim((string) $request->input('address', ''));
+        $religion = trim((string) $request->input('religion', ''));
+        $caste = trim((string) $request->input('caste', ''));
+        $mobile = trim((string) $request->input('mobile_number', ''));
+        $email = trim((string) $request->input('email', ''));
+        $bloodGroup = trim((string) $request->input('blood_group', ''));
+        $height = trim((string) $request->input('height', ''));
+        $weight = trim((string) $request->input('weight', ''));
+        $measurementDate = trim((string) $request->input('measurement_date', ''));
+        $medicalHistory = trim((string) $request->input('medical_history', ''));
+        $currentAddress = trim((string) $request->input('current_address', ''));
+        $permanentAddress = trim((string) $request->input('permanent_address', ''));
+        $nationalId = trim((string) $request->input('national_id', ''));
+        $localId = trim((string) $request->input('local_id', ''));
+        $note = trim((string) $request->input('note', ''));
+        $houseId = (int) $request->input('house_id', 0);
+        $transportRouteId = (int) $request->input('transport_route_id', 0);
+        $transportStopId = (int) $request->input('transport_stop_id', 0);
+        $transportFeesMonth = trim((string) $request->input('transport_fees_month', ''));
+        $hostelRoomId = (int) $request->input('hostel_room_id', 0);
+        $fatherName = trim((string) $request->input('father_name', ''));
+        $fatherPhone = trim((string) $request->input('father_phone', ''));
+        $fatherOccupation = trim((string) $request->input('father_occupation', ''));
+        $motherName = trim((string) $request->input('mother_name', ''));
+        $motherPhone = trim((string) $request->input('mother_phone', ''));
+        $motherOccupation = trim((string) $request->input('mother_occupation', ''));
         $status = (string) $request->input('status', 'active');
         $year = Student::yearById($yearId);
         $sections = Student::sections($classId);
@@ -242,7 +314,9 @@ final class StudentController
         if ($name === '' || $nameLength > 150 || $roll < 1 || $roll > 65535 || !$year || !$sectionIsValid
             || !in_array($gender, ['', 'Male', 'Female', 'Other'], true)
             || !in_array($status, ['active', 'inactive', 'graduated'], true)
-            || !$this->validDate($dateOfBirth, true) || !$this->validDate($admissionDate, false)
+            || !$this->validDate($dateOfBirth, true) || !$this->validDate($admissionDate, false) || !$this->validDate($measurementDate, false)
+            || ($email !== '' && (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 190))
+            || ($height !== '' && !is_numeric($height)) || ($weight !== '' && !is_numeric($weight))
             || $this->textLength($nameBn) > 150 || strlen($birthRegistrationNo) > 50 || $this->textLength($previousSchool) > 190 || $this->textLength($address) > 10000) {
             $this->rememberForm();
             Toast::flash('Check the student name, class, section, year, roll number, dates, and field lengths.', 'error');
@@ -262,6 +336,31 @@ final class StudentController
             'admission_date' => $admissionDate !== '' ? $admissionDate : null,
             'previous_school' => $previousSchool !== '' ? $previousSchool : null,
             'address' => $address !== '' ? $address : null,
+            'religion' => $religion !== '' ? $religion : null,
+            'caste' => $caste !== '' ? $caste : null,
+            'mobile_number' => $mobile !== '' ? $mobile : null,
+            'email' => $email !== '' ? $email : null,
+            'blood_group' => $bloodGroup !== '' ? $bloodGroup : null,
+            'height' => $height !== '' ? $height : null,
+            'weight' => $weight !== '' ? $weight : null,
+            'measurement_date' => $measurementDate !== '' ? $measurementDate : null,
+            'medical_history' => $medicalHistory !== '' ? $medicalHistory : null,
+            'current_address' => $currentAddress !== '' ? $currentAddress : null,
+            'permanent_address' => $permanentAddress !== '' ? $permanentAddress : null,
+            'national_id' => $nationalId !== '' ? $nationalId : null,
+            'local_id' => $localId !== '' ? $localId : null,
+            'note' => $note !== '' ? $note : null,
+            'house_id' => $houseId > 0 ? $houseId : null,
+            'transport_route_id' => $transportRouteId > 0 ? $transportRouteId : null,
+            'transport_stop_id' => $transportStopId > 0 ? $transportStopId : null,
+            'transport_fees_month' => $transportFeesMonth !== '' ? $transportFeesMonth : null,
+            'hostel_room_id' => $hostelRoomId > 0 ? $hostelRoomId : null,
+            'father_name' => $fatherName !== '' ? $fatherName : null,
+            'father_phone' => $fatherPhone !== '' ? $fatherPhone : null,
+            'father_occupation' => $fatherOccupation !== '' ? $fatherOccupation : null,
+            'mother_name' => $motherName !== '' ? $motherName : null,
+            'mother_phone' => $motherPhone !== '' ? $motherPhone : null,
+            'mother_occupation' => $motherOccupation !== '' ? $motherOccupation : null,
         ];
         if ($new) {
             $guardianMode = (string) $request->input('guardian_mode', 'none');
@@ -280,9 +379,12 @@ final class StudentController
                 $guardianRelation = (string) $request->input('guardian_relation', '');
                 $guardianPhone = trim((string) $request->input('guardian_phone', ''));
                 $guardianEmail = trim((string) $request->input('guardian_email', ''));
+                $guardianOccupation = trim((string) $request->input('guardian_occupation', ''));
+                $guardianAddress = trim((string) $request->input('guardian_address', ''));
                 $relations = ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'Other'];
                 if ($guardianName === '' || $this->textLength($guardianName) > 150 || $this->textLength($guardianNameBn) > 150
                     || !in_array($guardianRelation, $relations, true) || $guardianPhone === '' || strlen($guardianPhone) > 20
+                    || $this->textLength($guardianOccupation) > 100 || $this->textLength($guardianAddress) > 10000
                     || ($guardianEmail !== '' && (!filter_var($guardianEmail, FILTER_VALIDATE_EMAIL) || strlen($guardianEmail) > 190))) {
                     $this->rememberForm(); Toast::flash('Enter a guardian name, relation and valid phone; check the optional email.', 'error'); return null;
                 }
@@ -290,6 +392,8 @@ final class StudentController
                     'name' => $guardianName, 'name_bn' => $guardianNameBn !== '' ? $guardianNameBn : null,
                     'relation' => $guardianRelation, 'phone' => $guardianPhone,
                     'email' => $guardianEmail !== '' ? $guardianEmail : null,
+                    'occupation' => $guardianOccupation !== '' ? $guardianOccupation : null,
+                    'address' => $guardianAddress !== '' ? $guardianAddress : null,
                 ]];
             }
         }
@@ -314,7 +418,7 @@ final class StudentController
 
     private function rememberForm(): void
     {
-        $allowed = ['name', 'name_bn', 'class_id', 'section_id', 'roll_no', 'gender', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'address', 'guardian_mode', 'guardian_id', 'guardian_name', 'guardian_name_bn', 'guardian_relation', 'guardian_phone', 'guardian_email'];
+        $allowed = ['name', 'name_bn', 'class_id', 'section_id', 'roll_no', 'gender', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'address', 'religion', 'caste', 'mobile_number', 'email', 'blood_group', 'height', 'weight', 'measurement_date', 'medical_history', 'current_address', 'permanent_address', 'national_id', 'local_id', 'note', 'house_id', 'transport_route_id', 'transport_stop_id', 'transport_fees_month', 'hostel_room_id', 'father_name', 'father_phone', 'father_occupation', 'mother_name', 'mother_phone', 'mother_occupation', 'guardian_mode', 'guardian_id', 'guardian_name', 'guardian_name_bn', 'guardian_relation', 'guardian_phone', 'guardian_email', 'guardian_occupation', 'guardian_address', 'document_title_0', 'document_title_1', 'document_title_2', 'document_title_3'];
         $old = [];
         foreach ($allowed as $key) {
             if (isset($_POST[$key]) && is_scalar($_POST[$key])) $old[$key] = (string) $_POST[$key];
