@@ -135,6 +135,7 @@ final class Application
         $router->get('/students/export', [$students, 'export']);
         $router->get('/students/view', [$students, 'show']);
         $router->get('/students/new', [$students, 'create']);
+        $router->get('/students/create', [$students, 'create']); // alias
         $router->post('/students', [$students, 'store']);
         $router->get('/students/edit', [$students, 'edit']);
         $router->post('/students/update', [$students, 'update']);
