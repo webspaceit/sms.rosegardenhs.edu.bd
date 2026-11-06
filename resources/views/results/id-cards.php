@@ -52,9 +52,6 @@ use App\Core\View;
                     <?= View::escape(strtoupper(substr((string) $student['name'], 0, 1))) ?>
                 </span>
                 <p class="mt-3 font-semibold"><?= View::escape((string) $student['name']) ?></p>
-                <?php if ((string) $student['name_bn'] !== ''): ?>
-                    <p class="text-sm text-slate-500"><?= View::escape((string) $student['name_bn']) ?></p>
-                <?php endif; ?>
                 <dl class="mt-3 space-y-1 text-xs text-slate-600">
                     <div class="flex justify-between"><dt>Student ID</dt><dd class="font-medium text-slate-900"><?= View::escape((string) $student['student_id']) ?></dd></div>
                     <div class="flex justify-between"><dt>Class</dt><dd class="font-medium text-slate-900"><?= View::escape((string) $student['class_name']) ?> · <?= View::escape((string) $student['section_name']) ?></dd></div>

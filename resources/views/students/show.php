@@ -32,7 +32,7 @@ $statusClass = [
         <section class="rounded-2xl border border-green-900/60 dashboard-gradient p-5 sm:p-6" aria-labelledby="student-profile-title">
             <div class="flex items-center gap-4 border-b border-green-100/10 pb-5">
                 <?php if (!empty($student['photo'])): ?><img src="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $student['photo'])) ?>" alt="" class="h-14 w-14 shrink-0 rounded-2xl border border-green-200/20 object-cover"><?php else: ?><div class="grid h-14 w-14 shrink-0 place-items-center rounded-2xl border border-green-200/20 bg-green-200/10 text-xl font-semibold text-green-100"><?= View::escape(strtoupper(substr((string) $student['name'], 0, 1))) ?></div><?php endif; ?>
-                <div class="min-w-0"><h2 id="student-profile-title" class="truncate text-xl font-semibold"><?= View::escape($student['name']) ?></h2><?php if (!empty($student['name_bn'])): ?><p class="mt-1 text-sm text-white"><?= View::escape($student['name_bn']) ?></p><?php endif; ?></div>
+                <div class="min-w-0"><h2 id="student-profile-title" class="truncate text-xl font-semibold"><?= View::escape($student['name']) ?></h2></div>
             </div>
             <dl class="mt-4 grid gap-x-6 gap-y-4 sm:grid-cols-2">
                 <div><dt class="text-xs text-white">Student ID</dt><dd class="mt-1 text-sm font-medium"><?= View::escape($student['student_id']) ?></dd></div>

@@ -84,9 +84,6 @@ use App\Core\View;
                 <div class="admit-card-details">
                     <dl class="admit-card-fields">
                         <div class="admit-card-field"><dt>Student name</dt><dd><?= View::escape((string) $row['student_name']) ?></dd></div>
-                        <?php if (trim((string) ($row['student_name_bn'] ?? '')) !== ''): ?>
-                            <div class="admit-card-field"><dt>Name in Bangla</dt><dd style="font-family:'Noto Sans Bengali','Nirmala UI',sans-serif"><?= View::escape((string) $row['student_name_bn']) ?></dd></div>
-                        <?php endif; ?>
                         <?php if (trim((string) ($row['father_name'] ?? '')) !== ''): ?>
                             <div class="admit-card-field"><dt>Father's name</dt><dd><?= View::escape((string) $row['father_name']) ?></dd></div>
                         <?php endif; ?>

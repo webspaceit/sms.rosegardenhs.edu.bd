@@ -187,7 +187,7 @@ final class PortalData
     public static function teacherStudents(int $teacherId, int $classId): array
     {
         $statement = Database::read()->prepare(
-            'SELECT s.id, s.student_id, s.name, s.name_bn, s.roll_no, sec.name AS section_name'
+            'SELECT s.id, s.student_id, s.name, s.roll_no, sec.name AS section_name'
             . ' FROM students s JOIN sections sec ON sec.id = s.section_id AND sec.branch_id=s.branch_id'
             . ' WHERE s.class_id = :class_id AND s.status = "active" AND s.branch_id=:branch ORDER BY s.roll_no'
         );

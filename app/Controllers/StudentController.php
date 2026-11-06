@@ -53,7 +53,7 @@ final class StudentController
         $status = (string) $request->input('status', '');
         if (!in_array($status, ['', 'active', 'inactive', 'graduated'], true)) $status = '';
 
-        $sql = 'SELECT s.student_id, s.name, s.name_bn, c.name AS class_name, sec.name AS section_name, '
+        $sql = 'SELECT s.student_id, s.name, c.name AS class_name, sec.name AS section_name, '
             . 's.roll_no, ay.name AS academic_year, s.gender, s.date_of_birth, s.birth_registration_no, '
             . 's.admission_date, s.previous_school, s.address, s.status '
             . 'FROM students s JOIN classes c ON c.id=s.class_id AND c.branch_id=s.branch_id JOIN sections sec ON sec.id=s.section_id AND sec.branch_id=s.branch_id '
@@ -62,8 +62,8 @@ final class StudentController
         if ($classId > 0) { $sql .= ' AND s.class_id=:class_id'; $bindings['class_id'] = $classId; }
         if ($status !== '') { $sql .= ' AND s.status=:status'; $bindings['status'] = $status; }
         if ($search !== '') {
-            $sql .= ' AND (s.name LIKE :q1 OR s.name_bn LIKE :q2 OR s.student_id LIKE :q3 OR CAST(s.roll_no AS CHAR) LIKE :q4)';
-            for ($i = 1; $i <= 4; $i++) $bindings['q' . $i] = '%' . $search . '%';
+            $sql .= ' AND (s.name LIKE :q1 OR s.student_id LIKE :q2 OR CAST(s.roll_no AS CHAR) LIKE :q3)';
+            for ($i = 1; $i <= 3; $i++) $bindings['q' . $i] = '%' . $search . '%';
         }
         $sql .= ' ORDER BY c.numeric_level, sec.name, s.roll_no, s.name';
         $statement = Database::connection()->prepare($sql);
@@ -75,7 +75,7 @@ final class StudentController
         header('X-Content-Type-Options: nosniff');
         $output = fopen('php://output', 'wb');
         fwrite($output, "\xEF\xBB\xBF");
-        fputcsv($output, ['Student ID', 'Name', 'Name (Bangla)', 'Class', 'Section', 'Roll', 'Academic Year', 'Gender', 'Date of Birth', 'Birth Registration No.', 'Admission Date', 'Previous School', 'Address', 'Status']);
+        fputcsv($output, ['Student ID', 'Name', 'Class', 'Section', 'Roll', 'Academic Year', 'Gender', 'Date of Birth', 'Birth Registration No.', 'Admission Date', 'Previous School', 'Address', 'Status']);
         while ($row = $statement->fetch()) {
             fputcsv($output, array_map(static function (mixed $value): string {
                 $value = (string) ($value ?? '');
@@ -302,7 +302,6 @@ final class StudentController
     private function validatedInput(Request $request, bool $new): ?array
     {
         $name = trim((string) $request->input('name', ''));
-        $nameBn = trim((string) $request->input('name_bn', ''));
         $classId = (int) $request->input('class_id', 0);
         $sectionId = (int) $request->input('section_id', 0);
         $shift = (string) $request->input('shift', '');
@@ -352,14 +351,13 @@ final class StudentController
             || !$this->validDate($dateOfBirth, true) || !$this->validDate($admissionDate, false) || !$this->validDate($measurementDate, false)
             || ($email !== '' && (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 190))
             || ($height !== '' && !is_numeric($height)) || ($weight !== '' && !is_numeric($weight))
-            || $this->textLength($nameBn) > 150 || strlen($birthRegistrationNo) > 50 || $this->textLength($previousSchool) > 190 || $this->textLength($address) > 10000) {
+            || strlen($birthRegistrationNo) > 50 || $this->textLength($previousSchool) > 190 || $this->textLength($address) > 10000) {
             $this->rememberForm();
             Toast::flash('Check the student name, class, section, year, roll number, dates, and field lengths.', 'error');
             return null;
         }
         $data = [
             'name' => $name,
-            'name_bn' => $nameBn !== '' ? $nameBn : null,
             'class_id' => $classId,
             'section_id' => $sectionId,
             'shift' => $shift !== '' ? $shift : null,
@@ -454,7 +452,7 @@ final class StudentController
 
     private function rememberForm(): void
     {
-        $allowed = ['name', 'name_bn', 'class_id', 'section_id', 'shift', 'roll_no', 'gender', 'status', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'address', 'religion', 'caste', 'mobile_number', 'email', 'blood_group', 'height', 'weight', 'measurement_date', 'medical_history', 'current_address', 'permanent_address', 'national_id', 'local_id', 'note', 'house_id', 'transport_route_id', 'transport_stop_id', 'transport_fees_month', 'hostel_room_id', 'father_name', 'father_phone', 'father_occupation', 'mother_name', 'mother_phone', 'mother_occupation', 'guardian_mode', 'guardian_id', 'guardian_name', 'guardian_name_bn', 'guardian_relation', 'guardian_phone', 'guardian_email', 'guardian_occupation', 'guardian_address'];
+        $allowed = ['name', 'class_id', 'section_id', 'shift', 'roll_no', 'gender', 'status', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'address', 'religion', 'caste', 'mobile_number', 'email', 'blood_group', 'height', 'weight', 'measurement_date', 'medical_history', 'current_address', 'permanent_address', 'national_id', 'local_id', 'note', 'house_id', 'transport_route_id', 'transport_stop_id', 'transport_fees_month', 'hostel_room_id', 'father_name', 'father_phone', 'father_occupation', 'mother_name', 'mother_phone', 'mother_occupation', 'guardian_mode', 'guardian_id', 'guardian_name', 'guardian_name_bn', 'guardian_relation', 'guardian_phone', 'guardian_email', 'guardian_occupation', 'guardian_address'];
         $old = [];
         foreach ($allowed as $key) {
             if (isset($_POST[$key]) && is_scalar($_POST[$key])) $old[$key] = (string) $_POST[$key];

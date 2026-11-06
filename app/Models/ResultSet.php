@@ -93,7 +93,7 @@ final class ResultSet
             . ' ar.moral_evaluation, ar.co_curricular, ar.comments,'
             . ' s.name AS student_name, s.student_id AS student_code, s.roll_no, c.name AS class_name';
         if ($includeStudentDetails) {
-            $sql .= ', s.name_bn AS student_name_bn, s.photo, sec.name AS section_name'
+            $sql .= ', s.photo, sec.name AS section_name'
                 . ', (SELECT g.name FROM student_guardian sg JOIN guardians g ON g.id = sg.guardian_id AND g.branch_id=sg.branch_id'
                 . " WHERE sg.student_id = s.id AND sg.branch_id=s.branch_id AND g.relation = 'Father' ORDER BY sg.is_primary DESC, sg.id ASC LIMIT 1) AS father_name"
                 . ', (SELECT g.name FROM student_guardian sg JOIN guardians g ON g.id = sg.guardian_id AND g.branch_id=sg.branch_id'
@@ -166,7 +166,6 @@ final class ResultSet
                 'report_id' => $reportId,
                 'student_id' => (int) $row['student_id'],
                 'student_name' => (string) $row['student_name'],
-                'student_name_bn' => (string) ($row['student_name_bn'] ?? ''),
                 'photo' => (string) ($row['photo'] ?? ''),
                 'student_code' => (string) $row['student_code'],
                 'roll_no' => (int) $row['roll_no'],

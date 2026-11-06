@@ -52,7 +52,7 @@ final class DemoSeeder
                 $sectionStmt->execute(['class_id' => $classId, 'name' => 'A', 'room' => 'Room ' . (100 + $level)]);
             }
 
-            $studentStmt = $database->prepare('INSERT INTO students (student_id, name, name_bn, class_id, section_id, academic_year_id, roll_no, gender) VALUES (:student_id, :name, :name_bn, :class_id, :section_id, :year_id, :roll_no, :gender)');
+            $studentStmt = $database->prepare('INSERT INTO students (student_id, name, class_id, section_id, academic_year_id, roll_no, gender) VALUES (:student_id, :name, :class_id, :section_id, :year_id, :roll_no, :gender)');
             $sectionLookup = $database->prepare('SELECT id FROM sections WHERE class_id = :class_id AND name = :name');
             $sectionIdByLevel = [];
             foreach ($classIdByLevel as $level => $classId) {
@@ -61,23 +61,22 @@ final class DemoSeeder
             }
 
             $students = [
-                ['Ayesha Rahman', 'আয়েশা রহমান', 1, 1, 'Female'],
-                ['Arif Hasan', 'আরিফ হাসান', 1, 2, 'Male'],
-                ['Nusrat Jahan', 'নুসরাত জাহান', 2, 1, 'Female'],
-                ['Fahim Ahmed', 'ফাহিম আহমেদ', 2, 2, 'Male'],
-                ['Sumaiya Akter', 'সুমাইয়া আক্তার', 3, 1, 'Female'],
-                ['Rakib Hossain', 'রাকিব হোসেন', 3, 2, 'Male'],
-                ['Maliha Chowdhury', 'মালিহা চৌধুরী', 4, 1, 'Female'],
-                ['Tanvir Islam', 'তানভীর ইসলাম', 4, 2, 'Male'],
-                ['Jannatul Ferdous', 'জান্নাতুল ফেরদৌস', 5, 1, 'Female'],
-                ['Sabbir Khan', 'সাব্বির খান', 5, 2, 'Male'],
+                ['Ayesha Rahman', 1, 1, 'Female'],
+                ['Arif Hasan', 1, 2, 'Male'],
+                ['Nusrat Jahan', 2, 1, 'Female'],
+                ['Fahim Ahmed', 2, 2, 'Male'],
+                ['Sumaiya Akter', 3, 1, 'Female'],
+                ['Rakib Hossain', 3, 2, 'Male'],
+                ['Maliha Chowdhury', 4, 1, 'Female'],
+                ['Tanvir Islam', 4, 2, 'Male'],
+                ['Jannatul Ferdous', 5, 1, 'Female'],
+                ['Sabbir Khan', 5, 2, 'Male'],
             ];
 
-            foreach ($students as $index => [$name, $nameBn, $level, $roll, $gender]) {
+            foreach ($students as $index => [$name, $level, $roll, $gender]) {
                 $studentStmt->execute([
                     'student_id' => sprintf('DEMO-%s-%03d', $yearName, $index + 1),
                     'name' => $name,
-                    'name_bn' => $nameBn,
                     'class_id' => $classIdByLevel[$level],
                     'section_id' => $sectionIdByLevel[$level],
                     'year_id' => $yearId,

@@ -19,7 +19,7 @@ use App\Core\View;
         <h2 class="font-semibold">File format</h2>
         <p class="mt-1 text-sm text-white">The first row must hold the column names. These columns are read:</p>
         <div class="mt-3 flex flex-wrap gap-2">
-            <?php foreach (['name', 'name_bn', 'student_id', 'class', 'section', 'roll_no', 'gender', 'status'] as $column): ?>
+            <?php foreach (['name', 'student_id', 'class', 'section', 'roll_no', 'gender', 'status'] as $column): ?>
                 <code class="rounded-lg border border-green-100/15 bg-emerald-950/35 px-2.5 py-1 font-mono text-xs text-green-100"><?= $column ?></code>
             <?php endforeach; ?>
         </div>

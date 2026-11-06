@@ -23,7 +23,7 @@ final class IdCardController
         $classId = (int) $request->input('class_id', 0);
         $sectionId = (int) $request->input('section_id', 0);
 
-        $sql = 'SELECT s.id, s.name, s.name_bn, s.student_id, s.roll_no, s.photo,'
+        $sql = 'SELECT s.id, s.name, s.student_id, s.roll_no, s.photo,'
             . ' c.name AS class_name, sec.name AS section_name, g.phone AS guardian_phone'
             . ' FROM students s JOIN classes c ON c.id = s.class_id AND c.branch_id=s.branch_id JOIN sections sec ON sec.id = s.section_id AND sec.branch_id=s.branch_id'
             . ' LEFT JOIN student_guardian sg ON sg.student_id = s.id AND sg.branch_id=s.branch_id AND sg.is_primary = 1'

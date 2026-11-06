@@ -60,6 +60,12 @@ foreach (explode(';', $schema) as $statement) {
     }
 }
 
+// Student Bangla-name data has been retired from the student record.
+$studentBanglaNameColumn = $pdo->query("SHOW COLUMNS FROM students LIKE 'name_bn'")->fetch();
+if ($studentBanglaNameColumn !== false) {
+    $pdo->exec('ALTER TABLE students DROP COLUMN name_bn');
+}
+
 // Add a tenant key to school data while keeping control-plane tables global.
 // Existing records are assigned to the main campus, preserving single-branch
 // installations and making the migration safe to repeat.

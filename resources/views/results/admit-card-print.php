@@ -31,7 +31,6 @@ $photoUrl = $photo !== '' ? Url::to('/' . ltrim($photo, '/')) : '';
             <div class="admit-card-details">
                 <dl class="admit-card-fields">
                     <div class="admit-card-field"><dt>Student name</dt><dd><?= View::escape((string) $student['name']) ?></dd></div>
-                    <?php if (trim((string) ($student['name_bn'] ?? '')) !== ''): ?><div class="admit-card-field"><dt>Name in Bangla</dt><dd><?= View::escape((string) $student['name_bn']) ?></dd></div><?php endif; ?>
                     <?php if (trim((string) ($student['father_name'] ?? '')) !== ''): ?><div class="admit-card-field"><dt>Father's name</dt><dd><?= View::escape((string) $student['father_name']) ?></dd></div><?php endif; ?>
                     <?php if (trim((string) ($student['mother_name'] ?? '')) !== ''): ?><div class="admit-card-field"><dt>Mother's name</dt><dd><?= View::escape((string) $student['mother_name']) ?></dd></div><?php endif; ?>
                     <div class="admit-card-field"><dt>Class / section</dt><dd><?= View::escape((string) $student['class_name']) ?> · <?= View::escape((string) $student['section_name']) ?></dd></div>

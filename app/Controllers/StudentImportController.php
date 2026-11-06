@@ -18,8 +18,8 @@ use App\Models\Student;
 /**
  * Bulk student import from a CSV file.
  *
- * The file needs a header row. The recognised columns are name, name_bn,
- * student_id, class, section, roll_no, gender, guardian_name, guardian_phone
+ * The file needs a header row. The recognised columns are name, student_id,
+ * class, section, roll_no, gender, guardian_name, guardian_phone
  * and status. Anything that cannot be read is reported back to the
  * administrator rather than silently dropped.
  */
@@ -111,7 +111,7 @@ final class StudentImportController
                     static fn (mixed $column): string => strtolower(trim(str_replace(["\xEF\xBB\xBF", ' '], '', (string) $column))),
                     $line
                 );
-                $allowed = ['name', 'name_bn', 'student_id', 'class', 'section', 'roll_no', 'gender', 'guardian_name', 'guardian_phone', 'status'];
+                $allowed = ['name', 'student_id', 'class', 'section', 'roll_no', 'gender', 'guardian_name', 'guardian_phone', 'status'];
                 if (!in_array('name', $header, true) || !in_array('class', $header, true)
                     || !in_array('section', $header, true) || !in_array('roll_no', $header, true)
                     || array_diff($header, $allowed) !== [] || count($header) !== count(array_unique($header))) {
@@ -209,13 +209,12 @@ final class StudentImportController
             try {
                 $db->beginTransaction();
                 $statement = $db->prepare(
-                    'INSERT INTO students (student_id, name, name_bn, class_id, section_id, academic_year_id, roll_no, gender, status, branch_id)'
-                    . ' VALUES (:student_id, :name, :name_bn, :class_id, :section_id, :academic_year_id, :roll_no, :gender, :status, :branch_id)'
+                    'INSERT INTO students (student_id, name, class_id, section_id, academic_year_id, roll_no, gender, status, branch_id)'
+                    . ' VALUES (:student_id, :name, :class_id, :section_id, :academic_year_id, :roll_no, :gender, :status, :branch_id)'
                 );
                 $statement->execute([
                     'student_id' => $studentId,
                     'name' => $name,
-                    'name_bn' => trim((string) ($row['name_bn'] ?? '')) ?: null,
                     'class_id' => $classId,
                     'section_id' => $sectionId,
                     'academic_year_id' => $yearId,

@@ -55,7 +55,7 @@ final class Person
     public static function children(int $guardianId): array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT s.id, s.student_id, s.name, s.name_bn, s.roll_no, s.photo,'
+            'SELECT s.id, s.student_id, s.name, s.roll_no, s.photo,'
             . ' c.name AS class_name, sec.name AS section_name, sg.is_primary'
             . ' FROM student_guardian sg'
             . ' JOIN students s ON s.id = sg.student_id AND s.branch_id=sg.branch_id'

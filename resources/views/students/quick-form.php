@@ -45,10 +45,6 @@ $suggestedRoll = $selectedSection['next_roll'] ?? 1;
                     <input autofocus required maxlength="150" name="name" value="<?= View::escape((string) ($old['name'] ?? '')) ?>" placeholder="Enter student's full name" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
                 </label>
                 <label class="block">
-                    <span class="mb-1.5 block text-sm text-slate-300">Name (Bangla)</span>
-                    <input maxlength="150" name="name_bn" value="<?= View::escape((string) ($old['name_bn'] ?? '')) ?>" placeholder="শিক্ষার্থীর নাম" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
-                </label>
-                <label class="block">
                     <span class="mb-1.5 block text-sm text-slate-300">Class <span class="text-rose-300">*</span></span>
                     <select id="quick-class" required name="class_id" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
                         <?php foreach ($classes as $class): ?>

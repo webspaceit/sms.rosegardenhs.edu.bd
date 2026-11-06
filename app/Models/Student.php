@@ -46,7 +46,7 @@ final class Student
     public static function admitCardDetails(int $id): ?array
     {
         $statement = Database::connection()->prepare(
-            'SELECT s.id, s.student_id, s.name, s.name_bn, s.roll_no, s.photo, s.gender, s.status, s.class_id,'
+            'SELECT s.id, s.student_id, s.name, s.roll_no, s.photo, s.gender, s.status, s.class_id,'
             . ' c.name AS class_name, sec.name AS section_name, ay.id AS academic_year_id, ay.name AS year_name,'
             . ' parents.father_name, parents.mother_name, parents.guardian_name'
             . ' FROM students s JOIN classes c ON c.id = s.class_id AND c.branch_id=s.branch_id'
@@ -164,17 +164,17 @@ final class Student
             $params['class_id'] = $classId;
         }
         if ($search !== '') {
-            $where .= ' AND (s.name LIKE :name_search OR s.name_bn LIKE :bangla_search'
+            $where .= ' AND (s.name LIKE :name_search'
                 . ' OR s.student_id LIKE :id_search OR CAST(s.roll_no AS CHAR) LIKE :roll_search)';
             $needle = '%' . $search . '%';
-            $params += ['name_search' => $needle, 'bangla_search' => $needle, 'id_search' => $needle, 'roll_search' => $needle];
+            $params += ['name_search' => $needle, 'id_search' => $needle, 'roll_search' => $needle];
         }
         return [$where, $params];
     }
 
     public static function listing(string $search = '', int $classId = 0, string $status = '', int $limit = 25, int $offset = 0): array
     {
-        $sql = 'SELECT s.id, s.student_id, s.name, s.name_bn, s.roll_no, s.gender, s.status,
+        $sql = 'SELECT s.id, s.student_id, s.name, s.roll_no, s.gender, s.status,
                        c.name AS class_name, sec.name AS section_name, ay.name AS year_name
                 FROM students s
                 INNER JOIN classes c ON c.id = s.class_id AND c.branch_id=s.branch_id
@@ -213,10 +213,9 @@ final class Student
         $filters = '';
         $params = [];
         if ($search !== '') {
-            $filters .= ' AND (s.name LIKE :name_search OR s.name_bn LIKE :bangla_search OR s.student_id LIKE :id_search OR CAST(s.roll_no AS CHAR) LIKE :roll_search)';
+            $filters .= ' AND (s.name LIKE :name_search OR s.student_id LIKE :id_search OR CAST(s.roll_no AS CHAR) LIKE :roll_search)';
             $needle = '%' . $search . '%';
             $params['name_search'] = $needle;
-            $params['bangla_search'] = $needle;
             $params['id_search'] = $needle;
             $params['roll_search'] = $needle;
         }
@@ -386,8 +385,8 @@ final class Student
     public static function create(array $data): int
     {
         $stmt = Database::connection()->prepare(
-            'INSERT INTO students (student_id, name, name_bn, class_id, section_id, shift, academic_year_id, roll_no, gender, status, photo, date_of_birth, birth_registration_no, admission_date, previous_school, address, '
-            . implode(', ', self::EXTRA_COLUMNS) . ', branch_id) VALUES (:student_id, :name, :name_bn, :class_id, :section_id, :shift, :year_id, :roll_no, :gender, :status, :photo, :date_of_birth, :birth_registration_no, :admission_date, :previous_school, :address, :'
+            'INSERT INTO students (student_id, name, class_id, section_id, shift, academic_year_id, roll_no, gender, status, photo, date_of_birth, birth_registration_no, admission_date, previous_school, address, '
+            . implode(', ', self::EXTRA_COLUMNS) . ', branch_id) VALUES (:student_id, :name, :class_id, :section_id, :shift, :year_id, :roll_no, :gender, :status, :photo, :date_of_birth, :birth_registration_no, :admission_date, :previous_school, :address, :'
             . implode(', :', self::EXTRA_COLUMNS) . ', :branch_id)'
         );
         $stmt->execute($data + ['branch_id' => BranchContext::id()]);
@@ -398,7 +397,7 @@ final class Student
     {
         $data['id'] = $id;
         $assignments = array_merge(
-            ['name', 'name_bn', 'class_id', 'section_id', 'shift', 'academic_year_id', 'roll_no', 'gender', 'status', 'photo', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'address'],
+            ['name', 'class_id', 'section_id', 'shift', 'academic_year_id', 'roll_no', 'gender', 'status', 'photo', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'address'],
             self::EXTRA_COLUMNS
         );
         $set = implode(', ', array_map(static fn (string $c): string => $c . ' = :' . $c, $assignments));
