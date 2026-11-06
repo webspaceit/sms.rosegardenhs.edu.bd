@@ -55,7 +55,7 @@ final class StudentController
 
         $sql = 'SELECT s.student_id, s.name, c.name AS class_name, sec.name AS section_name, '
             . 's.roll_no, ay.name AS academic_year, s.gender, s.date_of_birth, s.birth_registration_no, '
-            . 's.admission_date, s.previous_school, s.address, s.status '
+            . 's.admission_date, s.address '
             . 'FROM students s JOIN classes c ON c.id=s.class_id AND c.branch_id=s.branch_id JOIN sections sec ON sec.id=s.section_id AND sec.branch_id=s.branch_id '
             . 'JOIN academic_years ay ON ay.id=s.academic_year_id AND ay.branch_id=s.branch_id WHERE s.branch_id=:branch_id';
         $bindings = ['branch_id' => BranchContext::id()];
@@ -75,7 +75,7 @@ final class StudentController
         header('X-Content-Type-Options: nosniff');
         $output = fopen('php://output', 'wb');
         fwrite($output, "\xEF\xBB\xBF");
-        fputcsv($output, ['Student ID', 'Name', 'Class', 'Section', 'Roll', 'Academic Year', 'Gender', 'Date of Birth', 'Birth Registration No.', 'Admission Date', 'Previous School', 'Address', 'Status']);
+        fputcsv($output, ['Student ID', 'Name', 'Class', 'Section', 'Roll', 'Academic Year', 'Gender', 'Date of Birth', 'Birth Registration No.', 'Admission Date', 'Address']);
         while ($row = $statement->fetch()) {
             fputcsv($output, array_map(static function (mixed $value): string {
                 $value = (string) ($value ?? '');
