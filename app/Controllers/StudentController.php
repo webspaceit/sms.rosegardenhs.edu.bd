@@ -113,12 +113,42 @@ final class StudentController
         $this->renderForm(null);
     }
 
+    public function quickCreate(Request $request): void
+    {
+        $this->requireSignIn();
+        $classes = Student::classes();
+        $year = Student::currentYear();
+        if ($year === null) {
+            Toast::flash('Set a current academic year before admitting students.', 'error');
+            header('Location: ' . Url::to('/academics'));
+            exit;
+        }
+
+        $sections = Student::allSections();
+        foreach ($sections as &$section) {
+            $section['next_roll'] = Student::nextRollNumber((int) $section['class_id'], (int) $section['id'], (int) $year['id']);
+        }
+        unset($section);
+
+        View::render('students/quick-form', [
+            'title' => 'Quick student admission',
+            'user' => Auth::user(),
+            'classes' => $classes,
+            'sections' => $sections,
+            'year' => $year,
+            'nextStudentId' => Student::nextStudentId($year['name']),
+        ]);
+        unset($_SESSION['_student_old']);
+    }
+
     public function store(Request $request): void
     {
         $this->requireSignIn();
         if (!$this->verifyCsrf($request)) { return; }
+        $quickAdmission = $request->input('_quick_admission') === '1';
+        $formUrl = $quickAdmission ? '/students/quick-admit' : '/students/new';
         $data = $this->validatedInput($request, true);
-        if ($data === null) { header('Location: ' . Url::to('/students/new')); exit; }
+        if ($data === null) { header('Location: ' . Url::to($formUrl)); exit; }
         $guardian = $data['_registration_guardian'] ?? ['mode' => 'none'];
         unset($data['_registration_guardian']);
 
@@ -139,7 +169,7 @@ final class StudentController
             foreach ($uploaded as $path) Upload::delete($path);
             $this->rememberForm();
             Toast::flash($error->getMessage(), 'error');
-            header('Location: ' . Url::to('/students/new')); exit;
+            header('Location: ' . Url::to($formUrl)); exit;
         }
 
         $documentPaths = [];
@@ -153,7 +183,8 @@ final class StudentController
                 $guardianId = Student::createGuardian($guardian['data']);
                 Student::linkGuardian($studentId, $guardianId, true);
             }
-            for ($i = 0; $i < 4; $i++) {
+            $documentCount = max(1, min(20, (int) $request->input('document_count', 1)));
+            for ($i = 0; $i < $documentCount; $i++) {
                 $title = trim((string) $request->input('document_title_' . $i, ''));
                 try {
                     $path = Upload::store('document_file_' . $i, 'student-documents', $documentExtensions, 10485760);
@@ -176,18 +207,18 @@ final class StudentController
             $this->rememberForm();
             error_log((string) $error);
             Toast::flash('The student or guardian could not be saved. Check for a duplicate roll number or invalid details.', 'error');
-            header('Location: ' . Url::to('/students/new')); exit;
+            header('Location: ' . Url::to($formUrl)); exit;
         } catch (\Throwable $error) {
             if ($db->inTransaction()) $db->rollBack();
             foreach (array_merge($uploaded, $documentPaths) as $path) Upload::delete($path);
             $this->rememberForm();
             error_log((string) $error);
             Toast::flash($error instanceof \RuntimeException ? $error->getMessage() : 'The student registration could not be completed. Please try again.', 'error');
-            header('Location: ' . Url::to('/students/new')); exit;
+            header('Location: ' . Url::to($formUrl)); exit;
         }
         AuditLog::record('student.created', 'students', $studentId);
-        Toast::flash('Student admitted successfully.');
-        header('Location: ' . Url::to('/students')); exit;
+        Toast::flash($quickAdmission ? 'Quick admission complete. You can add the remaining details from the student profile.' : 'Student admitted successfully.');
+        header('Location: ' . Url::to($quickAdmission ? '/students/view?id=' . $studentId : '/students')); exit;
     }
 
     public function edit(Request $request): void
@@ -423,9 +454,14 @@ final class StudentController
 
     private function rememberForm(): void
     {
-        $allowed = ['name', 'name_bn', 'class_id', 'section_id', 'shift', 'roll_no', 'gender', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'address', 'religion', 'caste', 'mobile_number', 'email', 'blood_group', 'height', 'weight', 'measurement_date', 'medical_history', 'current_address', 'permanent_address', 'national_id', 'local_id', 'note', 'house_id', 'transport_route_id', 'transport_stop_id', 'transport_fees_month', 'hostel_room_id', 'father_name', 'father_phone', 'father_occupation', 'mother_name', 'mother_phone', 'mother_occupation', 'guardian_mode', 'guardian_id', 'guardian_name', 'guardian_name_bn', 'guardian_relation', 'guardian_phone', 'guardian_email', 'guardian_occupation', 'guardian_address', 'document_title_0', 'document_title_1', 'document_title_2', 'document_title_3'];
+        $allowed = ['name', 'name_bn', 'class_id', 'section_id', 'shift', 'roll_no', 'gender', 'status', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'address', 'religion', 'caste', 'mobile_number', 'email', 'blood_group', 'height', 'weight', 'measurement_date', 'medical_history', 'current_address', 'permanent_address', 'national_id', 'local_id', 'note', 'house_id', 'transport_route_id', 'transport_stop_id', 'transport_fees_month', 'hostel_room_id', 'father_name', 'father_phone', 'father_occupation', 'mother_name', 'mother_phone', 'mother_occupation', 'guardian_mode', 'guardian_id', 'guardian_name', 'guardian_name_bn', 'guardian_relation', 'guardian_phone', 'guardian_email', 'guardian_occupation', 'guardian_address'];
         $old = [];
         foreach ($allowed as $key) {
+            if (isset($_POST[$key]) && is_scalar($_POST[$key])) $old[$key] = (string) $_POST[$key];
+        }
+        $documentCount = max(1, min(20, (int) ($_POST['document_count'] ?? 1)));
+        for ($i = 0; $i < $documentCount; $i++) {
+            $key = 'document_title_' . $i;
             if (isset($_POST[$key]) && is_scalar($_POST[$key])) $old[$key] = (string) $_POST[$key];
         }
         $_SESSION['_student_old'] = $old;

@@ -94,8 +94,15 @@ final class SchoolSettingController
             exit;
         }
 
-        $statement = Database::connection()->prepare(
-            'INSERT INTO school_settings (`key`, value, branch_id) VALUES (:key, :value, :branch) ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = CURRENT_TIMESTAMP'
+        $database = Database::connection();
+        $findSetting = $database->prepare(
+            'SELECT id FROM school_settings WHERE `key` = :key AND branch_id = :branch ORDER BY id DESC LIMIT 1'
+        );
+        $updateSetting = $database->prepare(
+            'UPDATE school_settings SET value = :value, updated_at = CURRENT_TIMESTAMP WHERE id = :id'
+        );
+        $insertSetting = $database->prepare(
+            'INSERT INTO school_settings (`key`, value, branch_id) VALUES (:key, :value, :branch)'
         );
 
         $saved = 0;
@@ -109,7 +116,14 @@ final class SchoolSettingController
                         continue;
                     }
                 }
-                $statement->execute(['key' => $key, 'value' => $value, 'branch' => BranchContext::id()]);
+                $branchId = BranchContext::id();
+                $findSetting->execute(['key' => $key, 'branch' => $branchId]);
+                $settingId = $findSetting->fetchColumn();
+                if ($settingId !== false) {
+                    $updateSetting->execute(['id' => (int) $settingId, 'value' => $value]);
+                } else {
+                    $insertSetting->execute(['key' => $key, 'value' => $value, 'branch' => $branchId]);
+                }
                 $saved++;
             }
         }
@@ -122,7 +136,7 @@ final class SchoolSettingController
     /** @return array<string, string> */
     private function values(): array
     {
-        $rows = Database::connection()->query('SELECT `key`, value FROM school_settings WHERE branch_id=' . BranchContext::id())->fetchAll();
+        $rows = Database::connection()->query('SELECT `key`, value FROM school_settings WHERE branch_id=' . BranchContext::id() . ' ORDER BY id ASC')->fetchAll();
         $values = [];
         foreach ($rows as $row) {
             $values[(string) $row['key']] = (string) $row['value'];
@@ -136,7 +150,7 @@ final class SchoolSettingController
      */
     public static function flag(string $key, bool $default = true): bool
     {
-        $statement = Database::connection()->prepare('SELECT value FROM school_settings WHERE `key` = :key AND branch_id = :branch LIMIT 1');
+        $statement = Database::connection()->prepare('SELECT value FROM school_settings WHERE `key` = :key AND branch_id = :branch ORDER BY id DESC LIMIT 1');
         $statement->execute(['key' => $key, 'branch' => BranchContext::id()]);
         $value = $statement->fetchColumn();
         if ($value === false || $value === null || $value === '') {

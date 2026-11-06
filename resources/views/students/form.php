@@ -130,14 +130,14 @@ $relationOptions = ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'O
         <!-- Documents -->
         <section class="rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
             <h2 class="text-lg font-semibold">Upload Documents</h2>
-            <div class="mt-5 grid gap-4">
-                <?php for ($i = 0; $i < 4; $i++): ?>
-                <div class="grid gap-3 sm:grid-cols-[1fr_2fr]">
-                    <input name="document_title_<?= $i ?>" placeholder="Title" value="<?= View::escape((string) $fieldValue('document_title_' . $i)) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm">
-                    <input type="file" name="document_file_<?= $i ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm">
+            <div id="student-document-rows" class="mt-5 grid gap-4">
+                <div class="student-document-row grid gap-3 sm:grid-cols-[1fr_2fr_auto]">
+                    <input name="document_title_0" placeholder="Title" value="<?= View::escape((string) $fieldValue('document_title_0')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm">
+                    <input type="file" name="document_file_0" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm">
                 </div>
-                <?php endfor; ?>
             </div>
+            <button type="button" id="add-student-document" class="mt-4 rounded-lg border border-green-100/20 px-4 py-2 text-sm text-teal-200 hover:border-teal-300">+ Add another document</button>
+            <input type="hidden" id="student-document-count" name="document_count" value="1">
         </section>
 
         <div class="flex flex-wrap justify-end gap-3 border-t border-green-900/60 pt-5">
@@ -166,5 +166,52 @@ $relationOptions = ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'O
     classField.addEventListener('change', syncSections);
     syncSections();
   }
+
+  const documentRows = document.getElementById('student-document-rows');
+  const addDocumentButton = document.getElementById('add-student-document');
+  const documentCount = document.getElementById('student-document-count');
+  const reindexDocuments = () => {
+    const rows = [...documentRows.querySelectorAll('.student-document-row')];
+    rows.forEach((row, index) => {
+      row.querySelector('input[type="text"]').name = `document_title_${index}`;
+      row.querySelector('input[type="file"]').name = `document_file_${index}`;
+    });
+    documentCount.value = String(rows.length);
+    addDocumentButton.disabled = rows.length >= 20;
+  };
+  addDocumentButton?.addEventListener('click', () => {
+    const index = documentRows.querySelectorAll('.student-document-row').length;
+    if (index >= 20) {
+      addDocumentButton.disabled = true;
+      return;
+    }
+
+    const row = document.createElement('div');
+    row.className = 'student-document-row grid gap-3 sm:grid-cols-[1fr_2fr_auto]';
+
+    const title = document.createElement('input');
+    title.name = `document_title_${index}`;
+    title.placeholder = 'Title';
+    title.className = 'w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm';
+
+    const file = document.createElement('input');
+    file.type = 'file';
+    file.name = `document_file_${index}`;
+    file.className = 'w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm';
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'rounded-lg border border-slate-700 px-3 py-2 text-sm text-rose-200 hover:border-rose-400';
+    remove.textContent = 'Remove';
+    remove.addEventListener('click', () => {
+      row.remove();
+      reindexDocuments();
+    });
+    row.append(title, file, remove);
+    documentRows.append(row);
+    reindexDocuments();
+  });
+  reindexDocuments();
 })();
+
 </script>

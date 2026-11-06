@@ -127,6 +127,18 @@ foreach ($branchUniqueKeys as $table => $keys) {
     }
 }
 
+// A prior migration could leave school_settings without its natural-key index.
+// Collapse duplicate rows to the newest saved value before restoring it.
+$schoolSettingsIndex = $pdo->query("SHOW INDEX FROM school_settings WHERE Key_name='school_settings_key_unique'")->fetchAll();
+if ($schoolSettingsIndex === []) {
+    $pdo->exec(
+        'DELETE older FROM school_settings older '
+        . 'INNER JOIN school_settings newer '
+        . 'ON newer.branch_id = older.branch_id AND newer.`key` = older.`key` AND newer.id > older.id'
+    );
+    $pdo->exec('ALTER TABLE school_settings ADD UNIQUE KEY school_settings_key_unique (branch_id, `key`)');
+}
+
 // Seed the default shifts used by classes and students.
 foreach (['Morning', 'Day'] as $shiftName) {
     $findShift = $pdo->prepare('SELECT id FROM shifts WHERE name = :name AND branch_id = :branch LIMIT 1');
