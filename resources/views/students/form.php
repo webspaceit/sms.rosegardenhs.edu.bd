@@ -146,7 +146,6 @@ $relationOptions = ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'O
 (() => {
   const classField = document.getElementById('student-class-field');
   const sectionField = document.getElementById('student-section-field');
-  const shiftField = document.getElementById('student-shift-field');
   if (classField && sectionField) {
     const syncSections = () => {
       const classId = classField.value;
@@ -160,20 +159,8 @@ $relationOptions = ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'O
         if (firstVisible) sectionField.value = firstVisible.value;
       }
     };
-    const syncShift = () => {
-      if (!shiftField) return;
-      const selected = classField.selectedOptions[0];
-      const classShift = selected?.dataset.shift || '';
-      if (classShift === 'Morning' || classShift === 'Day') {
-        shiftField.value = classShift;
-        shiftField.disabled = true;
-      } else {
-        shiftField.disabled = false;
-      }
-    };
-    classField.addEventListener('change', () => { syncSections(); syncShift(); });
+    classField.addEventListener('change', syncSections);
     syncSections();
-    syncShift();
   }
 })();
 </script>
