@@ -19,7 +19,7 @@ $appUser = Auth::user();
         body{font-family:'DM Sans',sans-serif}
         .dashboard-shell{background:radial-gradient(ellipse at 82% 0%,rgba(34,197,94,.14),transparent 38rem),linear-gradient(135deg,#0b4935 0%,#073d30 42%,#062f2d 100%)}
         .dashboard-gradient{background:linear-gradient(180deg,#064e3b 0%,#064039 45%,#052e32 100%)}
-        :is(input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button]):not([type=reset]):not([type=range]),textarea,select){background-color:#062f2d !important;border-color:rgba(22,101,52,.8);color:#f1f5f9;color-scheme:dark}
+        :is(input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button]):not([type=reset]):not([type=range]),textarea,select){background-color:#062f2d;border-color:rgba(22,101,52,.8);color:#f1f5f9;color-scheme:dark}
         :is(input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button]):not([type=reset]):not([type=file]):not([type=range]),textarea)::placeholder{color:#94a3b8;opacity:1}
         :is(input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button]):not([type=reset]):not([type=range]),textarea,select):focus{border-color:#34d399;outline:none;box-shadow:0 0 0 2px rgba(52,211,153,.18)}
         input[type=file]::file-selector-button{margin-right:.75rem;border:1px solid rgba(187,247,208,.25);border-radius:.5rem;background:rgba(134,239,172,.1);padding:.4rem .7rem;color:#dcfce7;font:inherit;cursor:pointer}
