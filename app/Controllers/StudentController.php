@@ -262,6 +262,8 @@ final class StudentController
             'transportStops' => Catalogue::transportStops(),
             'hostelRooms' => Catalogue::hostelRooms(),
             'nextStudentId' => $student ? ($student['student_id'] ?? '') : Student::nextStudentId($year['name'] ?? date('Y')),
+            'enableTransport' => SchoolSettingController::flag('enable_transport_details'),
+            'enableHostel' => SchoolSettingController::flag('enable_hostel_details'),
         ]);
         unset($_SESSION['_student_old']);
     }

@@ -58,6 +58,24 @@ CREATE TABLE IF NOT EXISTS classes (
     UNIQUE KEY classes_numeric_level_unique (numeric_level)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS shifts (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY shifts_name_unique (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS departments (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY departments_name_unique (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS sections (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     class_id BIGINT UNSIGNED NOT NULL,
@@ -302,7 +320,7 @@ CREATE TABLE IF NOT EXISTS teachers (
     employee_id VARCHAR(30) NOT NULL,
     name VARCHAR(150) NOT NULL,
     name_bn VARCHAR(150) NULL,
-    department VARCHAR(100) NULL,
+    department_id BIGINT UNSIGNED NULL,
     designation_id BIGINT UNSIGNED NULL,
     phone VARCHAR(20) NULL,
     email VARCHAR(190) NULL,
@@ -322,7 +340,9 @@ CREATE TABLE IF NOT EXISTS teachers (
     UNIQUE KEY teachers_employee_id_unique (employee_id),
     KEY teachers_name_index (name),
     KEY teachers_designation_index (designation_id),
-    CONSTRAINT teachers_user_fk FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+    KEY teachers_department_index (department_id),
+    CONSTRAINT teachers_user_fk FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL,
+    CONSTRAINT teachers_department_fk FOREIGN KEY (department_id) REFERENCES departments (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS designations (

@@ -37,6 +37,7 @@ use App\Models\Branch;
 use App\Models\Certificate;
 use App\Models\ClassRoutine;
 use App\Models\Complaint;
+use App\Models\Department;
 use App\Models\Designation;
 use App\Models\Event;
 use App\Models\Exam;
@@ -61,6 +62,9 @@ use App\Models\OnlineExam;
 use App\Models\PaymentGateway;
 use App\Models\SalaryPayment;
 use App\Models\SalaryStructure;
+use App\Models\SchoolClass;
+use App\Models\Section;
+use App\Models\Shift;
 use App\Models\SmsSetting;
 use App\Models\StaffAttendance;
 use App\Models\StudentHouse;
@@ -171,6 +175,10 @@ final class Application
         $this->crud($router, new Crud(Guardian::module()), '/guardians');
         $this->crud($router, new Crud(StudentHouse::module()), '/student-houses');
         $this->crud($router, new Crud(Subject::module()), '/subjects');
+        $this->crud($router, new Crud(SchoolClass::module()), '/classes');
+        $this->crud($router, new Crud(Shift::module()), '/shifts');
+        $this->crud($router, new Crud(Section::module()), '/sections');
+        $this->crud($router, new Crud(Department::module()), '/departments');
         $this->crud($router, new Crud(StudyMaterial::module()), '/study-materials');
         $this->crud($router, new Crud(LessonPlan::module()), '/lesson-plans');
         $this->crud($router, new Crud(Branch::module()), '/branches');
@@ -289,8 +297,13 @@ final class Application
         $router->get($route, [$controller, 'index']);
         $router->get($route . '/new', [$controller, 'create']);
         $router->post($route, [$controller, 'store']);
+        // Accept submissions to the form URL as well. Some browsers or
+        // previously rendered form markup can retain the current URL as the
+        // submit target; without these aliases that POST falls through to 404.
+        $router->post($route . '/new', [$controller, 'store']);
         $router->get($route . '/edit', [$controller, 'edit']);
         $router->post($route . '/update', [$controller, 'update']);
+        $router->post($route . '/edit', [$controller, 'update']);
         $router->post($route . '/delete', [$controller, 'destroy']);
     }
 }

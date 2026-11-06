@@ -60,6 +60,14 @@ final class SchoolSettingController
                     'school_footer_url' => ['label' => 'Footer link', 'type' => 'text', 'max' => 255],
                 ],
             ],
+            'modules' => [
+                'title' => 'Admission form modules',
+                'hint' => 'Toggle the optional sections shown on the student admission form.',
+                'fields' => [
+                    'enable_transport_details' => ['label' => 'Transport Details', 'type' => 'checkbox'],
+                    'enable_hostel_details' => ['label' => 'Hostel Details', 'type' => 'checkbox'],
+                ],
+            ],
         ];
     }
 
@@ -93,9 +101,13 @@ final class SchoolSettingController
         $saved = 0;
         foreach (self::groups() as $group) {
             foreach ($group['fields'] as $key => $field) {
-                $value = trim((string) $request->input($key, ''));
-                if ($value === '') {
-                    continue;
+                if (($field['type'] ?? 'text') === 'checkbox') {
+                    $value = $request->input($key) === '1' ? '1' : '0';
+                } else {
+                    $value = trim((string) $request->input($key, ''));
+                    if ($value === '') {
+                        continue;
+                    }
                 }
                 $statement->execute(['key' => $key, 'value' => $value, 'branch' => BranchContext::id()]);
                 $saved++;
@@ -116,5 +128,20 @@ final class SchoolSettingController
             $values[(string) $row['key']] = (string) $row['value'];
         }
         return $values;
+    }
+
+    /**
+     * Whether a boolean setting is enabled for the current branch. Defaults to
+     * enabled when the setting has never been saved.
+     */
+    public static function flag(string $key, bool $default = true): bool
+    {
+        $statement = Database::connection()->prepare('SELECT value FROM school_settings WHERE `key` = :key AND branch_id = :branch LIMIT 1');
+        $statement->execute(['key' => $key, 'branch' => BranchContext::id()]);
+        $value = $statement->fetchColumn();
+        if ($value === false || $value === null || $value === '') {
+            return $default;
+        }
+        return $value === '1' || $value === 'on' || $value === 'true';
     }
 }

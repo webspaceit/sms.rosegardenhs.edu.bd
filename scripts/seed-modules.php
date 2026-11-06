@@ -173,6 +173,11 @@ $teachers = [
     ['name' => 'Md. Delwar Hossain', 'department' => 'Physical Education', 'designation' => 'Assistant Teacher'],
 ];
 
+$departmentNames = array_values(array_unique(array_map(static fn (array $t): string => (string) $t['department'], $teachers)));
+foreach ($departmentNames as $departmentName) {
+    put('departments', 'name', $departmentName, ['name' => $departmentName, 'created_at' => now()]);
+}
+
 $teacherIds = [];
 $nextEmployee = 100;
 foreach ($pdo->query('SELECT employee_id FROM teachers') as $row) {
@@ -192,14 +197,18 @@ foreach ($teachers as $teacher) {
         $findDesignation->execute(['name' => $teacher['designation']]);
         $designationId = $findDesignation->fetchColumn();
 
+        $findDepartment = $pdo->prepare('SELECT id FROM departments WHERE name = :name LIMIT 1');
+        $findDepartment->execute(['name' => $teacher['department']]);
+        $departmentId = $findDepartment->fetchColumn();
+
         $statement = $pdo->prepare(
-            'INSERT INTO teachers (employee_id, name, department, designation_id, phone, email, gender, joining_date, qualification, experience_years, district, created_at)
-             VALUES (:employee_id, :name, :department, :designation_id, :phone, :email, :gender, :joining_date, :qualification, :experience_years, :district, :created_at)'
+            'INSERT INTO teachers (employee_id, name, department_id, designation_id, phone, email, gender, joining_date, qualification, experience_years, district, created_at)
+             VALUES (:employee_id, :name, :department_id, :designation_id, :phone, :email, :gender, :joining_date, :qualification, :experience_years, :district, :created_at)'
         );
         $statement->execute([
             'employee_id' => 'TCH-' . str_pad((string) $nextEmployee, 3, '0', STR_PAD_LEFT),
             'name' => $teacher['name'],
-            'department' => $teacher['department'],
+            'department_id' => $departmentId === false ? null : (int) $departmentId,
             'designation_id' => $designationId === false ? null : (int) $designationId,
             'phone' => '017' . str_pad((string) (20000000 + $nextEmployee), 8, '0', STR_PAD_LEFT),
             'email' => null,

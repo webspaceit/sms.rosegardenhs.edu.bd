@@ -22,10 +22,17 @@ use App\Core\View;
 
                 <div class="mt-5 grid gap-5 sm:grid-cols-2">
                     <?php foreach ($group['fields'] as $key => $field): ?>
-                        <div class="<?= $field['max'] > 150 ? 'sm:col-span-2' : '' ?>">
-                            <label for="setting-<?= View::escape($key) ?>" class="mb-1.5 block text-sm text-slate-300"><?= View::escape($field['label']) ?></label>
-                            <input id="setting-<?= View::escape($key) ?>" name="<?= View::escape($key) ?>" value="<?= View::escape($values[$key] ?? '') ?>" maxlength="<?= (int) $field['max'] ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm outline-none focus:border-teal-400">
-                        </div>
+                        <?php if (($field['type'] ?? 'text') === 'checkbox'): ?>
+                            <label class="flex items-center gap-3 rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-300">
+                                <input type="checkbox" name="<?= View::escape($key) ?>" value="1" <?= ($values[$key] ?? '1') === '1' ? 'checked' : '' ?> class="h-4 w-4 rounded border-slate-600 bg-slate-900 text-teal-400 focus:ring-teal-400">
+                                <span><?= View::escape($field['label']) ?></span>
+                            </label>
+                        <?php else: ?>
+                            <div class="<?= (int) ($field['max'] ?? 0) > 150 ? 'sm:col-span-2' : '' ?>">
+                                <label for="setting-<?= View::escape($key) ?>" class="mb-1.5 block text-sm text-slate-300"><?= View::escape($field['label']) ?></label>
+                                <input id="setting-<?= View::escape($key) ?>" name="<?= View::escape($key) ?>" value="<?= View::escape($values[$key] ?? '') ?>" maxlength="<?= (int) ($field['max'] ?? 0) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm outline-none focus:border-teal-400">
+                            </div>
+                        <?php endif; ?>
                     <?php endforeach; ?>
                 </div>
             </section>

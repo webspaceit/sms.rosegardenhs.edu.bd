@@ -36,7 +36,7 @@ $relationOptions = ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'O
                 <label class="block"><span class="mb-2 block text-sm font-medium">Gender <span class="text-red-300">*</span></span><select name="gender" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach ($genderOptions as $gender): ?><option value="<?= $gender ?>" <?= $fieldValue('gender') === $gender ? 'selected' : '' ?>><?= $gender ?></option><?php endforeach; ?></select></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Date Of Birth</span><input type="date" name="date_of_birth" max="<?= date('Y-m-d') ?>" value="<?= View::escape((string) $fieldValue('date_of_birth')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
 
-                <label class="block"><span class="mb-2 block text-sm font-medium">Religion</span><input maxlength="50" name="religion" placeholder="Religion" value="<?= View::escape((string) $fieldValue('religion')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
+                <label class="block"><span class="mb-2 block text-sm font-medium">Religion</span><select name="religion" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach (['Islam', 'Hinduism', 'Christianity', 'Buddhism', 'Other'] as $religionOpt): ?><option value="<?= $religionOpt ?>" <?= $fieldValue('religion') === $religionOpt ? 'selected' : '' ?>><?= $religionOpt ?></option><?php endforeach; ?></select></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Caste</span><input maxlength="100" name="caste" placeholder="Caste" value="<?= View::escape((string) $fieldValue('caste')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Mobile Number</span><input maxlength="20" name="mobile_number" placeholder="Mobile Number" value="<?= View::escape((string) $fieldValue('mobile_number')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Email</span><input type="email" maxlength="190" name="email" placeholder="Email" value="<?= View::escape((string) $fieldValue('email')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
@@ -51,24 +51,6 @@ $relationOptions = ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'O
                 <label class="block"><span class="mb-2 block text-sm font-medium">Student Photo (100px × 100px)</span><input type="file" name="photo" accept=".jpg,.jpeg,.png,.webp" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><?php if (!empty($student['photo'])): ?><a class="mt-1 block text-xs text-green-300" target="_blank" href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $student['photo'])) ?>">View current photo</a><?php endif; ?></label>
 
                 <label class="block sm:col-span-2 xl:col-span-4"><span class="mb-2 block text-sm font-medium">Medical History</span><textarea name="medical_history" rows="2" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" placeholder="Medical History"><?= View::escape((string) $fieldValue('medical_history')) ?></textarea></label>
-            </div>
-        </section>
-
-        <!-- Transport -->
-        <section class="rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
-            <h2 class="text-lg font-semibold">Transport Details</h2>
-            <div class="mt-5 grid gap-5 sm:grid-cols-3">
-                <label class="block"><span class="mb-2 block text-sm font-medium">Route List</span><select name="transport_route_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach ($transportRoutes as $rid => $rname): ?><option value="<?= (int) $rid ?>" <?= (int) $fieldValue('transport_route_id') === (int) $rid ? 'selected' : '' ?>><?= View::escape($rname) ?></option><?php endforeach; ?></select></label>
-                <label class="block"><span class="mb-2 block text-sm font-medium">Pickup Point</span><select name="transport_stop_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach ($transportStops as $sid => $sname): ?><option value="<?= (int) $sid ?>" <?= (int) $fieldValue('transport_stop_id') === (int) $sid ? 'selected' : '' ?>><?= View::escape($sname) ?></option><?php endforeach; ?></select></label>
-                <label class="block"><span class="mb-2 block text-sm font-medium">Fees Month</span><input maxlength="20" name="transport_fees_month" placeholder="January" value="<?= View::escape((string) $fieldValue('transport_fees_month', 'January')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
-            </div>
-        </section>
-
-        <!-- Hostel -->
-        <section class="rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
-            <h2 class="text-lg font-semibold">Hostel Details</h2>
-            <div class="mt-5 grid gap-5 sm:grid-cols-2">
-                <label class="block"><span class="mb-2 block text-sm font-medium">Hostel Room</span><select name="hostel_room_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach ($hostelRooms as $hid => $hname): ?><option value="<?= (int) $hid ?>" <?= (int) $fieldValue('hostel_room_id') === (int) $hid ? 'selected' : '' ?>><?= View::escape($hname) ?></option><?php endforeach; ?></select></label>
             </div>
         </section>
 
@@ -122,6 +104,28 @@ $relationOptions = ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'O
                 </div>
             </div>
         </details>
+
+        <?php if ($enableTransport ?? true): ?>
+        <!-- Transport -->
+        <section class="rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
+            <h2 class="text-lg font-semibold">Transport Details</h2>
+            <div class="mt-5 grid gap-5 sm:grid-cols-3">
+                <label class="block"><span class="mb-2 block text-sm font-medium">Route List</span><select name="transport_route_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach ($transportRoutes as $rid => $rname): ?><option value="<?= (int) $rid ?>" <?= (int) $fieldValue('transport_route_id') === (int) $rid ? 'selected' : '' ?>><?= View::escape($rname) ?></option><?php endforeach; ?></select></label>
+                <label class="block"><span class="mb-2 block text-sm font-medium">Pickup Point</span><select name="transport_stop_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach ($transportStops as $sid => $sname): ?><option value="<?= (int) $sid ?>" <?= (int) $fieldValue('transport_stop_id') === (int) $sid ? 'selected' : '' ?>><?= View::escape($sname) ?></option><?php endforeach; ?></select></label>
+                <label class="block"><span class="mb-2 block text-sm font-medium">Fees Month</span><input maxlength="20" name="transport_fees_month" placeholder="January" value="<?= View::escape((string) $fieldValue('transport_fees_month', 'January')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
+            </div>
+        </section>
+        <?php endif; ?>
+
+        <?php if ($enableHostel ?? true): ?>
+        <!-- Hostel -->
+        <section class="rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
+            <h2 class="text-lg font-semibold">Hostel Details</h2>
+            <div class="mt-5 grid gap-5 sm:grid-cols-2">
+                <label class="block"><span class="mb-2 block text-sm font-medium">Hostel Room</span><select name="hostel_room_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach ($hostelRooms as $hid => $hname): ?><option value="<?= (int) $hid ?>" <?= (int) $fieldValue('hostel_room_id') === (int) $hid ? 'selected' : '' ?>><?= View::escape($hname) ?></option><?php endforeach; ?></select></label>
+            </div>
+        </section>
+        <?php endif; ?>
 
         <!-- Documents -->
         <section class="rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">

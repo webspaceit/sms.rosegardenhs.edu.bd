@@ -67,7 +67,7 @@ $branchTables = [
     'users', 'audit_logs', 'academic_years', 'classes', 'sections', 'students', 'student_enrollment_history',
     'notices', 'holidays', 'events', 'complaints', 'school_settings', 'subjects', 'class_subject',
     'teachers', 'designations', 'teacher_subject', 'guardians', 'student_guardian', 'student_houses',
-    'fee_heads', 'fee_structures', 'fee_collections', 'fee_discounts', 'fee_carry_forwards',
+    'shifts', 'departments', 'fee_heads', 'fee_structures', 'fee_collections', 'fee_discounts', 'fee_carry_forwards',
     'transactions', 'bank_reconciliations', 'salary_structures', 'salary_payments', 'attendances',
     'teacher_attendances', 'staff_attendances', 'leave_requests', 'inventory_categories',
     'inventory_items', 'books', 'book_issues', 'transport_routes', 'transport_stops', 'student_transport',
@@ -107,6 +107,8 @@ $branchUniqueKeys = [
     'subjects' => ['subjects_name_unique' => 'name', 'subjects_code_unique' => 'code'],
     'teachers' => ['teachers_employee_id_unique' => 'employee_id'],
     'designations' => ['designations_name_unique' => 'name'],
+    'shifts' => ['shifts_name_unique' => 'name'],
+    'departments' => ['departments_name_unique' => 'name'],
     'fee_heads' => ['fee_heads_name_unique' => 'name'],
     'student_houses' => ['student_houses_name_unique' => 'name'],
     'inventory_categories' => ['inventory_categories_name_unique' => 'name'],
@@ -122,6 +124,15 @@ foreach ($branchUniqueKeys as $table => $keys) {
         if ($present === []) continue;
         $pdo->exec("ALTER TABLE `{$table}` DROP INDEX `{$key}`");
         $pdo->exec("ALTER TABLE `{$table}` ADD UNIQUE KEY `{$key}` (branch_id, `{$column}`)");
+    }
+}
+
+// Seed the default shifts used by classes and students.
+foreach (['Morning', 'Day'] as $shiftName) {
+    $findShift = $pdo->prepare('SELECT id FROM shifts WHERE name = :name AND branch_id = :branch LIMIT 1');
+    $findShift->execute(['name' => $shiftName, 'branch' => $mainBranchId]);
+    if ($findShift->fetchColumn() === false) {
+        $pdo->prepare('INSERT INTO shifts (name, branch_id, created_at) VALUES (:name, :branch, NOW())')->execute(['name' => $shiftName, 'branch' => $mainBranchId]);
     }
 }
 
@@ -209,6 +220,34 @@ if ($pdo->query("SHOW INDEX FROM teachers WHERE Key_name = 'teachers_designation
 }
 if ($pdo->query("SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'teachers' AND CONSTRAINT_NAME = 'teachers_designation_fk'")->fetchColumn() === false) {
     $pdo->exec('ALTER TABLE teachers ADD CONSTRAINT teachers_designation_fk FOREIGN KEY (designation_id) REFERENCES designations (id) ON DELETE SET NULL');
+}
+
+// teachers.department -> department_id
+$teacherColumns = $pdo->query('SHOW COLUMNS FROM teachers')->fetchAll(PDO::FETCH_COLUMN);
+if (!in_array('department_id', $teacherColumns, true)) {
+    $pdo->exec('ALTER TABLE teachers ADD COLUMN department_id BIGINT UNSIGNED NULL AFTER designation_id');
+}
+if (in_array('department', $teacherColumns, true)) {
+    $legacyTeachers = $pdo->query("SELECT id, department, branch_id FROM teachers WHERE department IS NOT NULL AND department <> '' AND department_id IS NULL")->fetchAll();
+    $findDepartment = $pdo->prepare('SELECT id FROM departments WHERE name = :name AND branch_id = :branch LIMIT 1');
+    $insertDepartment = $pdo->prepare('INSERT INTO departments (name, branch_id, created_at) VALUES (:name, :branch, NOW())');
+    $updateTeacher = $pdo->prepare('UPDATE teachers SET department_id = :department_id WHERE id = :id');
+    foreach ($legacyTeachers as $teacher) {
+        $findDepartment->execute(['name' => $teacher['department'], 'branch' => $teacher['branch_id']]);
+        $departmentId = $findDepartment->fetchColumn();
+        if ($departmentId === false) {
+            $insertDepartment->execute(['name' => $teacher['department'], 'branch' => $teacher['branch_id']]);
+            $departmentId = $pdo->lastInsertId();
+        }
+        $updateTeacher->execute(['department_id' => (int) $departmentId, 'id' => (int) $teacher['id']]);
+    }
+    $pdo->exec('ALTER TABLE teachers DROP COLUMN department');
+}
+if ($pdo->query("SHOW INDEX FROM teachers WHERE Key_name = 'teachers_department_index'")->fetchAll() === []) {
+    $pdo->exec('ALTER TABLE teachers ADD INDEX teachers_department_index (department_id)');
+}
+if ($pdo->query("SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'teachers' AND CONSTRAINT_NAME = 'teachers_department_fk'")->fetchColumn() === false) {
+    $pdo->exec('ALTER TABLE teachers ADD CONSTRAINT teachers_department_fk FOREIGN KEY (department_id) REFERENCES departments (id) ON DELETE SET NULL');
 }
 
 // academic_report_marks.subject_name -> subject_id

@@ -19,7 +19,7 @@ use App\Core\View;
         <h1 class="mt-2 text-3xl font-semibold">Welcome, <?= View::escape(explode(' ', (string) $teacher['name'])[0]) ?></h1>
         <p class="mt-1 text-sm text-emerald-100/60">
             <?= View::escape((string) ($teacher['designation_name'] ?? 'Teacher')) ?>
-            <?php if (($teacher['department'] ?? '') !== ''): ?> · <?= View::escape((string) $teacher['department']) ?><?php endif; ?>
+            <?php if (($teacher['department_name'] ?? '') !== ''): ?> · <?= View::escape((string) $teacher['department_name']) ?><?php endif; ?>
             · <?= View::escape((string) ($teacher['employee_id'] ?? '')) ?>
         </p>
     </div>

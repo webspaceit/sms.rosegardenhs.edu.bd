@@ -78,8 +78,9 @@ final class Person
 
         if ($table === 'teachers') {
             $stmt = Database::connection()->prepare(
-                'SELECT t.*, d.name AS designation_name FROM teachers t'
+                'SELECT t.*, d.name AS designation_name, dept.name AS department_name FROM teachers t'
                 . ' LEFT JOIN designations d ON d.id = t.designation_id AND d.branch_id = t.branch_id'
+                . ' LEFT JOIN departments dept ON dept.id = t.department_id AND dept.branch_id = t.branch_id'
                 . ' WHERE t.id = :id AND t.branch_id=:branch LIMIT 1'
             );
         } else {

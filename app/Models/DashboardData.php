@@ -33,8 +33,9 @@ final class DashboardData
             . ' FROM fee_collections WHERE branch_id=' . $branch
         )->fetch();
         $departments = $database->query(
-            "SELECT COALESCE(NULLIF(TRIM(department), ''), 'Unassigned') AS name, COUNT(*) AS total"
-            . " FROM teachers WHERE branch_id=" . $branch . " GROUP BY COALESCE(NULLIF(TRIM(department), ''), 'Unassigned')"
+            "SELECT COALESCE(NULLIF(dept.name, ''), 'Unassigned') AS name, COUNT(*) AS total"
+            . " FROM teachers t LEFT JOIN departments dept ON dept.id = t.department_id AND dept.branch_id = t.branch_id"
+            . " WHERE t.branch_id=" . $branch . " GROUP BY COALESCE(NULLIF(dept.name, ''), 'Unassigned')"
             . ' ORDER BY total DESC, name ASC LIMIT 8'
         )->fetchAll();
         $upcomingEvents = $database->query(
