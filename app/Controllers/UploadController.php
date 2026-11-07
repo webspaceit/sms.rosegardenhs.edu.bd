@@ -39,21 +39,50 @@ final class UploadController
         if (!$user) return false;
         if (str_starts_with($relative, 'student-photos/')) {
             if (Guard::can('students.view')) {
-                $query = Database::connection()->prepare('SELECT 1 FROM students WHERE photo=:path AND branch_id=:branch LIMIT 1');
-                $query->execute(['path' => $relative, 'branch' => BranchContext::id()]);
-                if ($query->fetchColumn()) return true;
-            }
-            if (($user['link_type'] ?? '') === 'student') {
-                $query = Database::connection()->prepare('SELECT 1 FROM students WHERE id=:id AND branch_id=:branch AND photo=:path LIMIT 1');
-                $query->execute(['id' => (int) $user['link_id'], 'branch' => BranchContext::id(), 'path' => $relative]);
+                $query = Database::connection()->prepare(
+                    'SELECT 1 FROM students s LEFT JOIN student_guardian sg ON sg.student_id=s.id AND sg.branch_id=s.branch_id'
+                    . ' LEFT JOIN guardians g ON g.id=sg.guardian_id AND g.branch_id=sg.branch_id'
+                    . ' WHERE s.branch_id=:branch AND (s.photo=:student_photo OR s.father_photo=:father_photo OR s.mother_photo=:mother_photo OR g.photo=:guardian_photo) LIMIT 1'
+                );
+                $query->execute(['branch' => BranchContext::id(), 'student_photo' => $relative, 'father_photo' => $relative, 'mother_photo' => $relative, 'guardian_photo' => $relative]);
                 return (bool) $query->fetchColumn();
             }
-            if (($user['link_type'] ?? '') === 'guardian') {
-                $query = Database::connection()->prepare('SELECT 1 FROM student_guardian sg JOIN students s ON s.id=sg.student_id AND s.branch_id=sg.branch_id WHERE sg.guardian_id=:id AND sg.branch_id=:branch AND s.photo=:path LIMIT 1');
-                $query->execute(['id' => (int) $user['link_id'], 'branch' => BranchContext::id(), 'path' => $relative]);
+            $linkType = (string) ($user['link_type'] ?? '');
+            $linkId = (int) ($user['link_id'] ?? 0);
+            if ($linkType === 'student') {
+                $query = Database::connection()->prepare('SELECT 1 FROM students WHERE id=:id AND branch_id=:branch AND (photo=:student_photo OR father_photo=:father_photo OR mother_photo=:mother_photo) LIMIT 1');
+                $query->execute(['id' => $linkId, 'branch' => BranchContext::id(), 'student_photo' => $relative, 'father_photo' => $relative, 'mother_photo' => $relative]);
+                return (bool) $query->fetchColumn();
+            }
+            if ($linkType === 'guardian') {
+                $query = Database::connection()->prepare('SELECT 1 FROM guardians WHERE id=:id AND branch_id=:branch AND photo=:photo LIMIT 1');
+                $query->execute(['id' => $linkId, 'branch' => BranchContext::id(), 'photo' => $relative]);
+                if ($query->fetchColumn()) return true;
+                $query = Database::connection()->prepare('SELECT 1 FROM student_guardian sg JOIN students s ON s.id=sg.student_id AND s.branch_id=sg.branch_id WHERE sg.guardian_id=:id AND sg.branch_id=:branch AND (s.photo=:student_photo OR s.father_photo=:father_photo OR s.mother_photo=:mother_photo) LIMIT 1');
+                $query->execute(['id' => $linkId, 'branch' => BranchContext::id(), 'student_photo' => $relative, 'father_photo' => $relative, 'mother_photo' => $relative]);
                 return (bool) $query->fetchColumn();
             }
             return false;
+        }
+        if (str_starts_with($relative, 'student-documents/')) {
+            $sql = 'SELECT 1 FROM student_documents d JOIN students s ON s.id = d.student_id AND s.branch_id = d.branch_id'
+                . ' WHERE d.file_path = :path AND d.branch_id = :branch';
+            $bindings = ['path' => $relative, 'branch' => BranchContext::id()];
+            if (!Guard::can('students.view')) {
+                $linkType = (string) ($user['link_type'] ?? '');
+                if ($linkType === 'student') {
+                    $sql .= ' AND s.id = :student_id';
+                    $bindings['student_id'] = (int) ($user['link_id'] ?? 0);
+                } elseif ($linkType === 'guardian') {
+                    $sql .= ' AND EXISTS (SELECT 1 FROM student_guardian sg WHERE sg.student_id = s.id AND sg.guardian_id = :guardian_id AND sg.branch_id = s.branch_id)';
+                    $bindings['guardian_id'] = (int) ($user['link_id'] ?? 0);
+                } else {
+                    return false;
+                }
+            }
+            $query = Database::connection()->prepare($sql . ' LIMIT 1');
+            $query->execute($bindings);
+            return (bool) $query->fetchColumn();
         }
         if (str_starts_with($relative, 'study-materials/')) {
             if (Guard::can('study-materials.manage')) {

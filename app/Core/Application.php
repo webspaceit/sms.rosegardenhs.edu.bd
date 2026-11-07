@@ -143,6 +143,9 @@ final class Application
         $router->get('/students/create', [$students, 'create']); // alias
         $router->post('/students', [$students, 'store']);
         $router->get('/students/edit', [$students, 'edit']);
+        // Some shared-host deployments or stale edit forms post to their
+        // current URL. Accept that submission as an update as well.
+        $router->post('/students/edit', [$students, 'update']);
         $router->post('/students/update', [$students, 'update']);
         $router->post('/students/archive', [$students, 'archive']);
         $router->get('/students/guardians', [$students, 'guardians']);

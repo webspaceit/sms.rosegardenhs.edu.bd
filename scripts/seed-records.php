@@ -88,14 +88,14 @@ $yearName = (string) ($pdo->query('SELECT name FROM academic_years WHERE is_curr
 // ---------------------------------------------------------------------------
 
 $feeHeads = [
-    ['name' => 'Tuition Fee', 'name_bn' => 'বেতন', 'frequency' => 'monthly', 'sort_order' => 1],
-    ['name' => 'Admission Fee', 'name_bn' => 'ভর্তি ফি', 'frequency' => 'one-time', 'sort_order' => 2],
-    ['name' => 'Development Fee', 'name_bn' => 'উন্নয়ন ফি', 'frequency' => 'yearly', 'sort_order' => 3],
-    ['name' => 'Examination Fee', 'name_bn' => 'পরীক্ষা ফি', 'frequency' => 'yearly', 'sort_order' => 4],
-    ['name' => 'Laboratory Fee', 'name_bn' => 'ল্যাবরেটরি ফি', 'frequency' => 'monthly', 'sort_order' => 5],
-    ['name' => 'Library Fee', 'name_bn' => 'গ্রন্থাগার ফি', 'frequency' => 'monthly', 'sort_order' => 6],
-    ['name' => 'Sports Fee', 'name_bn' => 'ক্রীড়া ফি', 'frequency' => 'monthly', 'sort_order' => 7],
-    ['name' => 'ICT Fee', 'name_bn' => 'আইসিটি ফি', 'frequency' => 'monthly', 'sort_order' => 8],
+    ['name' => 'Tuition Fee', 'frequency' => 'monthly', 'sort_order' => 1],
+    ['name' => 'Admission Fee', 'frequency' => 'one-time', 'sort_order' => 2],
+    ['name' => 'Development Fee', 'frequency' => 'yearly', 'sort_order' => 3],
+    ['name' => 'Examination Fee', 'frequency' => 'yearly', 'sort_order' => 4],
+    ['name' => 'Laboratory Fee', 'frequency' => 'monthly', 'sort_order' => 5],
+    ['name' => 'Library Fee', 'frequency' => 'monthly', 'sort_order' => 6],
+    ['name' => 'Sports Fee', 'frequency' => 'monthly', 'sort_order' => 7],
+    ['name' => 'ICT Fee', 'frequency' => 'monthly', 'sort_order' => 8],
 ];
 
 $feeHeadIds = [];

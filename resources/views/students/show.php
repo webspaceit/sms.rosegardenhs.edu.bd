@@ -1,10 +1,12 @@
 <?php
 use App\Core\Url;
 use App\Core\View;
+use App\Core\QrCode;
 
 $attendanceTotal = (int) ($attendanceSummary['total'] ?? 0);
 $attendanceAttended = (int) ($attendanceSummary['attended'] ?? 0);
 $attendanceRate = $attendanceTotal > 0 ? (int) round(($attendanceAttended / $attendanceTotal) * 100) : null;
+$studentIdQr = (new QrCode())->toDataUri((string) $student['student_id']);
 $statusClass = [
     'active' => 'border-green-300/20 bg-green-300/10 text-green-100',
     'inactive' => 'border-slate-200/15 bg-slate-200/10 text-slate-200',
@@ -38,6 +40,184 @@ $statusClass = [
         </div>
         <div class="student-detail-pdf-issued"><span>RECORD GENERATED</span><strong><?= date('d M Y') ?></strong></div>
     </header>
+
+    <?php
+    $detailValue = static fn (mixed $value): string => ($value !== null && trim((string) $value) !== '') ? View::escape($value) : '—';
+    $studentTabs = [
+        'profile' => 'Profile', 'fees' => 'Fees', 'exam' => 'Exam', 'attendance' => 'Attendance',
+        'documents' => 'Documents', 'timeline' => 'Timeline', 'behaviour' => 'Student Behaviour',
+    ];
+    ?>
+    <div class="student-reference-topline">
+        <div><a href="<?= Url::to('/students') ?>">Students</a><span>›</span><strong>Details</strong></div>
+        <span class="student-reference-year">Academic Year: <?= View::escape($student['year_name']) ?></span>
+    </div>
+    <div class="student-reference-layout">
+        <aside class="student-reference-card" aria-label="Student summary">
+            <div class="student-reference-identity">
+                <?php if (!empty($student['photo'])): ?><img src="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $student['photo'])) ?>" alt="" class="student-reference-avatar">
+                <?php else: ?><div class="student-reference-avatar student-reference-initial"><?= View::escape(strtoupper(substr((string) $student['name'], 0, 1))) ?></div><?php endif; ?>
+                <h2><?= View::escape($student['name']) ?></h2>
+                <p>Admission No <strong><?= View::escape($student['student_id']) ?></strong></p>
+                <p>Roll Number <strong><?= sprintf('%03d', (int) $student['roll_no']) ?></strong></p>
+            </div>
+            <div class="student-reference-actions" aria-label="Student actions">
+                <button type="button" onclick="window.print()" title="Print student details" aria-label="Print student details">▤</button>
+                <a href="<?= Url::to('/students/edit?id=' . (int) $student['id']) ?>" title="Edit student" aria-label="Edit student">✎</a>
+                <a href="<?= Url::to('/students/guardians?id=' . (int) $student['id']) ?>" title="Manage guardians" aria-label="Manage guardians">♙</a>
+                <a href="<?= Url::to('/students') ?>" title="Back to students" aria-label="Back to students">⋮</a>
+            </div>
+            <dl class="student-reference-facts">
+                <div><dt>Class</dt><dd><?= $detailValue($student['class_name']) ?></dd></div>
+                <div><dt>Section</dt><dd><?= $detailValue($student['section_name']) ?></dd></div>
+                <div><dt>Gender</dt><dd><?= $detailValue($student['gender']) ?></dd></div>
+                <div><dt>Status</dt><dd><?= View::escape(ucfirst((string) $student['status'])) ?></dd></div>
+            </dl>
+            <div class="student-reference-code-label student-reference-qr-label">Student ID QR code</div>
+            <img class="student-reference-qr" src="<?= $studentIdQr ?>" alt="QR code for student ID <?= View::escape($student['student_id']) ?>" width="112" height="112">
+            <div class="student-reference-code-label">Student ID</div>
+            <div class="student-reference-code" aria-label="Student ID <?= View::escape($student['student_id']) ?>"></div>
+            <div class="student-reference-code-value"><?= View::escape($student['student_id']) ?></div>
+        </aside>
+
+        <section class="student-reference-details" aria-label="Student information">
+            <nav class="student-reference-tabs" role="tablist" aria-label="Student record sections">
+                <?php foreach ($studentTabs as $key => $label): ?>
+                    <button type="button" role="tab" id="student-tab-<?= $key ?>" aria-controls="student-panel-<?= $key ?>" aria-selected="<?= $key === 'profile' ? 'true' : 'false' ?>" tabindex="<?= $key === 'profile' ? '0' : '-1' ?>" data-student-tab="<?= $key ?>"><?= View::escape($label) ?></button>
+                <?php endforeach; ?>
+            </nav>
+
+            <div class="student-reference-panel" role="tabpanel" id="student-panel-profile" aria-labelledby="student-tab-profile" data-student-panel="profile">
+                <div class="student-reference-rows">
+                    <?php foreach ([
+                        'Admission Date' => !empty($student['admission_date']) ? date('Y-m-d', strtotime((string) $student['admission_date'])) : '—',
+                        'Date Of Birth' => !empty($student['date_of_birth']) ? date('Y-m-d', strtotime((string) $student['date_of_birth'])) : '—',
+                        'Birth Registration No.' => $student['birth_registration_no'] ?? null,
+                        'Shift' => $student['shift'] ?? null, 'Mobile Number' => $student['mobile_number'] ?? null,
+                        'Email' => $student['email'] ?? null, 'Medical History' => $student['medical_history'] ?? null,
+                        'Note' => $student['note'] ?? null,
+                    ] as $label => $value): ?><div class="student-reference-row"><span><?= View::escape($label) ?></span><strong><?= $detailValue($value) ?></strong></div><?php endforeach; ?>
+                    <div class="student-reference-pair">
+                        <div class="student-reference-row"><span>Religion</span><strong><?= $detailValue($student['religion'] ?? null) ?></strong></div>
+                        <div class="student-reference-row"><span>Caste</span><strong><?= $detailValue($student['caste'] ?? null) ?></strong></div>
+                    </div>
+                    <div class="student-reference-row student-reference-group"><strong>Address</strong></div>
+                    <div class="student-reference-row"><span>Current Address</span><strong><?= $detailValue($student['current_address'] ?: ($student['address'] ?? null)) ?></strong></div>
+                    <div class="student-reference-row"><span>Permanent Address</span><strong><?= $detailValue($student['permanent_address'] ?? null) ?></strong></div>
+                    <div class="student-reference-row student-reference-group"><strong>Parent Guardian Detail</strong></div>
+                    <?php
+                    $fatherName = ($student['guardian_relation'] ?? '') === 'Father' ? (($student['father_name'] ?? '') ?: ($student['guardian_name'] ?? null)) : ($student['father_name'] ?? null);
+                    $fatherPhone = ($student['guardian_relation'] ?? '') === 'Father' ? (($student['father_phone'] ?? '') ?: ($student['guardian_phone'] ?? null)) : ($student['father_phone'] ?? null);
+                    $fatherOccupation = ($student['guardian_relation'] ?? '') === 'Father' ? (($student['father_occupation'] ?? '') ?: ($student['guardian_occupation'] ?? null)) : ($student['father_occupation'] ?? null);
+                    $motherName = ($student['guardian_relation'] ?? '') === 'Mother' ? (($student['mother_name'] ?? '') ?: ($student['guardian_name'] ?? null)) : ($student['mother_name'] ?? null);
+                    $motherPhone = ($student['guardian_relation'] ?? '') === 'Mother' ? (($student['mother_phone'] ?? '') ?: ($student['guardian_phone'] ?? null)) : ($student['mother_phone'] ?? null);
+                    $motherOccupation = ($student['guardian_relation'] ?? '') === 'Mother' ? (($student['mother_occupation'] ?? '') ?: ($student['guardian_occupation'] ?? null)) : ($student['mother_occupation'] ?? null);
+                    ?>
+                    <?php foreach ([
+                        'Father Name' => $fatherName, 'Father Phone' => $fatherPhone,
+                        'Father Occupation' => $fatherOccupation, 'Mother Name' => $motherName,
+                        'Mother Phone' => $motherPhone, 'Mother Occupation' => $motherOccupation,
+                        'Guardian Name' => $student['guardian_name'] ?? null, 'Guardian Email' => $student['guardian_email'] ?? null,
+                        'Guardian Relation' => $student['guardian_relation'] ?? null, 'Guardian Phone' => $student['guardian_phone'] ?? null,
+                        'Guardian Occupation' => $student['guardian_occupation'] ?? null, 'Guardian Address' => $student['guardian_address'] ?? null,
+                    ] as $label => $value): ?><div class="student-reference-row"><span><?= View::escape($label) ?></span><strong><?= $detailValue($value) ?></strong></div><?php endforeach; ?>
+                    <?php foreach ([
+                        'Father Photo' => $student['father_photo'] ?? null,
+                        'Mother Photo' => $student['mother_photo'] ?? null,
+                        'Guardian Photo' => $student['guardian_photo'] ?? null,
+                    ] as $label => $photoPath): ?>
+                        <div class="student-reference-row"><span><?= View::escape($label) ?></span><strong><?php if (!empty($photoPath)): ?><a href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $photoPath)) ?>" target="_blank" rel="noopener"><img class="student-reference-photo" src="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $photoPath)) ?>" alt="<?= View::escape($label) ?>"></a><?php else: ?>—<?php endif; ?></strong></div>
+                    <?php endforeach; ?>
+                    <div class="student-reference-row student-reference-group"><strong>Miscellaneous Details</strong></div>
+                    <?php foreach ([
+                        'Blood Group' => $student['blood_group'] ?? null, 'House' => $student['house_name'] ?? null,
+                        'Height' => isset($student['height']) && $student['height'] !== null ? $student['height'] . ' cm' : null,
+                        'Weight' => isset($student['weight']) && $student['weight'] !== null ? $student['weight'] . ' kg' : null,
+                        'Measurement Date' => !empty($student['measurement_date']) ? date('Y-m-d', strtotime((string) $student['measurement_date'])) : null,
+                        'Previous School Details' => $student['previous_school'] ?? null, 'National Identification Number' => $student['national_id'] ?? null,
+                        'Local Identification Number' => $student['local_id'] ?? null,
+                    ] as $label => $value): ?><div class="student-reference-row"><span><?= View::escape($label) ?></span><strong><?= $detailValue($value) ?></strong></div><?php endforeach; ?>
+                    <?php if (!empty($student['transport_route_id']) || !empty($student['transport_stop_id']) || !empty($student['transport_fees_month'])): ?>
+                        <div class="student-reference-row student-reference-group"><strong>Transport Details</strong></div>
+                        <?php foreach ([
+                            'Route' => $student['transport_route_name'] ?? null,
+                            'Pickup Point' => $student['transport_stop_name'] ?? null,
+                            'Fees Month' => $student['transport_fees_month'] ?? null,
+                        ] as $label => $value): ?><div class="student-reference-row"><span><?= View::escape($label) ?></span><strong><?= $detailValue($value) ?></strong></div><?php endforeach; ?>
+                    <?php endif; ?>
+                    <?php if (!empty($student['hostel_room_id'])): ?>
+                        <div class="student-reference-row student-reference-group"><strong>Hostel Details</strong></div>
+                        <div class="student-reference-row"><span>Hostel Room</span><strong><?= $detailValue($student['hostel_room_no'] ?? null) ?></strong></div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <div class="student-reference-panel" role="tabpanel" id="student-panel-fees" aria-labelledby="student-tab-fees" data-student-panel="fees" hidden>
+                <div class="student-reference-panel-heading"><h2>Fee history</h2><p>Recent invoices for this student</p></div>
+                <div class="student-reference-table-wrap"><table><thead><tr><th>Invoice</th><th>Fee Head</th><th>Amount</th><th>Status</th><th>Due Date</th></tr></thead><tbody>
+                    <?php if ($feeHistory === []): ?><tr><td colspan="5" class="student-reference-empty">No fee invoices found.</td></tr><?php else: foreach ($feeHistory as $invoice): ?><tr><td><?= View::escape($invoice['invoice_no']) ?></td><td><?= View::escape($invoice['fee_head']) ?></td><td>৳<?= number_format((float) $invoice['amount'], 2) ?></td><td><?= View::escape(ucfirst((string) $invoice['status'])) ?></td><td><?= !empty($invoice['due_date']) ? date('Y-m-d', strtotime((string) $invoice['due_date'])) : '—' ?></td></tr><?php endforeach; endif; ?>
+                </tbody></table></div>
+            </div>
+
+            <div class="student-reference-panel" role="tabpanel" id="student-panel-exam" aria-labelledby="student-tab-exam" data-student-panel="exam" hidden>
+                <div class="student-reference-panel-heading"><h2>Exam results</h2><p>Recent academic reports</p></div>
+                <div class="student-reference-table-wrap"><table><thead><tr><th>Examination</th><th>Academic Year</th><th>Marks</th><th>Class Position</th></tr></thead><tbody>
+                    <?php if ($recentReports === []): ?><tr><td colspan="4" class="student-reference-empty">No academic reports found.</td></tr><?php else: foreach ($recentReports as $report): ?><tr><td><?= View::escape($report['exam_name']) ?></td><td><?= View::escape($report['academic_year']) ?></td><td><?= (int) $report['obtained'] ?> / <?= (int) $report['full_marks'] ?></td><td><?= $report['class_position'] ? (int) $report['class_position'] : '—' ?></td></tr><?php endforeach; endif; ?>
+                </tbody></table></div>
+            </div>
+
+            <div class="student-reference-panel" role="tabpanel" id="student-panel-attendance" aria-labelledby="student-tab-attendance" data-student-panel="attendance" hidden>
+                <div class="student-reference-panel-heading"><h2>Attendance</h2><p>Attendance rate: <?= $attendanceRate !== null ? $attendanceRate . '%' : 'No records yet' ?> · Recorded: <?= $attendanceTotal ?></p></div>
+                <div class="student-reference-table-wrap"><table><thead><tr><th>Date</th><th>Status</th><th>Remarks</th></tr></thead><tbody>
+                    <?php if ($recentAttendance === []): ?><tr><td colspan="3" class="student-reference-empty">No attendance records found.</td></tr><?php else: foreach ($recentAttendance as $record): ?><tr><td><?= date('M j, Y', strtotime((string) $record['date'])) ?></td><td><?= View::escape(ucwords(str_replace('_', ' ', (string) $record['status']))) ?></td><td><?= View::escape($record['remarks'] ?: '—') ?></td></tr><?php endforeach; endif; ?>
+                </tbody></table></div>
+            </div>
+
+            <div class="student-reference-panel" role="tabpanel" id="student-panel-documents" aria-labelledby="student-tab-documents" data-student-panel="documents" hidden>
+                <div class="student-reference-panel-heading"><h2>Documents</h2><p>Files attached to this student record</p></div>
+                <div class="student-reference-table-wrap"><table><thead><tr><th>Document</th><th>Uploaded</th><th>File</th></tr></thead><tbody>
+                    <?php if (empty($documents)): ?><tr><td colspan="3" class="student-reference-empty">No documents uploaded.</td></tr><?php else: foreach ($documents as $document): ?><tr><td><?= View::escape($document['title']) ?></td><td><?= date('M j, Y', strtotime((string) $document['created_at'])) ?></td><td><a href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $document['file_path'])) ?>" target="_blank" rel="noopener">Open file</a></td></tr><?php endforeach; endif; ?>
+                </tbody></table></div>
+            </div>
+
+            <div class="student-reference-panel" role="tabpanel" id="student-panel-timeline" aria-labelledby="student-tab-timeline" data-student-panel="timeline" hidden>
+                <div class="student-reference-panel-heading"><h2>Student timeline</h2><p>Admission and previous enrollment history</p></div>
+                <div class="student-reference-table-wrap"><table><thead><tr><th>Academic Year</th><th>Class / Section</th><th>Roll</th><th>Status</th></tr></thead><tbody>
+                    <tr><td><?= View::escape($student['year_name']) ?></td><td><?= View::escape($student['class_name'] . ' / ' . $student['section_name']) ?></td><td><?= (int) $student['roll_no'] ?></td><td><?= View::escape(ucfirst((string) $student['status'])) ?></td></tr>
+                    <?php foreach ($enrollmentHistory as $enrollment): ?><tr><td><?= View::escape($enrollment['year_name']) ?></td><td><?= View::escape($enrollment['class_name'] . ' / ' . $enrollment['section_name']) ?></td><td><?= (int) $enrollment['roll_no'] ?></td><td><?= View::escape(ucfirst((string) $enrollment['status'])) ?></td></tr><?php endforeach; ?>
+                </tbody></table></div>
+            </div>
+
+            <div class="student-reference-panel" role="tabpanel" id="student-panel-behaviour" aria-labelledby="student-tab-behaviour" data-student-panel="behaviour" hidden>
+                <div class="student-reference-panel-heading"><h2>Student behaviour</h2><p>Behaviour records</p></div>
+                <p class="student-reference-empty student-reference-empty-panel">No behaviour records have been added for this student.</p>
+            </div>
+        </section>
+    </div>
+    <script>
+    (() => {
+        const tabs = document.querySelectorAll('[data-student-tab]');
+        const panels = document.querySelectorAll('[data-student-panel]');
+        tabs.forEach((tab) => {
+            tab.addEventListener('click', () => {
+                const selected = tab.dataset.studentTab;
+                tabs.forEach((item) => {
+                    const active = item === tab;
+                    item.setAttribute('aria-selected', active ? 'true' : 'false');
+                    item.tabIndex = active ? 0 : -1;
+                });
+                panels.forEach((panel) => { panel.hidden = panel.dataset.studentPanel !== selected; });
+            });
+            tab.addEventListener('keydown', (event) => {
+                if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+                event.preventDefault();
+                const list = Array.from(tabs);
+                const offset = event.key === 'ArrowRight' ? 1 : -1;
+                list[(list.indexOf(tab) + offset + list.length) % list.length].focus();
+            });
+        });
+    })();
+    </script>
 
     <div class="student-detail-screen-summary student-detail-print-grid mt-7 grid gap-5 lg:grid-cols-2">
         <section class="rounded-2xl border border-green-900/60 dashboard-gradient p-5 sm:p-6" aria-labelledby="student-profile-title">

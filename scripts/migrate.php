@@ -60,10 +60,12 @@ foreach (explode(';', $schema) as $statement) {
     }
 }
 
-// Student Bangla-name data has been retired from the student record.
-$studentBanglaNameColumn = $pdo->query("SHOW COLUMNS FROM students LIKE 'name_bn'")->fetch();
-if ($studentBanglaNameColumn !== false) {
-    $pdo->exec('ALTER TABLE students DROP COLUMN name_bn');
+// Bangla-name fields have been retired across the school records.
+foreach (['students', 'teachers', 'guardians', 'subjects', 'fee_heads', 'student_houses'] as $table) {
+    $columns = $pdo->query('SHOW COLUMNS FROM `' . $table . '`')->fetchAll(PDO::FETCH_COLUMN);
+    if (in_array('name_bn', $columns, true)) {
+        $pdo->exec('ALTER TABLE `' . $table . '` DROP COLUMN name_bn');
+    }
 }
 
 // Add a tenant key to school data while keeping control-plane tables global.
@@ -80,7 +82,7 @@ $branchTables = [
     'hostel_rooms', 'hostel_allocations', 'class_routines', 'exams', 'exam_schedules', 'exam_attendances',
     'exam_suggestions', 'academic_reports', 'academic_report_marks', 'report_configs', 'online_exams',
     'exam_questions', 'exam_submissions', 'certificates', 'sms_settings', 'payment_gateways', 'exam_seats',
-    'study_materials', 'lesson_plans',
+    'study_materials', 'lesson_plans', 'student_documents',
 ];
 $pdo->exec("INSERT INTO branches (name,is_main,status) SELECT 'Main Campus',1,'active' WHERE NOT EXISTS (SELECT 1 FROM branches)");
 $mainBranchId = (int) $pdo->query('SELECT id FROM branches ORDER BY is_main DESC,id ASC LIMIT 1')->fetchColumn();

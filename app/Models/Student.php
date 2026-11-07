@@ -68,12 +68,46 @@ final class Student
     public static function guardians(int $studentId): array
     {
         $statement = Database::connection()->prepare(
-            'SELECT g.id, g.name, g.relation, g.phone, g.email, sg.is_primary'
+            'SELECT g.id, g.name, g.relation, g.phone, g.email, g.occupation, g.address, g.photo, sg.is_primary,'
+            . ' (SELECT COUNT(*) FROM student_guardian sg2 WHERE sg2.guardian_id = g.id AND sg2.branch_id = g.branch_id) AS linked_students'
             . ' FROM student_guardian sg JOIN guardians g ON g.id = sg.guardian_id AND g.branch_id=sg.branch_id'
             . ' WHERE sg.student_id = :student_id AND sg.branch_id=:branch ORDER BY sg.is_primary DESC, g.name'
         );
         $statement->execute(['student_id' => $studentId, 'branch' => BranchContext::id()]);
         return $statement->fetchAll();
+    }
+
+    /** @return array<string, mixed>|null */
+    public static function primaryGuardian(int $studentId): ?array
+    {
+        $statement = Database::connection()->prepare(
+            'SELECT g.id, g.name, g.relation, g.phone, g.email, g.occupation, g.address, g.photo,'
+            . ' (SELECT COUNT(*) FROM student_guardian sg2 WHERE sg2.guardian_id = g.id AND sg2.branch_id = g.branch_id) AS linked_students'
+            . ' FROM student_guardian sg JOIN guardians g ON g.id = sg.guardian_id AND g.branch_id = sg.branch_id'
+            . ' WHERE sg.student_id = :student_id AND sg.branch_id = :branch'
+            . ' ORDER BY sg.is_primary DESC, sg.id ASC LIMIT 1'
+        );
+        $statement->execute(['student_id' => $studentId, 'branch' => BranchContext::id()]);
+        $guardian = $statement->fetch();
+        return $guardian ?: null;
+    }
+
+    public static function updateGuardian(int $guardianId, array $data): void
+    {
+        $data['id'] = $guardianId;
+        $data['branch_id'] = BranchContext::id();
+        Database::connection()->prepare(
+            'UPDATE guardians SET name = :name, relation = :relation, phone = :phone,'
+            . ' email = :email, occupation = :occupation, address = :address, photo = :photo, updated_at = NOW()'
+            . ' WHERE id = :id AND branch_id = :branch_id'
+        )->execute($data);
+    }
+
+    public static function deleteGuardianLink(int $studentId, int $guardianId): void
+    {
+        Database::connection()->prepare(
+            'DELETE FROM student_guardian WHERE student_id = :student_id AND guardian_id = :guardian_id AND branch_id = :branch'
+        )->execute(['student_id' => $studentId, 'guardian_id' => $guardianId, 'branch' => BranchContext::id()]);
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -92,7 +126,7 @@ final class Student
     /** Create a guardian record and return its id. */
     public static function createGuardian(array $data): int
     {
-        $statement = Database::connection()->prepare('INSERT INTO guardians (name, name_bn, relation, phone, email, occupation, address, photo, created_at, branch_id) VALUES (:name, :name_bn, :relation, :phone, :email, :occupation, :address, :photo, NOW(), :branch_id)');
+        $statement = Database::connection()->prepare('INSERT INTO guardians (name, relation, phone, email, occupation, address, photo, created_at, branch_id) VALUES (:name, :relation, :phone, :email, :occupation, :address, :photo, NOW(), :branch_id)');
         $statement->execute($data + ['branch_id' => BranchContext::id()]);
         return (int) Database::connection()->lastInsertId();
     }
@@ -241,7 +275,8 @@ final class Student
     public static function details(int $id): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT s.*, c.name AS class_name, sec.name AS section_name, ay.name AS year_name,'
+            'SELECT s.*, c.name AS class_name, sec.name AS section_name, ay.name AS year_name, sh.name AS house_name,'
+            . ' tr.name AS transport_route_name, ts.name AS transport_stop_name, hr.room_no AS hostel_room_no,'
             . ' (SELECT g.name FROM student_guardian sg JOIN guardians g ON g.id = sg.guardian_id AND g.branch_id=sg.branch_id'
             . ' WHERE sg.student_id = s.id AND sg.branch_id=s.branch_id ORDER BY sg.is_primary DESC, sg.id ASC LIMIT 1) AS guardian_name,'
             . ' (SELECT g.relation FROM student_guardian sg JOIN guardians g ON g.id = sg.guardian_id AND g.branch_id=sg.branch_id'
@@ -250,9 +285,19 @@ final class Student
             . ' WHERE sg.student_id = s.id AND sg.branch_id=s.branch_id ORDER BY sg.is_primary DESC, sg.id ASC LIMIT 1) AS guardian_phone,'
             . ' (SELECT g.email FROM student_guardian sg JOIN guardians g ON g.id = sg.guardian_id AND g.branch_id=sg.branch_id'
             . ' WHERE sg.student_id = s.id AND sg.branch_id=s.branch_id ORDER BY sg.is_primary DESC, sg.id ASC LIMIT 1) AS guardian_email'
+            . ', (SELECT g.occupation FROM student_guardian sg JOIN guardians g ON g.id = sg.guardian_id AND g.branch_id=sg.branch_id'
+            . ' WHERE sg.student_id = s.id AND sg.branch_id=s.branch_id ORDER BY sg.is_primary DESC, sg.id ASC LIMIT 1) AS guardian_occupation'
+            . ', (SELECT g.address FROM student_guardian sg JOIN guardians g ON g.id = sg.guardian_id AND g.branch_id=sg.branch_id'
+            . ' WHERE sg.student_id = s.id AND sg.branch_id=s.branch_id ORDER BY sg.is_primary DESC, sg.id ASC LIMIT 1) AS guardian_address'
+            . ', (SELECT g.photo FROM student_guardian sg JOIN guardians g ON g.id = sg.guardian_id AND g.branch_id=sg.branch_id'
+            . ' WHERE sg.student_id = s.id AND sg.branch_id=s.branch_id ORDER BY sg.is_primary DESC, sg.id ASC LIMIT 1) AS guardian_photo'
             . ' FROM students s JOIN classes c ON c.id = s.class_id AND c.branch_id=s.branch_id'
             . ' JOIN sections sec ON sec.id = s.section_id AND sec.branch_id=s.branch_id'
             . ' JOIN academic_years ay ON ay.id = s.academic_year_id AND ay.branch_id=s.branch_id'
+            . ' LEFT JOIN student_houses sh ON sh.id = s.house_id'
+            . ' LEFT JOIN transport_routes tr ON tr.id = s.transport_route_id'
+            . ' LEFT JOIN transport_stops ts ON ts.id = s.transport_stop_id AND ts.transport_route_id = s.transport_route_id'
+            . ' LEFT JOIN hostel_rooms hr ON hr.id = s.hostel_room_id'
             . ' WHERE s.id = :id AND s.branch_id=:branch LIMIT 1'
         );
         $stmt->execute(['id' => $id, 'branch' => BranchContext::id()]);
@@ -291,6 +336,61 @@ final class Student
         );
         $stmt->execute(['student_id' => $studentId, 'branch' => BranchContext::id()]);
         return $stmt->fetchAll();
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    public static function documents(int $studentId): array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT id, title, file_path, created_at FROM student_documents WHERE student_id = :student_id AND branch_id = :branch ORDER BY id ASC'
+        );
+        $stmt->execute(['student_id' => $studentId, 'branch' => BranchContext::id()]);
+        return $stmt->fetchAll();
+    }
+
+    public static function guardianById(int $guardianId): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT g.*, (SELECT COUNT(*) FROM student_guardian sg WHERE sg.guardian_id = g.id AND sg.branch_id = g.branch_id) AS linked_students'
+            . ' FROM guardians g WHERE g.id = :id AND g.branch_id = :branch LIMIT 1'
+        );
+        $stmt->execute(['id' => $guardianId, 'branch' => BranchContext::id()]);
+        $guardian = $stmt->fetch();
+        return $guardian ?: null;
+    }
+
+    public static function guardianLinkedToStudent(int $studentId, int $guardianId): bool
+    {
+        $stmt = Database::connection()->prepare('SELECT 1 FROM student_guardian WHERE student_id = :student_id AND guardian_id = :guardian_id AND branch_id = :branch LIMIT 1');
+        $stmt->execute(['student_id' => $studentId, 'guardian_id' => $guardianId, 'branch' => BranchContext::id()]);
+        return (bool) $stmt->fetchColumn();
+    }
+
+    public static function document(int $studentId, int $documentId): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT id, title, file_path FROM student_documents WHERE id = :id AND student_id = :student_id AND branch_id = :branch LIMIT 1'
+        );
+        $stmt->execute(['id' => $documentId, 'student_id' => $studentId, 'branch' => BranchContext::id()]);
+        $document = $stmt->fetch();
+        return $document ?: null;
+    }
+
+    public static function updateDocument(int $studentId, int $documentId, string $title, ?string $filePath = null): void
+    {
+        if ($filePath === null) {
+            $stmt = Database::connection()->prepare('UPDATE student_documents SET title = :title, updated_at = NOW() WHERE id = :id AND student_id = :student_id AND branch_id = :branch');
+            $stmt->execute(['title' => $title, 'id' => $documentId, 'student_id' => $studentId, 'branch' => BranchContext::id()]);
+            return;
+        }
+        $stmt = Database::connection()->prepare('UPDATE student_documents SET title = :title, file_path = :file_path, updated_at = NOW() WHERE id = :id AND student_id = :student_id AND branch_id = :branch');
+        $stmt->execute(['title' => $title, 'file_path' => $filePath, 'id' => $documentId, 'student_id' => $studentId, 'branch' => BranchContext::id()]);
+    }
+
+    public static function deleteDocument(int $studentId, int $documentId): void
+    {
+        Database::connection()->prepare('DELETE FROM student_documents WHERE id = :id AND student_id = :student_id AND branch_id = :branch')
+            ->execute(['id' => $documentId, 'student_id' => $studentId, 'branch' => BranchContext::id()]);
     }
 
     public static function recentReports(int $studentId): array
@@ -395,20 +495,25 @@ final class Student
 
     public static function update(int $id, array $data): void
     {
-        $data['id'] = $id;
-        $assignments = array_merge(
+        if (array_key_exists('year_id', $data)) {
+            $data['academic_year_id'] = $data['year_id'];
+            unset($data['year_id']);
+        }
+        $allowed = array_merge(
             ['name', 'class_id', 'section_id', 'shift', 'academic_year_id', 'roll_no', 'gender', 'status', 'photo', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'address'],
             self::EXTRA_COLUMNS
         );
-        $set = implode(', ', array_map(static fn (string $c): string => $c . ' = :' . $c, $assignments));
-        $stmt = Database::connection()->prepare('UPDATE students SET ' . $set . ' WHERE id = :id AND branch_id=:branch_id');
-        $stmt->execute($data + ['branch_id' => BranchContext::id()]);
+        $data = array_intersect_key($data, array_flip($allowed));
+        if ($data === []) return;
+        $set = implode(', ', array_map(static fn (string $column): string => $column . ' = :' . $column, array_keys($data)));
+        $stmt = Database::connection()->prepare('UPDATE students SET ' . $set . ' WHERE id = :id AND branch_id = :branch_id');
+        $stmt->execute($data + ['id' => $id, 'branch_id' => BranchContext::id()]);
     }
 
     public static function addDocument(int $studentId, string $title, string $filePath): void
     {
-        $stmt = Database::connection()->prepare('INSERT INTO student_documents (student_id, title, file_path, created_at) VALUES (:student_id, :title, :file_path, NOW())');
-        $stmt->execute(['student_id' => $studentId, 'title' => $title, 'file_path' => $filePath]);
+        $stmt = Database::connection()->prepare('INSERT INTO student_documents (student_id, title, file_path, created_at, branch_id) VALUES (:student_id, :title, :file_path, NOW(), :branch)');
+        $stmt->execute(['student_id' => $studentId, 'title' => $title, 'file_path' => $filePath, 'branch' => BranchContext::id()]);
     }
 
     public static function archive(int $id): void

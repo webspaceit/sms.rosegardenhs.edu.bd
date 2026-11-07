@@ -31,7 +31,6 @@ final class Teacher
             'fields' => [
                 ['name' => 'employee_id', 'label' => 'Employee ID', 'type' => 'text', 'required' => true, 'max' => 30],
                 ['name' => 'name', 'label' => 'Full name', 'type' => 'text', 'required' => true, 'max' => 150],
-                ['name' => 'name_bn', 'label' => 'Name in Bangla', 'type' => 'text', 'max' => 150],
                 ['name' => 'designation_id', 'label' => 'Designation', 'type' => 'select', 'options' => static fn (): array => Catalogue::designations()],
                 ['name' => 'department_id', 'label' => 'Department', 'type' => 'select', 'options' => static fn (): array => Catalogue::departments()],
                 ['name' => 'phone', 'label' => 'Phone', 'type' => 'text', 'max' => 20],
@@ -45,7 +44,7 @@ final class Teacher
                 ['name' => 'district', 'label' => 'District', 'type' => 'text', 'max' => 100],
                 ['name' => 'address', 'label' => 'Address', 'type' => 'textarea', 'rows' => 2],
             ],
-            'search' => ['t.name', 't.name_bn', 't.employee_id', 'd.name', 'dept.name'],
+            'search' => ['t.name', 't.employee_id', 'd.name', 'dept.name'],
             'order' => 't.name ASC',
         ];
     }

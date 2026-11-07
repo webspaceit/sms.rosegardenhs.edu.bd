@@ -73,19 +73,19 @@ function now(): string
 // ---------------------------------------------------------------------------
 
 $subjects = [
-    ['name' => 'Bangla', 'name_bn' => 'বাংলা', 'code' => 'BAN'],
-    ['name' => 'English', 'name_bn' => 'ইংরেজি', 'code' => 'ENG'],
-    ['name' => 'Mathematics', 'name_bn' => 'গণিত', 'code' => 'MATH'],
-    ['name' => 'BGS', 'name_bn' => 'বাংলাদেশ ও বিশ্বপরিচিতি', 'code' => 'BGS'],
-    ['name' => 'Science', 'name_bn' => 'বিজ্ঞান', 'code' => 'SCI'],
-    ['name' => 'Religion', 'name_bn' => 'ধর্ম', 'code' => 'REL'],
-    ['name' => 'ICT', 'name_bn' => 'তথ্য ও যোগাযোগ প্রযুক্তি', 'code' => 'ICT'],
-    ['name' => 'Arts & Crafts', 'name_bn' => 'চারুকলা', 'code' => 'ART'],
-    ['name' => 'Physical Education', 'name_bn' => 'শারীরিক শিক্ষা', 'code' => 'PE'],
-    ['name' => 'Agriculture', 'name_bn' => 'কৃষি শিক্ষা', 'code' => 'AGR'],
-    ['name' => 'Life & Livelihood', 'name_bn' => 'জীবন ও জীবিকা', 'code' => 'LNL'],
-    ['name' => 'Arabic', 'name_bn' => 'আরবি', 'code' => 'ARB'],
-    ['name' => 'Social Science', 'name_bn' => 'সমাজ বিজ্ঞান', 'code' => 'SS'],
+    ['name' => 'Bangla', 'code' => 'BAN'],
+    ['name' => 'English', 'code' => 'ENG'],
+    ['name' => 'Mathematics', 'code' => 'MATH'],
+    ['name' => 'BGS', 'code' => 'BGS'],
+    ['name' => 'Science', 'code' => 'SCI'],
+    ['name' => 'Religion', 'code' => 'REL'],
+    ['name' => 'ICT', 'code' => 'ICT'],
+    ['name' => 'Arts & Crafts', 'code' => 'ART'],
+    ['name' => 'Physical Education', 'code' => 'PE'],
+    ['name' => 'Agriculture', 'code' => 'AGR'],
+    ['name' => 'Life & Livelihood', 'code' => 'LNL'],
+    ['name' => 'Arabic', 'code' => 'ARB'],
+    ['name' => 'Social Science', 'code' => 'SS'],
 ];
 
 $subjectIds = [];
@@ -94,7 +94,7 @@ foreach ($subjects as $subject) {
     $find->execute(['name' => $subject['name']]);
     $id = $find->fetchColumn();
     if ($id === false) {
-        $statement = $pdo->prepare('INSERT INTO subjects (name, name_bn, code, type, created_at) VALUES (:name, :name_bn, :code, :type, :created_at)');
+        $statement = $pdo->prepare('INSERT INTO subjects (name, code, type, created_at) VALUES (:name, :code, :type, :created_at)');
         $statement->execute($subject + ['type' => 'core', 'created_at' => now()]);
         $id = $pdo->lastInsertId();
         $inserted++;
@@ -230,23 +230,22 @@ foreach ($teachers as $teacher) {
 // ---------------------------------------------------------------------------
 
 $guardians = [
-    ['name' => 'Md. Abdur Rahman', 'name_bn' => 'মোঃ আব্দুর রহমান', 'occupation' => 'Govt. Officer', 'relation' => 'Father', 'district' => 'Dhaka'],
-    ['name' => 'Mrs. Salma Begum', 'name_bn' => 'মিসেস সালমা বেগম', 'occupation' => 'Teacher', 'relation' => 'Mother', 'district' => 'Dhaka'],
-    ['name' => 'Md. Kamal Hossain', 'name_bn' => 'মোঃ কামাল হোসেন', 'occupation' => 'Businessman', 'relation' => 'Father', 'district' => 'Chattogram'],
-    ['name' => 'Md. Nurul Islam', 'name_bn' => 'মোঃ নুরুল ইসলাম', 'occupation' => 'Doctor', 'relation' => 'Father', 'district' => 'Rajshahi'],
-    ['name' => 'Mrs. Farida Yasmin', 'name_bn' => 'মিসেস ফরিদা ইয়াসমিন', 'occupation' => 'Housewife', 'relation' => 'Mother', 'district' => 'Khulna'],
-    ['name' => 'Md. Abdul Malek', 'name_bn' => 'মোঃ আব্দুল মালেক', 'occupation' => 'Engineer', 'relation' => 'Father', 'district' => 'Sylhet'],
-    ['name' => 'Md. Jahangir Alam', 'name_bn' => 'মোঃ জাহাঙ্গীর আলম', 'occupation' => 'Banker', 'relation' => 'Father', 'district' => 'Barishal'],
-    ['name' => 'Mrs. Nasrin Akhter', 'name_bn' => 'মিসেস নাসরিন আক্তার', 'occupation' => 'Nurse', 'relation' => 'Mother', 'district' => 'Rangpur'],
-    ['name' => 'Md. Shafiqul Islam', 'name_bn' => 'মোঃ শাফিকুল ইসলাম', 'occupation' => 'Lawyer', 'relation' => 'Father', 'district' => 'Mymensingh'],
-    ['name' => 'Md. Abu Bakkar Siddique', 'name_bn' => 'মোঃ আবু বক্কর সিদ্দিক', 'occupation' => 'Businessman', 'relation' => 'Father', 'district' => 'Dhaka'],
+    ['name' => 'Md. Abdur Rahman', 'occupation' => 'Govt. Officer', 'relation' => 'Father', 'district' => 'Dhaka'],
+    ['name' => 'Mrs. Salma Begum', 'occupation' => 'Teacher', 'relation' => 'Mother', 'district' => 'Dhaka'],
+    ['name' => 'Md. Kamal Hossain', 'occupation' => 'Businessman', 'relation' => 'Father', 'district' => 'Chattogram'],
+    ['name' => 'Md. Nurul Islam', 'occupation' => 'Doctor', 'relation' => 'Father', 'district' => 'Rajshahi'],
+    ['name' => 'Mrs. Farida Yasmin', 'occupation' => 'Housewife', 'relation' => 'Mother', 'district' => 'Khulna'],
+    ['name' => 'Md. Abdul Malek', 'occupation' => 'Engineer', 'relation' => 'Father', 'district' => 'Sylhet'],
+    ['name' => 'Md. Jahangir Alam', 'occupation' => 'Banker', 'relation' => 'Father', 'district' => 'Barishal'],
+    ['name' => 'Mrs. Nasrin Akhter', 'occupation' => 'Nurse', 'relation' => 'Mother', 'district' => 'Rangpur'],
+    ['name' => 'Md. Shafiqul Islam', 'occupation' => 'Lawyer', 'relation' => 'Father', 'district' => 'Mymensingh'],
+    ['name' => 'Md. Abu Bakkar Siddique', 'occupation' => 'Businessman', 'relation' => 'Father', 'district' => 'Dhaka'],
 ];
 
 foreach ($guardians as $index => $guardian) {
     $phone = '01711' . str_pad((string) (111111 + $index), 6, '0', STR_PAD_LEFT);
     put('guardians', 'phone', $phone, [
         'name' => $guardian['name'],
-        'name_bn' => $guardian['name_bn'],
         'phone' => $phone,
         'occupation' => $guardian['occupation'],
         'relation' => $guardian['relation'],
@@ -261,10 +260,10 @@ foreach ($guardians as $index => $guardian) {
 // ---------------------------------------------------------------------------
 
 $houses = [
-    ['name' => 'Robin', 'name_bn' => 'রবিন', 'color' => '#ef4444', 'description' => 'Red house'],
-    ['name' => 'Falcon', 'name_bn' => 'ফালকন', 'color' => '#3b82f6', 'description' => 'Blue house'],
-    ['name' => 'Tiger', 'name_bn' => 'টাইগার', 'color' => '#f59e0b', 'description' => 'Orange house'],
-    ['name' => 'Bear', 'name_bn' => 'বিয়ার', 'color' => '#10b981', 'description' => 'Green house'],
+    ['name' => 'Robin', 'color' => '#ef4444', 'description' => 'Red house'],
+    ['name' => 'Falcon', 'color' => '#3b82f6', 'description' => 'Blue house'],
+    ['name' => 'Tiger', 'color' => '#f59e0b', 'description' => 'Orange house'],
+    ['name' => 'Bear', 'color' => '#10b981', 'description' => 'Green house'],
 ];
 
 foreach ($houses as $house) {

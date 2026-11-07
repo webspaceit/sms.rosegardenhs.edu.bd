@@ -93,6 +93,7 @@ $appUser = Auth::user();
             body:has(#student-detail-print) #student-detail-print *{color:#111827!important;box-shadow:none!important}
             body:has(#student-detail-print) #student-detail-print .student-detail-status{background:transparent!important;background-color:transparent!important;border-color:transparent!important;color:#111827!important}
             body:has(#student-detail-print) .student-detail-web-header,body:has(#student-detail-print) .student-detail-actions,body:has(#student-detail-print) .student-detail-back,body:has(#student-detail-print) .student-detail-pdf-hint{display:none!important}
+            body:has(#student-detail-print) .student-reference-topline,body:has(#student-detail-print) .student-reference-layout{display:none!important}
             body:has(#student-detail-print) #student-detail-print .student-detail-pdf-heading{display:flex!important;align-items:center!important;gap:5mm!important;margin:0 0 5mm!important;padding:0 0 4mm!important;border-bottom:2px solid #047857!important;break-inside:avoid!important}
             body:has(#student-detail-print) #student-detail-print .student-detail-pdf-logo{display:block!important;width:17mm!important;height:17mm!important;object-fit:contain!important}
             body:has(#student-detail-print) #student-detail-print .student-detail-pdf-heading-copy{flex:1!important}
@@ -138,6 +139,67 @@ $appUser = Auth::user();
         .student-detail-pdf-hint strong{color:#d1fae5}
         .student-detail-pdf-summary{display:none}
         .student-detail-pdf-heading{display:none}
+        .student-detail-web-header{display:none}
+        @media screen{#student-detail-print .student-detail-print-history{display:none!important}}
+        #student-detail-print .student-detail-screen-summary{display:none!important}
+        #student-detail-print .student-detail-pdf-hint{display:none}
+        .student-reference-topline{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:1rem 0 1.25rem;padding:.15rem .25rem;color:#9aa9c1;font-size:.85rem}
+        .student-reference-topline>div{display:flex;align-items:center;gap:.8rem}
+        .student-reference-topline a{color:#94a3b8;text-decoration:none}
+        .student-reference-topline a:hover,.student-reference-details a{color:#22c1d6}
+        .student-reference-topline strong{color:#22c1d6;font-weight:600}
+        .student-reference-year{display:inline-flex;align-items:center;gap:.5rem;color:#a7b5cc}
+        .student-reference-layout{display:grid;grid-template-columns:16rem minmax(0,1fr);align-items:start;gap:1rem;color:#d7dfec}
+        .dashboard-shell main:has(.student-reference-layout){min-height:100vh;background:linear-gradient(180deg,#064e3b 0%,#064039 45%,#052e32 100%)!important;color:#f0fdf4}
+        .student-reference-card,.student-reference-details{overflow:hidden;border:1px solid rgba(167,243,208,.18);border-radius:1rem;background:linear-gradient(180deg,#064e3b 0%,#064039 45%,#052e32 100%);box-shadow:0 12px 32px rgba(0,0,0,.12)}
+        .student-reference-identity{padding:1.25rem 1rem 1rem;text-align:center}
+        .student-reference-avatar{display:grid;width:4.75rem;height:4.75rem;margin:0 auto .8rem;place-items:center;border:0;border-radius:50%;background:#e2e8f0;object-fit:cover;color:#94a3b8;font-size:2rem;font-weight:600}
+        .student-reference-identity h2{margin:0;color:#f1f5f9;font-size:1rem;font-weight:700}
+        .student-reference-identity p{margin:.22rem 0 0;color:#bbf7d0;font-size:.76rem}
+        .student-reference-identity p strong{color:#86efac;font-weight:600}
+        .student-reference-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid rgba(167,243,208,.16);border-bottom:1px solid rgba(167,243,208,.16)}
+        .student-reference-actions a,.student-reference-actions button{display:grid;min-height:2.4rem;place-items:center;border:0;border-right:1px solid rgba(167,243,208,.16);background:rgba(2,44,34,.22);color:#d1fae5;font-size:1rem;text-decoration:none;cursor:pointer}
+        .student-reference-actions a:last-child{border-right:0}
+        .student-reference-actions a:hover,.student-reference-actions button:hover{background:rgba(134,239,172,.12);color:#86efac}
+        .student-reference-facts{margin:0;padding:.15rem 0}
+        .student-reference-facts>div{display:flex;justify-content:space-between;gap:1rem;padding:.58rem .9rem;border-bottom:1px solid rgba(167,243,208,.14);font-size:.82rem}
+        .student-reference-facts dt{color:#bbf7d0}
+        .student-reference-facts dd{margin:0;color:#86efac;font-weight:600;text-align:right}
+        .student-reference-code-label{padding:.75rem .9rem .35rem;color:#bbf7d0;font-size:.74rem; text-align:center;}
+        .student-reference-code{height:2rem;margin:0 .8rem;background:repeating-linear-gradient(90deg,#a7f3d0 0 2px,transparent 2px 4px,#d1fae5 4px 5px,transparent 5px 8px,#86efac 8px 11px,transparent 11px 13px);opacity:.72}
+        .student-reference-code-value{padding:.35rem .9rem .9rem;color:#d1fae5;font-size:.72rem;letter-spacing:.08em;text-align:center}
+        .student-reference-qr{display:block;width:5.6rem;height:5.6rem;margin:0 auto 0rem;padding:.0rem;border-radius:.45rem;background:#fff;image-rendering:pixelated}
+        .student-reference-tabs{display:flex;overflow-x:auto;gap:0;border-bottom:1px solid rgba(167,243,208,.16);padding:0 .35rem;scrollbar-width:thin;scrollbar-color:#15803d transparent}
+        .student-reference-tabs [role=tab]{position:relative;flex:none;border:0;border-bottom:2px solid transparent;background:transparent;padding:.9rem .8rem .75rem;color:#bbf7d0;font-size:.84rem;white-space:nowrap;cursor:pointer}
+        .student-reference-tabs [role=tab]:hover{color:#f0fdf4}
+        .student-reference-tabs [role=tab][aria-selected=true]{border-bottom-color:#4ade80;color:#86efac}
+        .student-reference-tabs [role=tab]:focus-visible{outline:2px solid #86efac;outline-offset:-3px}
+        .student-reference-panel[hidden]{display:none!important}
+        .student-reference-panel{min-height:24rem;background:transparent}
+        .student-reference-rows{display:block}
+        .student-reference-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+        .student-reference-pair .student-reference-row{border-right:1px solid rgba(167,243,208,.14)}
+        .student-reference-pair .student-reference-row:last-child{border-right:0}
+        .student-reference-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);align-items:center;gap:1rem;min-height:2.55rem;padding:.55rem 1rem;border-bottom:1px solid rgba(167,243,208,.14);font-size:.84rem}
+        .student-reference-row>span{color:#bbf7d0}
+        .student-reference-row>strong{color:#f0fdf4;font-weight:600;overflow-wrap:anywhere}
+        .student-reference-photo{display:block;width:2.75rem;height:2.75rem;border:1px solid rgba(167,243,208,.25);border-radius:.5rem;object-fit:cover}
+        .student-reference-row.student-reference-group{grid-column:1/-1;min-height:2.6rem;background:rgba(2,44,34,.34)}
+        .student-reference-row.student-reference-group>strong{grid-column:1/-1;color:#f0fdf4}
+        .student-reference-panel-heading{padding:1.1rem 1rem .85rem;border-bottom:1px solid rgba(167,243,208,.16)}
+        .student-reference-panel-heading h2{margin:0;color:#f0fdf4;font-size:1rem;font-weight:700}
+        .student-reference-panel-heading p{margin:.35rem 0 0;color:#bbf7d0;font-size:.8rem}
+        .student-reference-table-wrap{overflow-x:auto}
+        .student-reference-table-wrap table{width:100%;border-collapse:collapse;color:#f0fdf4;font-size:.82rem}
+        .student-reference-table-wrap th,.student-reference-table-wrap td{padding:.75rem 1rem;border-bottom:1px solid rgba(167,243,208,.14);text-align:left;vertical-align:top}
+        .student-reference-table-wrap th{background:rgba(2,44,34,.34);color:#bbf7d0;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.045em}
+        .student-reference-table-wrap td{color:#f0fdf4}
+        .student-reference-table-wrap a{color:#86efac;text-decoration:none}
+        .student-reference-table-wrap a:hover{text-decoration:underline}
+        .student-reference-empty{padding:2rem 1rem!important;color:#d1fae5!important;text-align:center!important}
+        .student-reference-empty-panel{margin:0;padding:2rem 1rem;color:#d1fae5;text-align:center}
+        @media(max-width:900px){.student-reference-layout{grid-template-columns:13rem minmax(0,1fr)}}
+        @media(max-width:640px){.student-reference-topline{align-items:flex-start}.student-reference-year{font-size:.73rem}.student-reference-layout{grid-template-columns:minmax(0,1fr)}.student-reference-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.student-reference-identity{grid-column:1/-1}.student-reference-actions{grid-column:1/-1}.student-reference-facts{grid-column:1/-1}.student-reference-code-label:not(.student-reference-qr-label),.student-reference-code,.student-reference-code-value{display:none}.student-reference-qr-label,.student-reference-qr{grid-column:1/-1}.student-reference-row{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);padding:.55rem .75rem}.student-reference-pair{grid-template-columns:1fr}}
         .dashboard-shell main form button:not([class*="text-red-200"]):not([class*="text-rose-200"]){display:inline-flex;min-height:44px;align-items:center;gap:.7rem;border:1px solid rgba(187,247,208,.28);border-radius:.85rem;background:rgba(2,44,34,.5);padding:.4rem .85rem;color:#f0fdf4;font-size:.875rem;font-weight:600;transition:background-color .18s,border-color .18s,box-shadow .18s}
         .dashboard-shell main form button:not([class*="text-red-200"]):not([class*="text-rose-200"])::before{content:"＋";display:grid;height:2rem;width:2rem;flex:none;place-items:center;border:1px solid rgba(187,247,208,.24);border-radius:.65rem;background:rgba(134,239,172,.08);color:#bbf7d0;font-size:1rem}
         .dashboard-shell main form button:not([class*="text-red-200"]):not([class*="text-rose-200"])::after{content:"";height:.5rem;width:.5rem;flex:none;border-radius:999px;background:#f87171;box-shadow:0 0 9px rgba(239,35,60,.65)}
@@ -150,7 +212,7 @@ $appUser = Auth::user();
         .dashboard-shell main a[class*="rounded-lg"]:hover,.dashboard-shell main a[class*="rounded-md"]:hover{border-color:rgba(187,247,208,.48);background:rgba(134,239,172,.1);box-shadow:inset 0 0 18px rgba(34,197,94,.06),0 0 0 1px rgba(34,197,94,.08)}
         .dashboard-shell main a[class*="rounded-lg"]:focus-visible,.dashboard-shell main a[class*="rounded-md"]:focus-visible{outline:2px solid #86efac;outline-offset:2px}
         .dashboard-shell main table{background-color:rgba(11,52,37,.8)}
-        .dashboard-shell main table{border:1px solid rgba(74,222,128,.24);border-collapse:separate;border-spacing:0;border-radius:14px;box-shadow:0 0 0 1px rgba(34,197,94,.035)}
+        .dashboard-shell main table{/*border:1px solid rgba(74,222,128,.24);*/border-collapse:separate;border-spacing:0;border-radius:14px;box-shadow:0 0 0 1px rgba(34,197,94,.035)}
         .dashboard-shell main table th,.dashboard-shell main table td{border-right:1px solid rgba(74,222,128,.14)}
         .admit-list-shell{overflow:hidden;border:1px solid rgba(134,239,172,.2);border-radius:1.1rem;background:linear-gradient(145deg,rgba(8,67,48,.94),rgba(5,47,45,.96));box-shadow:0 16px 42px rgba(0,0,0,.16)}
         .admit-list-heading{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1.35rem 1.5rem;border-bottom:1px solid rgba(134,239,172,.18);background:linear-gradient(105deg,rgba(16,185,129,.14),rgba(6,78,59,.12))}
@@ -185,6 +247,10 @@ $appUser = Auth::user();
         .dashboard-shell main table.student-list-table tbody tr>td{border-bottom:1px solid rgba(74,222,128,.2)}
         .dashboard-shell main table.student-list-table tbody tr:last-child>td{border-bottom:0}
         .dashboard-shell main table tbody td[colspan]{background-color:rgba(2,44,34,.42)}
+        .dashboard-shell main .student-reference-table-wrap table{background:transparent!important}
+        .dashboard-shell main .student-reference-table-wrap table tbody{background:transparent!important}
+        .dashboard-shell main .student-reference-table-wrap table tbody tr,.dashboard-shell main .student-reference-table-wrap table tbody td{background:transparent!important}
+        .dashboard-shell main .student-reference-table-wrap table thead th{background:rgba(2,44,34,.34)!important}
         .toast-enter{animation:toast-in .2s ease-out}
         @keyframes toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
         .nav-group>summary{list-style:none;cursor:pointer}

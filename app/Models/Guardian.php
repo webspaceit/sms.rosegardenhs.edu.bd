@@ -26,7 +26,6 @@ final class Guardian
             ],
             'fields' => [
                 ['name' => 'name', 'label' => 'Full name', 'type' => 'text', 'required' => true, 'max' => 150],
-                ['name' => 'name_bn', 'label' => 'Name in Bangla', 'type' => 'text', 'max' => 150],
                 ['name' => 'relation', 'label' => 'Relation', 'type' => 'select', 'required' => true, 'default' => 'Father', 'options' => [
                     'Father' => 'Father',
                     'Mother' => 'Mother',
@@ -42,7 +41,7 @@ final class Guardian
                 ['name' => 'district', 'label' => 'District', 'type' => 'text', 'max' => 100],
                 ['name' => 'address', 'label' => 'Address', 'type' => 'textarea', 'rows' => 2],
             ],
-            'search' => ['name', 'name_bn', 'phone', 'occupation'],
+            'search' => ['name', 'phone', 'occupation'],
             'order' => 'name ASC',
         ];
     }

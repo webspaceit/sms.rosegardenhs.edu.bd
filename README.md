@@ -27,7 +27,7 @@ With WAMP, start Apache and MySQL from the WAMP tray menu and open `http://local
 ## Implemented modules
 
 - **Dashboard** — current academic year, active student/class/section counts, and recent student records.
-- **Student register** — search by English/Bangla name, student ID, or roll; filter by class and status; admit, edit, and archive student records. Registration captures date of birth, birth registration number, admission date, previous school, address, student photo and a linked guardian. New admissions include a final review step. Student IDs use `STU-YEAR-NNN` format.
+- **Student register** — search by name, student ID, or roll; filter by class and status; admit, edit, and archive student records. Registration captures date of birth, birth registration number, admission date, previous school, address, student photo and a linked guardian. New admissions include a final review step. Student IDs use `STU-YEAR-NNN` format.
 - **Enrollment history and promotion** — promote one active class cohort into a new academic year, assign destination rolls automatically, and retain the previous year/class/section/roll on each student detail page.
 - **Student data export** — download filtered student records as spreadsheet-safe UTF-8 CSV.
 - **Guardian links** — manage multiple linked guardians per student, with a primary contact, from each student's details.

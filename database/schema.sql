@@ -281,7 +281,6 @@ CREATE TABLE IF NOT EXISTS branches (
 CREATE TABLE IF NOT EXISTS subjects (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
-    name_bn VARCHAR(150) NULL,
     code VARCHAR(20) NULL,
     type VARCHAR(30) NOT NULL DEFAULT 'core',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -318,7 +317,6 @@ CREATE TABLE IF NOT EXISTS teachers (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     employee_id VARCHAR(30) NOT NULL,
     name VARCHAR(150) NOT NULL,
-    name_bn VARCHAR(150) NULL,
     department_id BIGINT UNSIGNED NULL,
     designation_id BIGINT UNSIGNED NULL,
     phone VARCHAR(20) NULL,
@@ -373,7 +371,6 @@ CREATE TABLE IF NOT EXISTS teacher_subject (
 CREATE TABLE IF NOT EXISTS guardians (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(150) NOT NULL,
-    name_bn VARCHAR(150) NULL,
     phone VARCHAR(20) NOT NULL,
     email VARCHAR(190) NULL,
     occupation VARCHAR(100) NULL,
@@ -404,7 +401,6 @@ CREATE TABLE IF NOT EXISTS student_guardian (
 CREATE TABLE IF NOT EXISTS student_houses (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
-    name_bn VARCHAR(150) NULL,
     color VARCHAR(20) NOT NULL DEFAULT '#0ea5a4',
     description VARCHAR(255) NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -420,7 +416,6 @@ CREATE TABLE IF NOT EXISTS student_houses (
 CREATE TABLE IF NOT EXISTS fee_heads (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(150) NOT NULL,
-    name_bn VARCHAR(150) NULL,
     frequency ENUM('monthly','yearly','one-time') NOT NULL DEFAULT 'monthly',
     is_optional TINYINT(1) NOT NULL DEFAULT 0,
     sort_order SMALLINT UNSIGNED NOT NULL DEFAULT 0,
@@ -1165,7 +1160,10 @@ CREATE TABLE IF NOT EXISTS student_documents (
     file_path VARCHAR(255) NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NULL,
+    branch_id BIGINT UNSIGNED NOT NULL DEFAULT 1,
     PRIMARY KEY (id),
     KEY student_documents_student_index (student_id),
-    CONSTRAINT student_documents_student_fk FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE
+    KEY student_documents_branch_index (branch_id),
+    CONSTRAINT student_documents_student_fk FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,
+    CONSTRAINT student_documents_branch_fk FOREIGN KEY (branch_id) REFERENCES branches (id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
