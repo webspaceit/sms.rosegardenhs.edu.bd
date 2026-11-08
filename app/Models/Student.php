@@ -521,4 +521,64 @@ final class Student
         $stmt = Database::connection()->prepare("UPDATE students SET status = 'inactive' WHERE id = :id AND status = 'active' AND branch_id=:branch");
         $stmt->execute(['id' => $id, 'branch' => BranchContext::id()]);
     }
+
+    /** @return array{0: int, 1: array<int, string>} Number deleted and owned upload paths to remove after commit. */
+    public static function deleteMany(array $ids): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids), static fn (int $id): bool => $id > 0)));
+        if ($ids === []) return [0, []];
+
+        $database = Database::connection();
+        $branchId = BranchContext::id();
+        $holders = [];
+        $parameters = ['branch_id' => $branchId];
+        foreach ($ids as $index => $id) {
+            $holder = 'student_' . $index;
+            $holders[] = ':' . $holder;
+            $parameters[$holder] = $id;
+        }
+        $in = implode(', ', $holders);
+
+        $database->beginTransaction();
+        try {
+            $studentsQuery = $database->prepare('SELECT id, photo, father_photo, mother_photo FROM students WHERE branch_id = :branch_id AND id IN (' . $in . ') FOR UPDATE');
+            $studentsQuery->execute($parameters);
+            $students = $studentsQuery->fetchAll();
+            if ($students === []) {
+                $database->commit();
+                return [0, []];
+            }
+
+            $validIds = array_map(static fn (array $student): int => (int) $student['id'], $students);
+            $filePaths = [];
+            foreach ($students as $student) {
+                foreach (['photo', 'father_photo', 'mother_photo'] as $field) {
+                    if (!empty($student[$field])) $filePaths[] = (string) $student[$field];
+                }
+            }
+
+            $validHolders = [];
+            $documentParameters = ['branch_id' => $branchId];
+            foreach ($validIds as $index => $id) {
+                $holder = 'document_student_' . $index;
+                $validHolders[] = ':' . $holder;
+                $documentParameters[$holder] = $id;
+            }
+            $documentsQuery = $database->prepare('SELECT file_path FROM student_documents WHERE branch_id = :branch_id AND student_id IN (' . implode(', ', $validHolders) . ')');
+            $documentsQuery->execute($documentParameters);
+            foreach ($documentsQuery->fetchAll(PDO::FETCH_COLUMN) as $path) {
+                if (is_string($path) && $path !== '') $filePaths[] = $path;
+            }
+
+            $delete = $database->prepare('DELETE FROM students WHERE branch_id = :branch_id AND id IN (' . implode(', ', $validHolders) . ')');
+            $delete->execute($documentParameters);
+            $deletedCount = $delete->rowCount();
+            $database->commit();
+
+            return [$deletedCount, array_values(array_unique($filePaths))];
+        } catch (\Throwable $error) {
+            if ($database->inTransaction()) $database->rollBack();
+            throw $error;
+        }
+    }
 }

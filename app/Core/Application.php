@@ -148,6 +148,7 @@ final class Application
         $router->post('/students/edit', [$students, 'update']);
         $router->post('/students/update', [$students, 'update']);
         $router->post('/students/archive', [$students, 'archive']);
+        $router->post('/students/delete-selected', [$students, 'deleteSelected']);
         $router->get('/students/guardians', [$students, 'guardians']);
         $router->post('/students/guardians/link', [$students, 'linkGuardian']);
         $router->post('/students/guardians/unlink', [$students, 'unlinkGuardian']);

@@ -8,6 +8,7 @@ use App\Core\AuditLog;
 use App\Core\BranchContext;
 use App\Core\Csrf;
 use App\Core\Database;
+use App\Core\Guard;
 use App\Core\Request;
 use App\Core\Toast;
 use App\Core\Url;
@@ -42,6 +43,7 @@ final class StudentController
             'page' => $page,
             'totalPages' => $totalPages,
             'totalStudents' => $totalStudents,
+            'canDeleteStudents' => Guard::can('students.edit'),
         ]);
     }
 
@@ -385,6 +387,52 @@ final class StudentController
         AuditLog::record('student.archived', 'students', (int) $request->input('id', 0));
         Toast::flash('Student record marked inactive.');
         header('Location: ' . Url::to('/students')); exit;
+    }
+
+    public function deleteSelected(Request $request): void
+    {
+        $this->requireSignIn();
+        if (!$this->verifyCsrf($request)) { return; }
+        Guard::requirePermission('students.edit');
+
+        $rawIds = $request->input('student_ids', []);
+        if (!is_array($rawIds)) $rawIds = [];
+        $ids = [];
+        foreach ($rawIds as $rawId) {
+            if (is_scalar($rawId) && filter_var((string) $rawId, FILTER_VALIDATE_INT) !== false) {
+                $id = (int) $rawId;
+                if ($id > 0) $ids[] = $id;
+            }
+        }
+        $ids = array_values(array_unique($ids));
+        if ($ids === [] || count($ids) > 100) {
+            Toast::flash($ids === [] ? 'Select at least one student to delete.' : 'Select no more than 100 students at a time.', 'error');
+            header('Location: ' . Url::to('/students')); exit;
+        }
+
+        try {
+            [$deletedCount, $files] = Student::deleteMany($ids);
+            foreach ($files as $file) Upload::delete($file);
+            if ($deletedCount > 0) {
+                AuditLog::record('students.deleted', 'students', null, ['count' => $deletedCount]);
+                Toast::flash($deletedCount . ' student ' . ($deletedCount === 1 ? 'record was' : 'records were') . ' permanently deleted with linked records.');
+            } else {
+                Toast::flash('No selected student records were found in this campus.', 'error');
+            }
+        } catch (\Throwable $error) {
+            error_log((string) $error);
+            Toast::flash('The selected student records could not be deleted. No changes were saved.', 'error');
+        }
+
+        $search = trim((string) $request->input('q', ''));
+        $classId = max(0, (int) $request->input('class_id', 0));
+        $status = (string) $request->input('status', '');
+        if (!in_array($status, ['', 'active', 'inactive', 'graduated'], true)) $status = '';
+        $perPage = (int) $request->input('per_page', 25);
+        if (!in_array($perPage, [10, 25, 50, 100], true)) $perPage = 25;
+        $page = max(1, (int) $request->input('page', 1));
+        $query = http_build_query(['q' => $search, 'class_id' => $classId, 'status' => $status, 'per_page' => $perPage, 'page' => $page]);
+        header('Location: ' . Url::to('/students?' . $query)); exit;
     }
 
     private function renderForm(?array $student): void
