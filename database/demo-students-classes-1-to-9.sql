@@ -1,4 +1,5 @@
--- Add clearly labeled, non-real sample student profiles for Classes 1–9.
+-- Add clearly labeled, non-real sample student profiles for every section
+-- in Classes 1–9 (two students per section).
 -- Run this file in phpMyAdmin after selecting the school database.
 -- Safe to repeat: it adds only missing SAMPLE records and fills only blank
 -- profile fields for existing students. Existing nonblank values are preserved.
@@ -21,7 +22,7 @@ SET @demo_year_name = (
     SELECT name FROM academic_years WHERE id = @demo_year_id LIMIT 1
 );
 
--- Ensure all nine class levels and a section A are available.
+-- Ensure all nine class levels and at least a section A are available.
 INSERT INTO classes (name, numeric_level, shift, branch_id)
 SELECT CONCAT('Class ', levels.level), levels.level, 'Day', @demo_branch_id
 FROM (
@@ -58,8 +59,9 @@ INSERT INTO demo_student_roster (class_level, slot, gender) VALUES
     (7,1,'Female'),(7,2,'Male'),(8,1,'Female'),(8,2,'Male'),
     (9,1,'Female'),(9,2,'Male');
 
--- Create two sample records for every class. Existing records and roll numbers
--- remain unchanged; sample roll numbers continue after the current maximum.
+-- Create two sample records for every existing section. Existing records and
+-- roll numbers remain unchanged; sample roll numbers continue after the
+-- current maximum in each section.
 INSERT INTO students (
     student_id, name, class_id, section_id, shift, academic_year_id, roll_no,
     gender, date_of_birth, birth_registration_no, admission_date, address,
@@ -69,8 +71,11 @@ INSERT INTO students (
     mother_phone, mother_occupation, branch_id
 )
 SELECT
-    CONCAT('SAMPLE-', @demo_year_name, '-C', LPAD(roster.class_level, 2, '0'), '-', LPAD(roster.slot, 2, '0')),
-    CONCAT('Demo Class ', roster.class_level, ' Student ', LPAD(roster.slot, 2, '0')),
+    CASE WHEN sec.name = 'A'
+        THEN CONCAT('SAMPLE-', @demo_year_name, '-C', LPAD(roster.class_level, 2, '0'), '-', LPAD(roster.slot, 2, '0'))
+        ELSE CONCAT('SAMPLE-', @demo_year_name, '-C', LPAD(roster.class_level, 2, '0'), '-SEC', LPAD(sec.id, 4, '0'), '-', LPAD(roster.slot, 2, '0'))
+    END,
+    CONCAT('Demo Class ', roster.class_level, ' Section ', sec.name, ' Student ', LPAD(roster.slot, 2, '0')),
     c.id, sec.id, 'Day', @demo_year_id,
     COALESCE((
         SELECT MAX(existing.roll_no) FROM students existing
@@ -80,28 +85,31 @@ SELECT
     ), 0) + roster.slot,
     roster.gender,
     DATE_SUB(CURDATE(), INTERVAL (6 + roster.class_level) YEAR),
-    CONCAT('DEMO-BR-', LPAD(roster.class_level, 2, '0'), LPAD(roster.slot, 2, '0')),
+    CONCAT('DEMO-BR-C', LPAD(roster.class_level, 2, '0'), '-S', LPAD(sec.id, 4, '0'), '-', LPAD(roster.slot, 2, '0')),
     DATE_ADD(@demo_year_start, INTERVAL 1 DAY),
     'Demo address, Dhaka', 'Demo value', 'Demo value',
-    CONCAT('010', LPAD(roster.class_level * 100 + roster.slot, 8, '0')),
-    CONCAT('student.c', roster.class_level, '.', roster.slot, '@example.invalid'),
+    CONCAT('010', LPAD(sec.id * 100 + roster.slot, 8, '0')),
+    CONCAT('student.c', roster.class_level, '.s', sec.id, '.', roster.slot, '@example.invalid'),
     'O+', 120 + roster.class_level, 25 + roster.class_level,
     DATE_ADD(@demo_year_start, INTERVAL 1 DAY),
     'Demo: no known medical conditions', 'Demo address, Dhaka', 'Demo address, Dhaka',
     'Sample data for demonstration only',
-    CONCAT('Demo father C', roster.class_level, '-', roster.slot),
-    CONCAT('010', LPAD(1000 + roster.class_level * 10 + roster.slot, 8, '0')),
+    CONCAT('Demo father C', roster.class_level, ' S', sec.id, '-', roster.slot),
+    CONCAT('010', LPAD(100000 + sec.id * 10 + roster.slot, 8, '0')),
     'Demo occupation',
-    CONCAT('Demo mother C', roster.class_level, '-', roster.slot),
-    CONCAT('010', LPAD(2000 + roster.class_level * 10 + roster.slot, 8, '0')),
+    CONCAT('Demo mother C', roster.class_level, ' S', sec.id, '-', roster.slot),
+    CONCAT('010', LPAD(200000 + sec.id * 10 + roster.slot, 8, '0')),
     'Demo occupation', @demo_branch_id
 FROM demo_student_roster roster
 JOIN classes c ON c.numeric_level = roster.class_level AND c.branch_id = @demo_branch_id
-JOIN sections sec ON sec.class_id = c.id AND sec.name = 'A' AND sec.branch_id = @demo_branch_id
+JOIN sections sec ON sec.class_id = c.id AND sec.branch_id = @demo_branch_id
 WHERE @demo_year_id IS NOT NULL
   AND NOT EXISTS (
       SELECT 1 FROM students existing
-      WHERE existing.student_id = CONCAT('SAMPLE-', @demo_year_name, '-C', LPAD(roster.class_level, 2, '0'), '-', LPAD(roster.slot, 2, '0'))
+      WHERE existing.student_id = CASE WHEN sec.name = 'A'
+          THEN CONCAT('SAMPLE-', @demo_year_name, '-C', LPAD(roster.class_level, 2, '0'), '-', LPAD(roster.slot, 2, '0'))
+          ELSE CONCAT('SAMPLE-', @demo_year_name, '-C', LPAD(roster.class_level, 2, '0'), '-SEC', LPAD(sec.id, 4, '0'), '-', LPAD(roster.slot, 2, '0'))
+      END
         AND existing.branch_id = @demo_branch_id
   );
 
@@ -175,12 +183,13 @@ WHERE s.branch_id IS NOT NULL
 
 DROP TEMPORARY TABLE demo_student_roster;
 
--- Confirm demo records exist by class level.
-SELECT c.name AS class_name, COUNT(s.id) AS sample_students
+-- Confirm demo records exist for every class and section.
+SELECT c.name AS class_name, sec.name AS section_name, COUNT(s.id) AS sample_students
 FROM classes c
-LEFT JOIN students s ON s.class_id = c.id AND s.branch_id = c.branch_id
+JOIN sections sec ON sec.class_id = c.id AND sec.branch_id = c.branch_id
+LEFT JOIN students s ON s.class_id = c.id AND s.section_id = sec.id AND s.branch_id = c.branch_id
     AND (s.student_id LIKE 'DEMO-%' OR s.student_id LIKE 'SAMPLE-%')
 WHERE c.numeric_level BETWEEN 1 AND 9
   AND c.branch_id = @demo_branch_id
-GROUP BY c.id, c.name, c.numeric_level
-ORDER BY c.numeric_level;
+GROUP BY c.id, c.name, c.numeric_level, sec.id, sec.name
+ORDER BY c.numeric_level, sec.name;

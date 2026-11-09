@@ -56,7 +56,7 @@ $columnCount = $canDeleteStudents ? 9 : 8;
                 <p class="mt-1 text-xs text-slate-400"><?= $totalStudents ?> total records</p>
             </div>
             <?php if ($canDeleteStudents): ?>
-                <form id="student-bulk-delete" method="post" action="<?= Url::to('/students/delete-selected') ?>" data-confirm="Permanently delete the selected student records and their related attendance, fee, exam, guardian-link, and document records? This cannot be undone." class="flex flex-wrap items-center gap-3">
+                <form id="student-bulk-delete" method="post" action="<?= Url::to('/students/delete-selected') ?>" data-no-ajax data-confirm="Permanently delete the selected student records and their related attendance, fee, exam, guardian-link, and document records? This cannot be undone." class="flex flex-wrap items-center gap-3">
                     <?= Csrf::field() ?>
                     <input type="hidden" name="q" value="<?= View::escape($search) ?>">
                     <input type="hidden" name="class_id" value="<?= $selectedClass ?>">

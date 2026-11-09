@@ -520,16 +520,25 @@ final class StudentController
         $sectionIsValid = in_array($sectionId, array_map(static fn (array $item): int => (int) $item['id'], $sections), true);
         preg_match_all('/./us', $name, $nameCharacters);
         $nameLength = isset($nameCharacters[0]) ? count($nameCharacters[0]) : strlen($name);
-        if ($name === '' || $nameLength > 150 || $roll < 1 || $roll > 65535 || !$year || !$sectionIsValid
-            || !in_array($gender, ['', 'Male', 'Female', 'Other'], true)
-            || !in_array($shift, ['', 'Morning', 'Day'], true)
-            || !in_array($status, ['active', 'inactive', 'graduated'], true)
-            || !$this->validDate($dateOfBirth, true) || !$this->validDate($admissionDate, false) || !$this->validDate($measurementDate, false)
-            || ($email !== '' && (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 190))
-            || ($height !== '' && !is_numeric($height)) || ($weight !== '' && !is_numeric($weight))
-            || strlen($birthRegistrationNo) > 50 || $this->textLength($previousSchool) > 190 || $this->textLength($address) > 10000) {
+        $validationIssues = [];
+        if ($name === '' || $nameLength > 150) $validationIssues[] = 'student name (required, up to 150 characters)';
+        if (!$year || !$sectionIsValid) $validationIssues[] = 'class, section, and academic year';
+        if ($roll < 1 || $roll > 65535) $validationIssues[] = 'roll number (1–65535)';
+        if (!in_array($gender, ['', 'Male', 'Female', 'Other'], true)) $validationIssues[] = 'gender';
+        if (!in_array($shift, ['', 'Morning', 'Day'], true)) $validationIssues[] = 'shift';
+        if (!in_array($status, ['active', 'inactive', 'graduated'], true)) $validationIssues[] = 'student status';
+        if (!$this->validDate($dateOfBirth, true)) $validationIssues[] = 'date of birth (must be valid and not in the future)';
+        if (!$this->validDate($admissionDate, false)) $validationIssues[] = 'admission date';
+        if (!$this->validDate($measurementDate, false)) $validationIssues[] = 'measurement date';
+        if ($email !== '' && (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 190)) $validationIssues[] = 'email address';
+        if ($height !== '' && !is_numeric($height)) $validationIssues[] = 'height (must be numeric)';
+        if ($weight !== '' && !is_numeric($weight)) $validationIssues[] = 'weight (must be numeric)';
+        if (strlen($birthRegistrationNo) > 50) $validationIssues[] = 'birth registration number (up to 50 characters)';
+        if ($this->textLength($previousSchool) > 190) $validationIssues[] = 'previous school (up to 190 characters)';
+        if ($this->textLength($address) > 10000) $validationIssues[] = 'address (up to 10,000 characters)';
+        if ($validationIssues !== []) {
             $this->rememberForm();
-            Toast::flash('Check the student name, class, section, year, roll number, dates, and field lengths.', 'error');
+            Toast::flash('Please check: ' . implode('; ', $validationIssues) . '.', 'error');
             return null;
         }
         $data = [

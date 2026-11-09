@@ -265,7 +265,7 @@
   document.addEventListener('submit', (event) => {
     if (event.defaultPrevented) return;
     const form = event.target;
-    if (!(form instanceof HTMLFormElement) || form.dataset.noAjax !== undefined) return;
+    if (!(form instanceof HTMLFormElement)) return;
     const submitter = event.submitter;
     if (form.dataset.confirm && !confirmedForms.has(form)) {
       event.preventDefault();
@@ -277,6 +277,7 @@
       return;
     }
     confirmedForms.delete(form);
+    if (form.dataset.noAjax !== undefined) return;
     const action = submitter?.formAction || form.action || window.location.href;
     const method = (submitter?.formMethod || form.method || 'GET').toUpperCase();
     const target = new URL(action, window.location.href);
