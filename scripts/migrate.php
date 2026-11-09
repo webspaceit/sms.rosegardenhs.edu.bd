@@ -529,6 +529,7 @@ $newColumns = [
         'weight' => 'DECIMAL(5,2) NULL AFTER height',
         'measurement_date' => 'DATE NULL AFTER weight',
         'medical_history' => 'TEXT NULL AFTER measurement_date',
+        'student_behaviour' => 'TEXT NULL AFTER medical_history',
         'current_address' => 'TEXT NULL AFTER medical_history',
         'permanent_address' => 'TEXT NULL AFTER current_address',
         'national_id' => 'VARCHAR(50) NULL AFTER permanent_address',

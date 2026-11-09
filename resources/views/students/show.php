@@ -2,11 +2,18 @@
 use App\Core\Url;
 use App\Core\View;
 use App\Core\QrCode;
+use App\Core\Barcode;
 
 $attendanceTotal = (int) ($attendanceSummary['total'] ?? 0);
 $attendanceAttended = (int) ($attendanceSummary['attended'] ?? 0);
 $attendanceRate = $attendanceTotal > 0 ? (int) round(($attendanceAttended / $attendanceTotal) * 100) : null;
-$studentIdQr = (new QrCode())->toDataUri((string) $student['student_id']);
+$requestHost = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost');
+if (!preg_match('/\A(?:[A-Za-z0-9.-]+|\[[A-Fa-f0-9:]+\])(?::[0-9]{1,5})?\z/D', $requestHost)) $requestHost = 'localhost';
+$forwardedProtocol = strtolower(trim(explode(',', (string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''))[0]));
+$requestScheme = (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off') || $forwardedProtocol === 'https' ? 'https' : 'http';
+$studentProfileUrl = $requestScheme . '://' . $requestHost . Url::to('/students/view?id=' . (int) $student['id']);
+$studentIdQr = (new QrCode())->toDataUri($studentProfileUrl);
+$studentIdBarcode = (new Barcode())->toDataUri((string) $student['student_id']);
 $statusClass = [
     'active' => 'border-green-300/20 bg-green-300/10 text-green-100',
     'inactive' => 'border-slate-200/15 bg-slate-200/10 text-slate-200',
@@ -73,8 +80,8 @@ $statusClass = [
                 <div><dt>Gender</dt><dd><?= $detailValue($student['gender']) ?></dd></div>
                 <div><dt>Status</dt><dd><?= View::escape(ucfirst((string) $student['status'])) ?></dd></div>
             </dl>
-            <div class="student-reference-code-label student-reference-qr-label">Student ID QR code</div>
-            <img class="student-reference-qr" src="<?= $studentIdQr ?>" alt="QR code for student ID <?= View::escape($student['student_id']) ?>" width="112" height="112">
+            <div class="student-reference-code-label student-reference-qr-label">Open student profile</div>
+            <img class="student-reference-qr" src="<?= $studentIdQr ?>" alt="QR code link to student profile <?= View::escape($student['student_id']) ?>" width="112" height="112">
             <div class="student-reference-code-label">Student ID</div>
             <div class="student-reference-code" aria-label="Student ID <?= View::escape($student['student_id']) ?>"></div>
             <div class="student-reference-code-value"><?= View::escape($student['student_id']) ?></div>
@@ -189,8 +196,8 @@ $statusClass = [
             </div>
 
             <div class="student-reference-panel" role="tabpanel" id="student-panel-behaviour" aria-labelledby="student-tab-behaviour" data-student-panel="behaviour" hidden>
-                <div class="student-reference-panel-heading"><h2>Student behaviour</h2><p>Behaviour records</p></div>
-                <p class="student-reference-empty student-reference-empty-panel">No behaviour records have been added for this student.</p>
+                <div class="student-reference-panel-heading"><h2>Student behaviour</h2><p>Notes from the student registration record</p></div>
+                <?php if (trim((string) ($student['student_behaviour'] ?? '')) !== ''): ?><p class="student-reference-empty-panel whitespace-pre-line"><?= View::escape((string) $student['student_behaviour']) ?></p><?php else: ?><p class="student-reference-empty student-reference-empty-panel">No student behaviour details have been recorded.</p><?php endif; ?>
             </div>
         </section>
     </div>
@@ -278,21 +285,78 @@ $statusClass = [
     </div>
 
     <section class="student-detail-pdf-summary mt-7" aria-label="Printable student details">
-        <table class="student-detail-pdf-table">
-            <thead><tr><th colspan="4">Student profile &amp; enrollment</th></tr></thead>
+        <table class="student-detail-pdf-table student-detail-pdf-student-table">
+            <colgroup><col class="student-detail-pdf-label-col"><col class="student-detail-pdf-value-col"><col class="student-detail-pdf-photo-col"></colgroup>
+            <thead><tr><th colspan="3">STUDENT DETAILS</th></tr></thead>
             <tbody>
-                <tr><th scope="row">Student name</th><td><?= View::escape($student['name']) ?></td><th scope="row">Student ID</th><td><?= View::escape($student['student_id']) ?></td></tr>
-                <tr><th scope="row">Class</th><td><?= View::escape($student['class_name']) ?></td><th scope="row">Section</th><td><?= View::escape($student['section_name']) ?></td></tr>
-                <tr><th scope="row">Roll number</th><td><?= (int) $student['roll_no'] ?></td><th scope="row">Academic year</th><td><?= View::escape($student['year_name']) ?></td></tr>
-                <tr><th scope="row">Gender</th><td><?= View::escape($student['gender'] ?: 'Not specified') ?></td><th scope="row">Status</th><td><?= View::escape(ucfirst((string) $student['status'])) ?></td></tr>
-                <tr><th scope="row">Date of birth</th><td><?= !empty($student['date_of_birth']) ? date('M j, Y', strtotime((string) $student['date_of_birth'])) : 'Not provided' ?></td><th scope="row">Admission date</th><td><?= !empty($student['admission_date']) ? date('M j, Y', strtotime((string) $student['admission_date'])) : 'Not provided' ?></td></tr>
-                <tr><th scope="row">Birth registration no.</th><td><?= View::escape($student['birth_registration_no'] ?: 'Not provided') ?></td><th scope="row">Previous school</th><td><?= View::escape($student['previous_school'] ?: 'Not provided') ?></td></tr>
-                <tr><th scope="row">Address</th><td colspan="3"><?= nl2br(View::escape($student['address'] ?: 'Not provided')) ?></td></tr>
-                <tr class="student-detail-pdf-section"><th colspan="4">Guardian details</th></tr>
-                <?php if (!empty($student['guardian_name'])): ?>
-                    <tr><th scope="row">Name</th><td><?= View::escape($student['guardian_name']) ?></td><th scope="row">Relation</th><td><?= View::escape($student['guardian_relation'] ?: 'Not provided') ?></td></tr>
-                    <tr><th scope="row">Phone</th><td><?= View::escape($student['guardian_phone'] ?: 'Not provided') ?></td><th scope="row">Email</th><td><?= View::escape($student['guardian_email'] ?: 'Not provided') ?></td></tr>
-                <?php else: ?><tr><td colspan="4">No guardian is linked to this student.</td></tr><?php endif; ?>
+                <tr><th scope="row">Name</th><td><?= View::escape($student['name']) ?></td><td class="student-detail-pdf-student-photo" rowspan="26"><?php if (!empty($student['photo'])): ?><img class="student-detail-pdf-photo" src="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $student['photo'])) ?>" alt="Student photo"><?php else: ?><span class="student-detail-pdf-photo-placeholder">No photo</span><?php endif; ?></td></tr>
+                <tr><th scope="row">Admission no.</th><td><?= View::escape($student['student_id']) ?></td></tr>
+                <tr><th scope="row">Roll no.</th><td><?= (int) $student['roll_no'] ?></td></tr>
+                <tr><th scope="row">Class</th><td><?= View::escape($student['class_name']) ?></td></tr>
+                <tr><th scope="row">Section</th><td><?= View::escape($student['section_name']) ?></td></tr>
+                <tr><th scope="row">Shift</th><td><?= $detailValue($student['shift'] ?? null) ?></td></tr>
+                <tr><th scope="row">Gender</th><td><?= $detailValue($student['gender'] ?? null) ?></td></tr>
+                <tr><th scope="row">Status</th><td><?= View::escape(ucfirst((string) $student['status'])) ?></td></tr>
+                <tr><th scope="row">Admission date</th><td><?= !empty($student['admission_date']) ? date('Y-m-d', strtotime((string) $student['admission_date'])) : '—' ?></td></tr>
+                <tr><th scope="row">Date of birth</th><td><?= !empty($student['date_of_birth']) ? date('Y-m-d', strtotime((string) $student['date_of_birth'])) : '—' ?></td></tr>
+                <tr><th scope="row">Birth certificate / local ID</th><td><?= $detailValue($student['birth_registration_no'] ?? null) ?></td></tr>
+                <tr><th scope="row">Academic year</th><td><?= View::escape($student['year_name']) ?></td></tr>
+                <tr><th scope="row">Religion</th><td><?= $detailValue($student['religion'] ?? null) ?></td></tr>
+                <tr><th scope="row">Caste</th><td><?= $detailValue($student['caste'] ?? null) ?></td></tr>
+                <tr><th scope="row">Mobile number</th><td><?= $detailValue($student['mobile_number'] ?? null) ?></td></tr>
+                <tr><th scope="row">Email</th><td><?= $detailValue($student['email'] ?? null) ?></td></tr>
+                <tr><th scope="row">Blood group</th><td><?= $detailValue($student['blood_group'] ?? null) ?></td></tr>
+                <tr><th scope="row">Student house</th><td><?= $detailValue($student['house_name'] ?? null) ?></td></tr>
+                <tr><th scope="row">Height</th><td><?= isset($student['height']) && $student['height'] !== null ? View::escape($student['height'] . ' cm') : '—' ?></td></tr>
+                <tr><th scope="row">Weight</th><td><?= isset($student['weight']) && $student['weight'] !== null ? View::escape($student['weight'] . ' kg') : '—' ?></td></tr>
+                <tr><th scope="row">Measurement date</th><td><?= !empty($student['measurement_date']) ? date('Y-m-d', strtotime((string) $student['measurement_date'])) : '—' ?></td></tr>
+                <tr><th scope="row">Medical history</th><td><?= nl2br($detailValue($student['medical_history'] ?? null)) ?></td></tr>
+                <tr><th scope="row">Student behaviour</th><td><?= nl2br($detailValue($student['student_behaviour'] ?? null)) ?></td></tr>
+                <tr><th scope="row">Previous school</th><td><?= nl2br($detailValue($student['previous_school'] ?? null)) ?></td></tr>
+                <tr><th scope="row">Note</th><td><?= nl2br($detailValue($student['note'] ?? null)) ?></td></tr>
+                <tr><th scope="row">Address</th><td><?= nl2br($detailValue($student['address'] ?? null)) ?></td></tr>
+
+            </tbody>
+        </table>
+
+        <table class="student-detail-pdf-table student-detail-pdf-student-table">
+            <colgroup><col class="student-detail-pdf-label-col"><col class="student-detail-pdf-value-col"><col class="student-detail-pdf-photo-col"></colgroup>
+            <thead><tr><th colspan="3">PARENT / GUARDIAN DETAIL</th></tr></thead>
+            <tbody>
+                <tr><th scope="row">Father name</th><td><?= $detailValue($fatherName) ?></td><td class="student-detail-pdf-student-photo" rowspan="3"><?php if (!empty($student['father_photo'])): ?><img class="student-detail-pdf-photo" src="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $student['father_photo'])) ?>" alt="Father photo"><?php else: ?><span class="student-detail-pdf-photo-placeholder">No photo</span><?php endif; ?></td></tr>
+                <tr><th scope="row">Father phone</th><td><?= $detailValue($fatherPhone) ?></td></tr>
+                <tr><th scope="row">Father occupation</th><td><?= $detailValue($fatherOccupation) ?></td></tr>
+                <tr><th scope="row">Mother name</th><td><?= $detailValue($motherName) ?></td><td class="student-detail-pdf-student-photo" rowspan="3"><?php if (!empty($student['mother_photo'])): ?><img class="student-detail-pdf-photo" src="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $student['mother_photo'])) ?>" alt="Mother photo"><?php else: ?><span class="student-detail-pdf-photo-placeholder">No photo</span><?php endif; ?></td></tr>
+                <tr><th scope="row">Mother phone</th><td><?= $detailValue($motherPhone) ?></td></tr>
+                <tr><th scope="row">Mother occupation</th><td><?= $detailValue($motherOccupation) ?></td></tr>
+                <tr><th scope="row">Guardian name</th><td><?= $detailValue($student['guardian_name'] ?? null) ?></td><td class="student-detail-pdf-student-photo" rowspan="6"><?php if (!empty($student['guardian_photo'])): ?><img class="student-detail-pdf-photo" src="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $student['guardian_photo'])) ?>" alt="Guardian photo"><?php else: ?><span class="student-detail-pdf-photo-placeholder">No photo</span><?php endif; ?></td></tr>
+                <tr><th scope="row">Guardian relation</th><td><?= $detailValue($student['guardian_relation'] ?? null) ?></td></tr>
+                <tr><th scope="row">Guardian phone</th><td><?= $detailValue($student['guardian_phone'] ?? null) ?></td></tr>
+                <tr><th scope="row">Guardian email</th><td><?= $detailValue($student['guardian_email'] ?? null) ?></td></tr>
+                <tr><th scope="row">Guardian occupation</th><td><?= $detailValue($student['guardian_occupation'] ?? null) ?></td></tr>
+                <tr><th scope="row">Guardian address</th><td><?= nl2br($detailValue($student['guardian_address'] ?? null)) ?></td></tr>
+            </tbody>
+        </table>
+
+        <table class="student-detail-pdf-table">
+            <tbody>
+
+                <tr class="student-detail-pdf-section"><th colspan="4">Add More Details</th></tr>
+                <tr><th scope="row">Current address</th><td colspan="3"><?= nl2br($detailValue($student['current_address'] ?: ($student['address'] ?? null))) ?></td></tr>
+                <tr><th scope="row">Permanent address</th><td colspan="3"><?= nl2br($detailValue($student['permanent_address'] ?? null)) ?></td></tr>
+                <tr><th scope="row">National identification number</th><td><?= $detailValue($student['national_id'] ?? null) ?></td><th scope="row">Local identification number</th><td><?= $detailValue($student['local_id'] ?? null) ?></td></tr>
+                <tr><th scope="row">Previous school details</th><td colspan="3"><?= nl2br($detailValue($student['previous_school'] ?? null)) ?></td></tr>
+                <tr><th scope="row">Note</th><td colspan="3"><?= nl2br($detailValue($student['note'] ?? null)) ?></td></tr>
+
+                <?php if (!empty($student['transport_route_id']) || !empty($student['transport_stop_id']) || !empty($student['transport_fees_month'])): ?>
+                    <tr class="student-detail-pdf-section"><th colspan="4">Transport Details</th></tr>
+                    <tr><th scope="row">Route list</th><td><?= $detailValue($student['transport_route_name'] ?? null) ?></td><th scope="row">Pickup point</th><td><?= $detailValue($student['transport_stop_name'] ?? null) ?></td></tr>
+                    <tr><th scope="row">Fees month</th><td colspan="3"><?= $detailValue($student['transport_fees_month'] ?? null) ?></td></tr>
+                <?php endif; ?>
+                <?php if (!empty($student['hostel_room_id'])): ?>
+                    <tr class="student-detail-pdf-section"><th colspan="4">Hostel Details</th></tr>
+                    <tr><th scope="row">Hostel room</th><td colspan="3"><?= $detailValue($student['hostel_room_no'] ?? null) ?></td></tr>
+                <?php endif; ?>
                 <tr class="student-detail-pdf-section"><th colspan="4">Attendance summary</th></tr>
                 <?php if ($attendanceTotal > 0): ?>
                     <tr><th scope="row">Attendance rate</th><td><?= $attendanceRate ?>%</td><th scope="row">Recorded</th><td><?= $attendanceTotal ?></td></tr>
@@ -312,8 +376,8 @@ $statusClass = [
 
         <section class="overflow-hidden rounded-2xl border border-green-900/60 dashboard-gradient" aria-labelledby="fee-history-title">
             <div class="border-b border-green-900/60 px-5 py-4"><h2 id="fee-history-title" class="font-semibold">Recent fee invoices</h2><p class="mt-1 text-xs text-white">Latest fee records for this student</p></div>
-            <div class="overflow-x-auto"><table class="admit-list-table w-full min-w-[500px] text-left text-sm"><thead class="text-sm uppercase tracking-wide text-green-100/55"><tr><th class="px-5 py-3 font-medium">Invoice</th><th class="px-5 py-3 font-medium">Fee head</th><th class="px-5 py-3 font-medium">Amount</th><th class="px-5 py-3 font-medium">Status</th></tr></thead><tbody class="divide-y divide-green-900/50">
-                <?php if ($feeHistory === []): ?><tr><td colspan="4" class="px-5 py-7 text-center text-white">No fee invoices found.</td></tr><?php else: foreach ($feeHistory as $invoice): ?><tr><td class="px-5 py-2 text-slate-300"><?= View::escape($invoice['invoice_no']) ?></td><td class="px-5 py-2 text-slate-300"><?= View::escape($invoice['fee_head']) ?></td><td class="px-5 py-2 text-slate-300">৳<?= number_format((float) $invoice['amount'], 2) ?></td><td class="px-5 py-2"><span class="student-detail-status rounded-full border border-green-100/10 bg-emerald-950/30 px-2.5 py-1 text-xs text-green-50/80"><?= View::escape(ucfirst((string) $invoice['status'])) ?></span></td></tr><?php endforeach; endif; ?>
+            <div class="overflow-x-auto"><table class="admit-list-table w-full min-w-[620px] text-left text-sm"><thead class="text-sm uppercase tracking-wide text-green-100/55"><tr><th class="px-5 py-3 font-medium">Invoice</th><th class="px-5 py-3 font-medium">Fee head</th><th class="px-5 py-3 font-medium">Amount</th><th class="px-5 py-3 font-medium">Status</th><th class="px-5 py-3 font-medium">Due date</th></tr></thead><tbody class="divide-y divide-green-900/50">
+                <?php if ($feeHistory === []): ?><tr><td colspan="5" class="px-5 py-7 text-center text-white">No fee invoices found.</td></tr><?php else: foreach ($feeHistory as $invoice): ?><tr><td class="px-5 py-2 text-slate-300"><?= View::escape($invoice['invoice_no']) ?></td><td class="px-5 py-2 text-slate-300"><?= View::escape($invoice['fee_head']) ?></td><td class="px-5 py-2 text-slate-300">৳<?= number_format((float) $invoice['amount'], 2) ?></td><td class="px-5 py-2"><span class="student-detail-status rounded-full border border-green-100/10 bg-emerald-950/30 px-2.5 py-1 text-xs text-green-50/80"><?= View::escape(ucfirst((string) $invoice['status'])) ?></span></td><td class="px-5 py-2 text-slate-300"><?= !empty($invoice['due_date']) ? date('M j, Y', strtotime((string) $invoice['due_date'])) : '—' ?></td></tr><?php endforeach; endif; ?>
             </tbody></table></div>
         </section>
 
@@ -326,6 +390,16 @@ $statusClass = [
             <div class="overflow-x-auto"><table class="admit-list-table w-full min-w-[520px] text-left text-sm"><thead class="text-sm uppercase tracking-wide text-green-100/55"><tr><th class="px-5 py-3 font-medium">Examination</th><th class="px-5 py-3 font-medium">Academic year</th><th class="px-5 py-3 font-medium">Marks</th><th class="px-5 py-3 font-medium">Class position</th></tr></thead><tbody class="divide-y divide-green-900/50">
                 <?php if ($recentReports === []): ?><tr><td colspan="4" class="px-5 py-7 text-center text-white">No academic reports found.</td></tr><?php else: foreach ($recentReports as $report): ?><tr><td class="px-5 py-2 font-medium text-slate-200"><?= View::escape($report['exam_name']) ?></td><td class="px-5 py-2 text-white"><?= View::escape($report['academic_year']) ?></td><td class="px-5 py-2 text-slate-300"><?= (int) $report['obtained'] ?> / <?= (int) $report['full_marks'] ?></td><td class="px-5 py-2 text-slate-300"><?= $report['class_position'] ? (int) $report['class_position'] : '—' ?></td></tr><?php endforeach; endif; ?>
             </tbody></table></div>
+        </section>
+        <section class="overflow-hidden rounded-2xl border border-green-900/60 dashboard-gradient xl:col-span-2" aria-labelledby="documents-history-title">
+            <div class="border-b border-green-900/60 px-5 py-4"><h2 id="documents-history-title" class="font-semibold">Student documents</h2><p class="mt-1 text-xs text-white">Files attached to this student profile</p></div>
+            <div class="overflow-x-auto"><table class="admit-list-table w-full min-w-[420px] text-left text-sm"><thead class="text-sm uppercase tracking-wide text-green-100/55"><tr><th class="px-5 py-3 font-medium">Document</th><th class="px-5 py-3 font-medium">Uploaded</th><th class="px-5 py-3 font-medium">File</th></tr></thead><tbody class="divide-y divide-green-900/50">
+                <?php if (empty($documents)): ?><tr><td colspan="3" class="px-5 py-7 text-center text-white">No documents uploaded.</td></tr><?php else: foreach ($documents as $document): ?><tr><td class="px-5 py-2 text-slate-300"><?= View::escape($document['title']) ?></td><td class="px-5 py-2 text-slate-300"><?= date('M j, Y', strtotime((string) $document['created_at'])) ?></td><td class="px-5 py-2 text-slate-300"><?= View::escape(basename((string) $document['file_path'])) ?></td></tr><?php endforeach; endif; ?>
+            </tbody></table></div>
+        </section>
+        <section class="overflow-hidden rounded-2xl border border-green-900/60 dashboard-gradient xl:col-span-2" aria-labelledby="behaviour-history-title">
+            <div class="border-b border-green-900/60 px-5 py-4"><h2 id="behaviour-history-title" class="font-semibold">Student behaviour</h2><p class="mt-1 text-xs text-white">Behaviour notes from the student profile</p></div>
+            <?php if (trim((string) ($student['student_behaviour'] ?? '')) !== ''): ?><p class="whitespace-pre-line px-5 py-4 text-sm text-white"><?= View::escape((string) $student['student_behaviour']) ?></p><?php else: ?><p class="px-5 py-4 text-sm text-white">No student behaviour details have been recorded.</p><?php endif; ?>
         </section>
     </div>
 </div>

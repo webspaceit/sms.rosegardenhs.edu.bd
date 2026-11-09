@@ -111,6 +111,7 @@ CREATE TABLE IF NOT EXISTS students (
     weight DECIMAL(5,2) NULL,
     measurement_date DATE NULL,
     medical_history TEXT NULL,
+    student_behaviour TEXT NULL,
     current_address TEXT NULL,
     permanent_address TEXT NULL,
     national_id VARCHAR(50) NULL,
@@ -1167,3 +1168,4 @@ CREATE TABLE IF NOT EXISTS student_documents (
     CONSTRAINT student_documents_student_fk FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,
     CONSTRAINT student_documents_branch_fk FOREIGN KEY (branch_id) REFERENCES branches (id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

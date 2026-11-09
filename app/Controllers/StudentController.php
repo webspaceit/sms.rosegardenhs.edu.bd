@@ -496,6 +496,7 @@ final class StudentController
         $weight = trim((string) $value('weight'));
         $measurementDate = trim((string) $value('measurement_date'));
         $medicalHistory = trim((string) $value('medical_history'));
+        $studentBehaviour = trim((string) $value('student_behaviour'));
         $currentAddress = trim((string) $value('current_address'));
         $permanentAddress = trim((string) $value('permanent_address'));
         $nationalId = trim((string) $value('national_id'));
@@ -536,6 +537,7 @@ final class StudentController
         if (strlen($birthRegistrationNo) > 50) $validationIssues[] = 'birth registration number (up to 50 characters)';
         if ($this->textLength($previousSchool) > 190) $validationIssues[] = 'previous school (up to 190 characters)';
         if ($this->textLength($address) > 10000) $validationIssues[] = 'address (up to 10,000 characters)';
+        if ($this->textLength($studentBehaviour) > 5000) $validationIssues[] = 'student behaviour (up to 5,000 characters)';
         if ($validationIssues !== []) {
             $this->rememberForm();
             Toast::flash('Please check: ' . implode('; ', $validationIssues) . '.', 'error');
@@ -564,6 +566,7 @@ final class StudentController
             'weight' => $weight !== '' ? $weight : null,
             'measurement_date' => $measurementDate !== '' ? $measurementDate : null,
             'medical_history' => $medicalHistory !== '' ? $medicalHistory : null,
+            'student_behaviour' => $studentBehaviour !== '' ? $studentBehaviour : null,
             'current_address' => $currentAddress !== '' ? $currentAddress : null,
             'permanent_address' => $permanentAddress !== '' ? $permanentAddress : null,
             'national_id' => $nationalId !== '' ? $nationalId : null,
@@ -679,7 +682,7 @@ final class StudentController
 
     private function rememberForm(): void
     {
-        $allowed = ['name', 'class_id', 'section_id', 'shift', 'roll_no', 'gender', 'status', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'address', 'religion', 'caste', 'mobile_number', 'email', 'blood_group', 'height', 'weight', 'measurement_date', 'medical_history', 'current_address', 'permanent_address', 'national_id', 'local_id', 'note', 'house_id', 'transport_route_id', 'transport_stop_id', 'transport_fees_month', 'hostel_room_id', 'father_name', 'father_phone', 'father_occupation', 'mother_name', 'mother_phone', 'mother_occupation', 'guardian_mode', 'guardian_action', 'guardian_id', 'guardian_name', 'guardian_relation', 'guardian_phone', 'guardian_email', 'guardian_occupation', 'guardian_address', 'document_count'];
+        $allowed = ['name', 'class_id', 'section_id', 'shift', 'roll_no', 'gender', 'status', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'address', 'religion', 'caste', 'mobile_number', 'email', 'blood_group', 'height', 'weight', 'measurement_date', 'medical_history', 'student_behaviour', 'current_address', 'permanent_address', 'national_id', 'local_id', 'note', 'house_id', 'transport_route_id', 'transport_stop_id', 'transport_fees_month', 'hostel_room_id', 'father_name', 'father_phone', 'father_occupation', 'mother_name', 'mother_phone', 'mother_occupation', 'guardian_mode', 'guardian_action', 'guardian_id', 'guardian_name', 'guardian_relation', 'guardian_phone', 'guardian_email', 'guardian_occupation', 'guardian_address', 'document_count'];
         $old = [];
         foreach ($allowed as $key) {
             if (isset($_POST[$key]) && is_scalar($_POST[$key])) $old[$key] = (string) $_POST[$key];

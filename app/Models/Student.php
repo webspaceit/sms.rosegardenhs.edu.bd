@@ -476,7 +476,7 @@ final class Student
 
     private const EXTRA_COLUMNS = [
         'religion', 'caste', 'mobile_number', 'email', 'blood_group', 'height', 'weight',
-        'measurement_date', 'medical_history', 'current_address', 'permanent_address',
+        'measurement_date', 'medical_history', 'student_behaviour', 'current_address', 'permanent_address',
         'national_id', 'local_id', 'note', 'house_id', 'transport_route_id', 'transport_stop_id',
         'transport_fees_month', 'hostel_room_id', 'father_name', 'father_phone', 'father_occupation',
         'father_photo', 'mother_name', 'mother_phone', 'mother_occupation', 'mother_photo',
