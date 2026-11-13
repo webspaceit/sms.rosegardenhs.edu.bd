@@ -72,7 +72,7 @@ foreach (['students', 'teachers', 'guardians', 'subjects', 'fee_heads', 'student
 // Existing records are assigned to the main campus, preserving single-branch
 // installations and making the migration safe to repeat.
 $branchTables = [
-    'users', 'audit_logs', 'academic_years', 'classes', 'sections', 'students', 'student_enrollment_history',
+    'users', 'audit_logs', 'academic_years', 'classes', 'sections', 'students', 'student_enrollment_history', 'academic_groups',
     'notices', 'holidays', 'events', 'complaints', 'school_settings', 'subjects', 'class_subject',
     'teachers', 'designations', 'teacher_subject', 'guardians', 'student_guardian', 'student_houses',
     'shifts', 'departments', 'fee_heads', 'fee_structures', 'fee_collections', 'fee_discounts', 'fee_carry_forwards',
@@ -108,6 +108,7 @@ foreach ($branchTables as $table) {
 // Scope historically global natural keys by campus so each branch can use
 // its own class labels, subjects, and student identifiers.
 $branchUniqueKeys = [
+    'academic_groups' => ['academic_groups_name_unique' => 'name'],
     'academic_years' => ['academic_years_name_unique' => 'name'],
     'classes' => ['classes_name_unique' => 'name', 'classes_numeric_level_unique' => 'numeric_level'],
     'students' => ['students_student_id_unique' => 'student_id'],
@@ -156,6 +157,15 @@ foreach (['Morning', 'Day'] as $shiftName) {
     }
 }
 
+// Seed the standard Class 9 groups independently for every campus. This is
+// repeatable and never overwrites custom group names or student assignments.
+$seedAcademicGroup = $pdo->prepare('INSERT INTO academic_groups (name, branch_id) SELECT :name, :branch WHERE NOT EXISTS (SELECT 1 FROM academic_groups WHERE name = :existing_name AND branch_id = :existing_branch)');
+foreach ($pdo->query('SELECT id FROM branches')->fetchAll(PDO::FETCH_COLUMN) as $branchId) {
+    foreach (['Science', 'Business Studies', 'Humanities', 'S.S.C Vocational'] as $groupName) {
+        $seedAcademicGroup->execute(['name' => $groupName, 'branch' => $branchId, 'existing_name' => $groupName, 'existing_branch' => $branchId]);
+    }
+}
+
 // Columns added after a table already exists in the field need an explicit
 // alteration, because CREATE TABLE IF NOT EXISTS leaves the table untouched.
 $columns = [
@@ -164,6 +174,7 @@ $columns = [
         'link_id' => 'BIGINT UNSIGNED NULL AFTER link_type',
     ],
     'students' => [
+        'academic_group' => 'VARCHAR(50) NULL AFTER section_id',
         'photo' => 'VARCHAR(255) NULL AFTER gender',
         'date_of_birth' => 'DATE NULL AFTER photo',
         'birth_registration_no' => 'VARCHAR(50) NULL AFTER date_of_birth',

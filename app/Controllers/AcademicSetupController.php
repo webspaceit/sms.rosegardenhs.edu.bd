@@ -10,6 +10,7 @@ use App\Core\Toast;
 use App\Core\Url;
 use App\Core\View;
 use App\Models\AcademicSetup;
+use App\Models\AcademicGroup;
 use PDOException;
 
 final class AcademicSetupController
@@ -23,6 +24,81 @@ final class AcademicSetupController
             'years' => AcademicSetup::years(),
             'classes' => AcademicSetup::classes(),
         ]);
+    }
+
+    public function academicGroups(Request $request): void
+    {
+        $this->requireAdmin();
+        View::render('academics/groups', [
+            'title' => 'Academic groups',
+            'user' => Auth::user(),
+            'groups' => AcademicGroup::all(),
+        ]);
+    }
+
+    public function storeAcademicGroup(Request $request): void
+    {
+        $this->requireAdmin();
+        if (!$this->verifyGroupCsrf($request)) return;
+        $name = trim((string) $request->input('name', ''));
+        if (!$this->validGroupName($name)) {
+            Toast::flash('Enter a group name up to 100 characters.', 'error');
+            header('Location: ' . Url::to('/academic-groups')); exit;
+        }
+        try {
+            AcademicGroup::create($name);
+            Toast::flash('Academic group added.');
+        } catch (PDOException $error) {
+            error_log((string) $error);
+            Toast::flash('That academic group already exists or could not be saved.', 'error');
+        }
+        header('Location: ' . Url::to('/academic-groups')); exit;
+    }
+
+    public function updateAcademicGroup(Request $request): void
+    {
+        $this->requireAdmin();
+        if (!$this->verifyGroupCsrf($request)) return;
+        $id = (int) $request->input('id', 0);
+        $name = trim((string) $request->input('name', ''));
+        if ($id < 1 || !$this->validGroupName($name)) {
+            Toast::flash('Enter a valid academic group name.', 'error');
+            header('Location: ' . Url::to('/academic-groups')); exit;
+        }
+        try {
+            if (AcademicGroup::rename($id, $name)) Toast::flash('Academic group updated.');
+            else Toast::flash('Academic group not found.', 'error');
+        } catch (PDOException $error) {
+            error_log((string) $error);
+            Toast::flash('That academic group name already exists or could not be saved.', 'error');
+        }
+        header('Location: ' . Url::to('/academic-groups')); exit;
+    }
+
+    public function deleteAcademicGroup(Request $request): void
+    {
+        $this->requireAdmin();
+        if (!$this->verifyGroupCsrf($request)) return;
+        $result = AcademicGroup::delete((int) $request->input('id', 0));
+        if ($result === 'deleted') Toast::flash('Academic group deleted.');
+        elseif ($result === 'in_use') Toast::flash('This group is assigned to students. Change or remove those assignments before deleting it.', 'error');
+        else Toast::flash('Academic group not found.', 'error');
+        header('Location: ' . Url::to('/academic-groups')); exit;
+    }
+
+    private function verifyGroupCsrf(Request $request): bool
+    {
+        if (Csrf::verify($request)) return true;
+        http_response_code(419);
+        Toast::flash('Your session expired. Please try again.', 'error');
+        header('Location: ' . Url::to('/academic-groups'), true, 419); exit;
+    }
+
+    private function validGroupName(string $name): bool
+    {
+        preg_match_all('/./us', $name, $characters);
+        $length = isset($characters[0]) ? count($characters[0]) : strlen($name);
+        return $name !== '' && $length <= 100;
     }
 
     public function storeYear(Request $request): void

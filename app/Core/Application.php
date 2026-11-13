@@ -167,6 +167,10 @@ final class Application
         $router->post('/academics/years/current', [$academics, 'setCurrentYear']);
         $router->post('/academics/classes', [$academics, 'storeClass']);
         $router->post('/academics/sections', [$academics, 'storeSection']);
+        $router->get('/academic-groups', [$academics, 'academicGroups']);
+        $router->post('/academic-groups/create', [$academics, 'storeAcademicGroup']);
+        $router->post('/academic-groups/update', [$academics, 'updateAcademicGroup']);
+        $router->post('/academic-groups/delete', [$academics, 'deleteAcademicGroup']);
 
         // Communication
         $this->crud($router, new Crud(Notice::module()), '/notices');

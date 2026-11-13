@@ -208,7 +208,7 @@ final class Student
 
     public static function listing(string $search = '', int $classId = 0, string $status = '', int $limit = 25, int $offset = 0, int $yearId = 0): array
     {
-        $sql = 'SELECT s.id, s.student_id, s.name, s.roll_no, s.gender, s.status, s.archive_reason,
+        $sql = 'SELECT s.id, s.student_id, s.name, s.roll_no, s.gender, s.status, s.archive_reason, s.academic_group,
                        c.name AS class_name, sec.name AS section_name, ay.name AS year_name
                 FROM students s
                 INNER JOIN classes c ON c.id = s.class_id AND c.branch_id=s.branch_id
@@ -431,6 +431,14 @@ final class Student
         return Database::connection()->query('SELECT id, name, numeric_level, shift FROM classes WHERE branch_id=' . BranchContext::id() . ' ORDER BY numeric_level')->fetchAll();
     }
 
+    public static function classLevel(int $classId): ?int
+    {
+        $stmt = Database::connection()->prepare('SELECT numeric_level FROM classes WHERE id=:id AND branch_id=:branch LIMIT 1');
+        $stmt->execute(['id' => $classId, 'branch' => BranchContext::id()]);
+        $level = $stmt->fetchColumn();
+        return $level === false ? null : (int) $level;
+    }
+
     public static function sections(int $classId): array
     {
         $stmt = Database::connection()->prepare('SELECT id, name FROM sections WHERE class_id = :class_id AND branch_id=:branch ORDER BY name');
@@ -479,7 +487,7 @@ final class Student
     }
 
     private const EXTRA_COLUMNS = [
-        'religion', 'caste', 'mobile_number', 'email', 'blood_group', 'height', 'weight',
+        'academic_group', 'religion', 'caste', 'mobile_number', 'email', 'blood_group', 'height', 'weight',
         'measurement_date', 'medical_history', 'student_behaviour', 'current_address', 'permanent_address',
         'national_id', 'local_id', 'note', 'house_id', 'transport_route_id', 'transport_stop_id',
         'transport_fees_month', 'hostel_room_id', 'father_name', 'father_phone', 'father_occupation',

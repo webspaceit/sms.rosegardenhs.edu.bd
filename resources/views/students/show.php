@@ -77,6 +77,7 @@ $statusClass = [
             <dl class="student-reference-facts">
                 <div><dt>Class</dt><dd><?= $detailValue($student['class_name']) ?></dd></div>
                 <div><dt>Section</dt><dd><?= $detailValue($student['section_name']) ?></dd></div>
+                <?php if (!empty($student['academic_group'])): ?><div><dt>Academic group</dt><dd><?= View::escape($student['academic_group']) ?></dd></div><?php endif; ?>
                 <div><dt>Gender</dt><dd><?= $detailValue($student['gender']) ?></dd></div>
                 <div><dt>Status</dt><dd><?= View::escape(ucfirst((string) $student['status'])) ?></dd></div>
                 <?php if (($student['status'] ?? '') === 'inactive' && !empty($student['archive_reason'])): ?><div class="student-reference-archive-reason"><dt>Archive reason</dt><dd><?= nl2br($detailValue($student['archive_reason'])) ?></dd></div><?php endif; ?>
@@ -101,7 +102,9 @@ $statusClass = [
                         'Admission Date' => !empty($student['admission_date']) ? \App\Core\DateFormatter::format($student['admission_date']) : '—',
                         'Date Of Birth' => !empty($student['date_of_birth']) ? \App\Core\DateFormatter::format($student['date_of_birth']) : '—',
                         'Birth Registration No.' => $student['birth_registration_no'] ?? null,
-                        'Shift' => $student['shift'] ?? null, 'Mobile Number' => $student['mobile_number'] ?? null,
+                        'Shift' => $student['shift'] ?? null,
+                        ...(!empty($student['academic_group']) ? ['Academic Group' => $student['academic_group']] : []),
+                        'Mobile Number' => $student['mobile_number'] ?? null,
                         'Email' => $student['email'] ?? null, 'Medical History' => $student['medical_history'] ?? null,
                         'Note' => $student['note'] ?? null,
                     ] as $label => $value): ?><div class="student-reference-row"><span><?= View::escape($label) ?></span><strong><?= $detailValue($value) ?></strong></div><?php endforeach; ?>
@@ -290,11 +293,12 @@ $statusClass = [
             <colgroup><col class="student-detail-pdf-label-col"><col class="student-detail-pdf-value-col"><col class="student-detail-pdf-photo-col"></colgroup>
             <thead><tr><th colspan="3">STUDENT DETAILS</th></tr></thead>
             <tbody>
-                <tr><th scope="row">Name</th><td><?= View::escape($student['name']) ?></td><td class="student-detail-pdf-student-photo" rowspan="<?= ($student['status'] ?? '') === 'inactive' && !empty($student['archive_reason']) ? 26 : 25 ?>"><?php if (!empty($student['photo'])): ?><img class="student-detail-pdf-photo" src="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $student['photo'])) ?>" alt="Student photo"><?php else: ?><span class="student-detail-pdf-photo-placeholder">No photo</span><?php endif; ?></td></tr>
+                <tr><th scope="row">Name</th><td><?= View::escape($student['name']) ?></td><td class="student-detail-pdf-student-photo" rowspan="<?= 25 + (!empty($student['academic_group']) ? 1 : 0) + (($student['status'] ?? '') === 'inactive' && !empty($student['archive_reason']) ? 1 : 0) ?>"><?php if (!empty($student['photo'])): ?><img class="student-detail-pdf-photo" src="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $student['photo'])) ?>" alt="Student photo"><?php else: ?><span class="student-detail-pdf-photo-placeholder">No photo</span><?php endif; ?></td></tr>
                 <tr><th scope="row">Admission no.</th><td><?= View::escape($student['student_id']) ?></td></tr>
                 <tr><th scope="row">Roll no.</th><td><?= (int) $student['roll_no'] ?></td></tr>
                 <tr><th scope="row">Class</th><td><?= View::escape($student['class_name']) ?></td></tr>
                 <tr><th scope="row">Section</th><td><?= View::escape($student['section_name']) ?></td></tr>
+                <?php if (!empty($student['academic_group'])): ?><tr><th scope="row">Academic group</th><td><?= View::escape($student['academic_group']) ?></td></tr><?php endif; ?>
                 <tr><th scope="row">Shift</th><td><?= $detailValue($student['shift'] ?? null) ?></td></tr>
                 <tr><th scope="row">Gender</th><td><?= $detailValue($student['gender'] ?? null) ?></td></tr>
                 <tr><th scope="row">Status</th><td><?= View::escape(ucfirst((string) $student['status'])) ?></td></tr>

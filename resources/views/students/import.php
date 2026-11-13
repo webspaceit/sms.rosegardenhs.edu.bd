@@ -17,13 +17,13 @@ use App\Core\View;
 
     <section class="mt-7 rounded-2xl border border-green-900/60 dashboard-gradient p-5">
         <h2 class="font-semibold">File format</h2>
-        <p class="mt-1 text-sm text-white">The first row must hold the column names. These columns are read:</p>
+        <p class="mt-1 text-sm text-white">The first row must hold the column names. Class 9 rows must include an academic group:</p>
         <div class="mt-3 flex flex-wrap gap-2">
-            <?php foreach (['name', 'student_id', 'class', 'section', 'roll_no', 'gender', 'status'] as $column): ?>
+            <?php foreach (['name', 'student_id', 'class', 'academic_group', 'section', 'roll_no', 'gender', 'status'] as $column): ?>
                 <code class="rounded-lg border border-green-100/15 bg-emerald-950/35 px-2.5 py-1 font-mono text-xs text-green-100"><?= $column ?></code>
             <?php endforeach; ?>
         </div>
-        <p class="mt-3 text-xs text-slate-500">The class and section must already exist. When student_id is left empty one is generated.</p>
+        <p class="mt-3 text-xs text-slate-500">The class and section must already exist. For Class 9, use Science, Business Studies, Humanities, or S.S.C Vocational. When student_id is left empty one is generated.</p>
     </section>
 
     <form method="post" action="<?= Url::to('/students/import') ?>" enctype="multipart/form-data" class="mt-5 rounded-2xl border border-green-900/60 dashboard-gradient p-5">

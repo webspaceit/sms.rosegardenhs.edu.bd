@@ -14,12 +14,13 @@ use App\Core\Toast;
 use App\Core\Url;
 use App\Core\View;
 use App\Models\Student;
+use App\Models\AcademicGroup;
 
 /**
  * Bulk student import from a CSV file.
  *
  * The file needs a header row. The recognised columns are name, student_id,
- * class, section, roll_no, gender, guardian_name, guardian_phone
+ * class, academic_group, section, roll_no, gender, guardian_name, guardian_phone
  * and status. Anything that cannot be read is reported back to the
  * administrator rather than silently dropped.
  */
@@ -108,10 +109,10 @@ final class StudentImportController
             }
             if ($header === null) {
                 $header = array_map(
-                    static fn (mixed $column): string => strtolower(trim(str_replace(["\xEF\xBB\xBF", ' '], '', (string) $column))),
+                    static fn (mixed $column): string => preg_replace('/[\s-]+/', '_', strtolower(trim(str_replace("\xEF\xBB\xBF", '', (string) $column)))) ?? '',
                     $line
                 );
-                $allowed = ['name', 'student_id', 'class', 'section', 'roll_no', 'gender', 'guardian_name', 'guardian_phone', 'status'];
+                $allowed = ['name', 'student_id', 'class', 'academic_group', 'section', 'roll_no', 'gender', 'guardian_name', 'guardian_phone', 'status'];
                 if (!in_array('name', $header, true) || !in_array('class', $header, true)
                     || !in_array('section', $header, true) || !in_array('roll_no', $header, true)
                     || array_diff($header, $allowed) !== [] || count($header) !== count(array_unique($header))) {
@@ -149,10 +150,14 @@ final class StudentImportController
         $db = Database::connection();
         $year = Student::currentYear();
         $yearId = (int) ($year['id'] ?? 0);
+        $academicGroups = AcademicGroup::names();
 
         $classIds = [];
-        foreach ($db->query('SELECT id, name FROM classes WHERE branch_id=' . BranchContext::id()) as $row) {
-            $classIds[strtolower((string) $row['name'])] = (int) $row['id'];
+        foreach ($db->query('SELECT id, name, numeric_level FROM classes WHERE branch_id=' . BranchContext::id()) as $row) {
+            $classIds[strtolower((string) $row['name'])] = [
+                'id' => (int) $row['id'],
+                'level' => (int) $row['numeric_level'],
+            ];
         }
 
         $sectionIds = [];
@@ -176,7 +181,8 @@ final class StudentImportController
                 continue;
             }
 
-            $classId = $classIds[$className] ?? 0;
+            $class = $classIds[$className] ?? null;
+            $classId = (int) ($class['id'] ?? 0);
             $sectionId = $sectionIds[$className . ' ' . $sectionName] ?? 0;
 
             if ($classId === 0 || $sectionId === 0) {
@@ -184,6 +190,14 @@ final class StudentImportController
                 $problems[] = 'Row ' . $line . ': class "' . ($row['class'] ?? '') . '" or section "' . ($row['section'] ?? '') . '" is unknown.';
                 continue;
             }
+
+            $academicGroup = trim((string) ($row['academic_group'] ?? ''));
+            if ((int) ($class['level'] ?? 0) === 9 && !in_array($academicGroup, $academicGroups, true)) {
+                $skipped++;
+                $problems[] = 'Row ' . $line . ': Class 9 requires academic_group to be Science, Business Studies, Humanities, or S.S.C Vocational.';
+                continue;
+            }
+            if ((int) ($class['level'] ?? 0) !== 9) $academicGroup = '';
 
             $roll = (int) ($row['roll_no'] ?? 0);
             if ($roll < 1) {
@@ -209,13 +223,14 @@ final class StudentImportController
             try {
                 $db->beginTransaction();
                 $statement = $db->prepare(
-                    'INSERT INTO students (student_id, name, class_id, section_id, academic_year_id, roll_no, gender, status, branch_id)'
-                    . ' VALUES (:student_id, :name, :class_id, :section_id, :academic_year_id, :roll_no, :gender, :status, :branch_id)'
+                    'INSERT INTO students (student_id, name, class_id, academic_group, section_id, academic_year_id, roll_no, gender, status, branch_id)'
+                    . ' VALUES (:student_id, :name, :class_id, :academic_group, :section_id, :academic_year_id, :roll_no, :gender, :status, :branch_id)'
                 );
                 $statement->execute([
                     'student_id' => $studentId,
                     'name' => $name,
                     'class_id' => $classId,
+                    'academic_group' => $academicGroup !== '' ? $academicGroup : null,
                     'section_id' => $sectionId,
                     'academic_year_id' => $yearId,
                     'roll_no' => $roll,

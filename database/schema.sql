@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS students (
     name VARCHAR(150) NOT NULL,
     class_id BIGINT UNSIGNED NOT NULL,
     section_id BIGINT UNSIGNED NOT NULL,
+    academic_group VARCHAR(50) NULL,
     shift VARCHAR(10) NULL,
     academic_year_id BIGINT UNSIGNED NOT NULL,
     roll_no SMALLINT UNSIGNED NOT NULL,
@@ -273,6 +274,18 @@ CREATE TABLE IF NOT EXISTS branches (
     updated_at DATETIME NULL,
     PRIMARY KEY (id),
     UNIQUE KEY branches_name_unique (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS academic_groups (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL,
+    branch_id BIGINT UNSIGNED NOT NULL DEFAULT 1,
+    PRIMARY KEY (id),
+    UNIQUE KEY academic_groups_name_unique (branch_id, name),
+    KEY academic_groups_branch_index (branch_id),
+    CONSTRAINT academic_groups_branch_fk FOREIGN KEY (branch_id) REFERENCES branches (id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------------

@@ -62,6 +62,7 @@ final class Nav
                 'collapsible' => true,
                 'items' => [
                     self::item('Academic Setup', '/academics', 'building'),
+                    self::item('Academic Groups', '/academic-groups', 'book'),
                     self::item('Teachers', '/teachers', 'users', ['/teachers', '/designations'], [
                         self::item('All Teachers', '/teachers', 'users', ['/teachers']),
                         self::item('Designations', '/designations', 'award'),
@@ -228,6 +229,7 @@ final class Nav
         '/students' => 'students.view',
         '/audit-logs' => 'settings.manage',
         '/academics' => 'classes.manage',
+        '/academic-groups' => 'classes.manage',
         '/teachers' => 'teachers.view',
         '/designations' => 'designations.manage',
         '/subjects' => 'subjects.manage',

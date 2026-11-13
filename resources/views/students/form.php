@@ -6,6 +6,10 @@ $editing = $student !== null;
 $old = $_SESSION['_student_old'] ?? [];
 $fieldValue = static fn (string $key, mixed $fallback = ''): mixed => $old[$key] ?? ($student[$key] ?? $fallback);
 $selectedClassId = (int) $fieldValue('class_id', $classes[0]['id'] ?? 0);
+$selectedClassLevel = 0;
+foreach ($classes as $classOption) {
+    if ((int) $classOption['id'] === $selectedClassId) { $selectedClassLevel = (int) $classOption['numeric_level']; break; }
+}
 $nextStudentId = $nextStudentId ?? '';
 $genderOptions = ['Male', 'Female', 'Other'];
 $relationOptions = ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'Other'];
@@ -28,8 +32,9 @@ $removedDocumentIds = array_map('intval', (array) ($old['document_remove_ids'] ?
             <h2 class="text-lg font-semibold">Student Admission</h2>
             <div class="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
                 <label class="block"><span class="mb-2 block text-sm font-medium">Admission No <span class="text-red-300">*</span></span><input readonly name="student_id" value="<?= View::escape((string) $fieldValue('student_id', $nextStudentId)) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2.5 text-sm text-slate-300"></label>
-                <label class="block"><span class="mb-2 block text-sm font-medium">Class <span class="text-red-300">*</span></span><select required id="student-class-field" name="class_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach ($classes as $class): ?><option value="<?= (int) $class['id'] ?>" data-shift="<?= View::escape((string) ($class['shift'] ?? 'Day')) ?>" <?= $selectedClassId === (int) $class['id'] ? 'selected' : '' ?>><?= View::escape($class['name']) ?></option><?php endforeach; ?></select></label>
+                <label class="block"><span class="mb-2 block text-sm font-medium">Class <span class="text-red-300">*</span></span><select required id="student-class-field" name="class_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach ($classes as $class): ?><option value="<?= (int) $class['id'] ?>" data-level="<?= (int) $class['numeric_level'] ?>" data-shift="<?= View::escape((string) ($class['shift'] ?? 'Day')) ?>" <?= $selectedClassId === (int) $class['id'] ? 'selected' : '' ?>><?= View::escape($class['name']) ?></option><?php endforeach; ?></select></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Section <span class="text-red-300">*</span></span><select required id="student-section-field" name="section_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><?php foreach ($sections as $section): ?><option data-class-id="<?= (int) $section['class_id'] ?>" value="<?= (int) $section['id'] ?>" <?= (int) $fieldValue('section_id', $student['section_id'] ?? 0) === (int) $section['id'] ? 'selected' : '' ?>><?= View::escape($section['class_name'] . ' · ' . $section['name']) ?></option><?php endforeach; ?></select></label>
+                <label id="student-academic-group-wrap" class="block <?= $selectedClassLevel === 9 ? '' : 'hidden' ?>"><span class="mb-2 block text-sm font-medium">Academic Group <span class="text-red-300">*</span></span><select id="student-academic-group" name="academic_group" <?= $selectedClassLevel === 9 ? 'required' : '' ?> class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select group</option><?php foreach ($academicGroups as $group): ?><option value="<?= View::escape($group) ?>" <?= (string) $fieldValue('academic_group') === $group ? 'selected' : '' ?>><?= View::escape($group) ?></option><?php endforeach; ?></select></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Shift</span><select id="student-shift-field" name="shift" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach (['Morning', 'Day'] as $shiftOpt): ?><option value="<?= $shiftOpt ?>" <?= $fieldValue('shift') === $shiftOpt ? 'selected' : '' ?>><?= $shiftOpt ?></option><?php endforeach; ?></select></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Roll Number <span class="text-red-300">*</span></span><input required min="1" max="65535" type="number" name="roll_no" placeholder="Roll Number" value="<?= View::escape((string) $fieldValue('roll_no')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
 
@@ -195,6 +200,16 @@ $removedDocumentIds = array_map('intval', (array) ($old['document_remove_ids'] ?
 (() => {
   const classField = document.getElementById('student-class-field');
   const sectionField = document.getElementById('student-section-field');
+  const academicGroupWrap = document.getElementById('student-academic-group-wrap');
+  const academicGroupField = document.getElementById('student-academic-group');
+  const syncAcademicGroup = () => {
+    if (!classField || !academicGroupWrap || !academicGroupField) return;
+    const classOption = classField.selectedOptions[0];
+    const isClassNine = classOption?.dataset.level === '9';
+    academicGroupWrap.classList.toggle('hidden', !isClassNine);
+    academicGroupField.required = isClassNine;
+    if (!isClassNine) academicGroupField.value = '';
+  };
   if (classField && sectionField) {
     const syncSections = () => {
       const classId = classField.value;
@@ -207,9 +222,12 @@ $removedDocumentIds = array_map('intval', (array) ($old['document_remove_ids'] ?
       if (!sectionField.selectedOptions[0] || sectionField.selectedOptions[0].dataset.classId !== classId) {
         if (firstVisible) sectionField.value = firstVisible.value;
       }
+      syncAcademicGroup();
     };
     classField.addEventListener('change', syncSections);
     syncSections();
+  } else {
+    syncAcademicGroup();
   }
 
   const createGuardianToggle = document.getElementById('create-guardian-toggle');

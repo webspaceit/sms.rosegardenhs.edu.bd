@@ -8,6 +8,10 @@ use App\Core\View;
 
 $old = $_SESSION['_student_old'] ?? [];
 $selectedClassId = (int) ($old['class_id'] ?? ($classes[0]['id'] ?? 0));
+$selectedClassLevel = 0;
+foreach ($classes as $classOption) {
+    if ((int) $classOption['id'] === $selectedClassId) { $selectedClassLevel = (int) $classOption['numeric_level']; break; }
+}
 $classSections = array_values(array_filter($sections, static fn (array $section): bool => (int) $section['class_id'] === $selectedClassId));
 $selectedSectionId = (int) ($old['section_id'] ?? ($classSections[0]['id'] ?? 0));
 $selectedSection = null;
@@ -48,8 +52,15 @@ $suggestedRoll = $selectedSection['next_roll'] ?? 1;
                     <span class="mb-1.5 block text-sm text-slate-300">Class <span class="text-rose-300">*</span></span>
                     <select id="quick-class" required name="class_id" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
                         <?php foreach ($classes as $class): ?>
-                            <option value="<?= (int) $class['id'] ?>" <?= $selectedClassId === (int) $class['id'] ? 'selected' : '' ?>><?= View::escape($class['name']) ?></option>
+                        <option value="<?= (int) $class['id'] ?>" data-level="<?= (int) $class['numeric_level'] ?>" <?= $selectedClassId === (int) $class['id'] ? 'selected' : '' ?>><?= View::escape($class['name']) ?></option>
                         <?php endforeach; ?>
+                    </select>
+                </label>
+                <label id="quick-academic-group-wrap" class="block <?= $selectedClassLevel === 9 ? '' : 'hidden' ?>">
+                    <span class="mb-1.5 block text-sm text-slate-300">Academic group <span class="text-rose-300">*</span></span>
+                    <select id="quick-academic-group" name="academic_group" <?= $selectedClassLevel === 9 ? 'required' : '' ?> class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
+                        <option value="">Select group</option>
+                        <?php foreach ($academicGroups as $group): ?><option value="<?= View::escape($group) ?>" <?= ($old['academic_group'] ?? '') === $group ? 'selected' : '' ?>><?= View::escape($group) ?></option><?php endforeach; ?>
                     </select>
                 </label>
                 <label class="block">
@@ -139,11 +150,21 @@ $suggestedRoll = $selectedSection['next_roll'] ?? 1;
   const form = document.getElementById('quick-admission-form');
   const classField = document.getElementById('quick-class');
   const sectionField = document.getElementById('quick-section');
+  const academicGroupWrap = document.getElementById('quick-academic-group-wrap');
+  const academicGroupField = document.getElementById('quick-academic-group');
   const rollField = document.getElementById('quick-roll');
   const guardianName = document.getElementById('quick-guardian-name');
   const guardianPhone = document.getElementById('quick-guardian-phone');
   const guardianMode = document.getElementById('guardian-mode');
   if (!form || !classField || !sectionField || !rollField) return;
+  const syncAcademicGroup = () => {
+    const isClassNine = classField.selectedOptions[0]?.dataset.level === '9';
+    if (academicGroupWrap) academicGroupWrap.classList.toggle('hidden', !isClassNine);
+    if (academicGroupField) {
+      academicGroupField.required = isClassNine;
+      if (!isClassNine) academicGroupField.value = '';
+    }
+  };
   const syncSections = () => {
     let first = null;
     for (const option of sectionField.options) {
@@ -156,6 +177,7 @@ $suggestedRoll = $selectedSection['next_roll'] ?? 1;
     }
     const selected = sectionField.selectedOptions[0];
     if (selected && !rollField.dataset.edited) rollField.value = selected.dataset.nextRoll || '1';
+    syncAcademicGroup();
   };
   rollField.addEventListener('input', () => { rollField.dataset.edited = '1'; });
   classField.addEventListener('change', syncSections);

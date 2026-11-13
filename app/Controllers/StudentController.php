@@ -15,6 +15,7 @@ use App\Core\Url;
 use App\Core\View;
 use App\Core\Upload;
 use App\Models\Catalogue;
+use App\Models\AcademicGroup;
 use App\Models\Student;
 use PDOException;
 
@@ -69,7 +70,7 @@ final class StudentController
         $validYearIds = array_map(static fn (array $year): int => (int) $year['id'], $academicYears);
         if ($yearId > 0 && !in_array($yearId, $validYearIds, true)) $yearId = (int) ($currentYear['id'] ?? 0);
 
-        $sql = 'SELECT s.student_id, s.name, c.name AS class_name, sec.name AS section_name, '
+        $sql = 'SELECT s.student_id, s.name, c.name AS class_name, s.academic_group, sec.name AS section_name, '
             . 's.roll_no, ay.name AS academic_year, s.gender, s.date_of_birth, s.birth_registration_no, '
             . 's.admission_date, s.current_address '
             . 'FROM students s JOIN classes c ON c.id=s.class_id AND c.branch_id=s.branch_id JOIN sections sec ON sec.id=s.section_id AND sec.branch_id=s.branch_id '
@@ -92,7 +93,7 @@ final class StudentController
         header('X-Content-Type-Options: nosniff');
         $output = fopen('php://output', 'wb');
         fwrite($output, "\xEF\xBB\xBF");
-        fputcsv($output, ['Student ID', 'Name', 'Class', 'Section', 'Roll', 'Academic Year', 'Gender', 'Date of Birth', 'Birth Registration No.', 'Admission Date', 'Current Address']);
+        fputcsv($output, ['Student ID', 'Name', 'Class', 'Academic Group', 'Section', 'Roll', 'Academic Year', 'Gender', 'Date of Birth', 'Birth Registration No.', 'Admission Date', 'Current Address']);
         while ($row = $statement->fetch()) {
             fputcsv($output, array_map(static function (mixed $value): string {
                 $value = (string) ($value ?? '');
@@ -152,6 +153,7 @@ final class StudentController
             'title' => 'Quick student admission',
             'user' => Auth::user(),
             'classes' => $classes,
+            'academicGroups' => AcademicGroup::names(),
             'sections' => $sections,
             'year' => $year,
             'nextStudentId' => Student::nextStudentId($year['name']),
@@ -476,6 +478,7 @@ final class StudentController
             'user' => Auth::user(),
             'student' => $student,
             'classes' => $classes,
+            'academicGroups' => AcademicGroup::names(),
             'sections' => Student::allSections(),
             'guardians' => Student::guardianOptions(),
             'linkedGuardians' => $studentId > 0 ? Student::guardians($studentId) : [],
@@ -505,6 +508,7 @@ final class StudentController
         $name = trim((string) $value('name'));
         $classId = (int) $value('class_id', 0);
         $sectionId = (int) $value('section_id', 0);
+        $academicGroup = trim((string) $value('academic_group'));
         $shift = (string) $value('shift');
         $yearId = (int) $value('academic_year_id', 0);
         $roll = (int) $value('roll_no', 0);
@@ -544,12 +548,14 @@ final class StudentController
         $enableHostel = SchoolSettingController::flag('enable_hostel_details');
         $year = Student::yearById($yearId);
         $sections = Student::sections($classId);
+        $classLevel = Student::classLevel($classId);
         $sectionIsValid = in_array($sectionId, array_map(static fn (array $item): int => (int) $item['id'], $sections), true);
         preg_match_all('/./us', $name, $nameCharacters);
         $nameLength = isset($nameCharacters[0]) ? count($nameCharacters[0]) : strlen($name);
         $validationIssues = [];
         if ($name === '' || $nameLength > 150) $validationIssues[] = 'student name (required, up to 150 characters)';
         if (!$year || !$sectionIsValid) $validationIssues[] = 'class, section, and academic year';
+        if ($classLevel === 9 && !in_array($academicGroup, AcademicGroup::names(), true)) $validationIssues[] = 'Class 9 academic group';
         if ($roll < 1 || $roll > 65535) $validationIssues[] = 'roll number (1–65535)';
         if (!in_array($gender, ['', 'Male', 'Female', 'Other'], true)) $validationIssues[] = 'gender';
         if (!in_array($shift, ['', 'Morning', 'Day'], true)) $validationIssues[] = 'shift';
@@ -572,6 +578,7 @@ final class StudentController
             'name' => $name,
             'class_id' => $classId,
             'section_id' => $sectionId,
+            'academic_group' => $classLevel === 9 ? $academicGroup : null,
             'shift' => $shift !== '' ? $shift : null,
             'year_id' => $yearId,
             'roll_no' => $roll,
@@ -706,7 +713,7 @@ final class StudentController
 
     private function rememberForm(): void
     {
-        $allowed = ['name', 'class_id', 'section_id', 'shift', 'roll_no', 'gender', 'status', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'religion', 'caste', 'mobile_number', 'email', 'blood_group', 'height', 'weight', 'measurement_date', 'medical_history', 'student_behaviour', 'current_address', 'permanent_address', 'national_id', 'local_id', 'note', 'house_id', 'transport_route_id', 'transport_stop_id', 'transport_fees_month', 'hostel_room_id', 'father_name', 'father_phone', 'father_occupation', 'mother_name', 'mother_phone', 'mother_occupation', 'guardian_mode', 'guardian_action', 'guardian_id', 'guardian_name', 'guardian_relation', 'guardian_phone', 'guardian_email', 'guardian_occupation', 'guardian_address', 'document_count'];
+        $allowed = ['name', 'class_id', 'section_id', 'academic_group', 'shift', 'roll_no', 'gender', 'status', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'religion', 'caste', 'mobile_number', 'email', 'blood_group', 'height', 'weight', 'measurement_date', 'medical_history', 'student_behaviour', 'current_address', 'permanent_address', 'national_id', 'local_id', 'note', 'house_id', 'transport_route_id', 'transport_stop_id', 'transport_fees_month', 'hostel_room_id', 'father_name', 'father_phone', 'father_occupation', 'mother_name', 'mother_phone', 'mother_occupation', 'guardian_mode', 'guardian_action', 'guardian_id', 'guardian_name', 'guardian_relation', 'guardian_phone', 'guardian_email', 'guardian_occupation', 'guardian_address', 'document_count'];
         $old = [];
         foreach ($allowed as $key) {
             if (isset($_POST[$key]) && is_scalar($_POST[$key])) $old[$key] = (string) $_POST[$key];

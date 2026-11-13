@@ -98,7 +98,7 @@ $columnCount = ($canDeleteStudents ? 10 : 9) + ($showArchiveReasonColumn ? 1 : 0
                             <td class="w-12 px-2 py-2 text-white"><?= ($page - 1) * $perPage + $index + 1 ?></td>
                             <td class="px-5 py-2"><p class="font-medium"><?= View::escape($student['name']) ?></p></td>
                             <td class="px-5 py-2 text-white"><?= View::escape($student['student_id']) ?></td>
-                            <td class="px-5 py-2 text-slate-300"><?= View::escape($student['class_name']) ?></td>
+                            <td class="px-5 py-2 text-slate-300"><?= View::escape($student['class_name']) ?><?php if (!empty($student['academic_group'])): ?><span class="mt-0.5 block text-xs text-green-200/75"><?= View::escape($student['academic_group']) ?></span><?php endif; ?></td>
                             <td class="px-5 py-2 text-slate-300"><?= View::escape($student['section_name']) ?></td>
                             <td class="px-5 py-2 text-white"><?= (int) $student['roll_no'] ?></td>
                             <td class="px-5 py-2 text-white"><?= View::escape($student['year_name']) ?></td>
