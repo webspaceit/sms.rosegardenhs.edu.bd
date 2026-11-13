@@ -34,7 +34,7 @@ SET @sample_guardian_email = CONCAT('guardian.', @sample_year_name, '.full001@ex
 INSERT INTO students (
     student_id, name, class_id, section_id, shift, academic_year_id, roll_no,
     gender, date_of_birth, birth_registration_no, admission_date, previous_school,
-    address, religion, caste, mobile_number, email, blood_group, height, weight,
+    religion, caste, mobile_number, email, blood_group, height, weight,
     measurement_date, medical_history, current_address, permanent_address,
     national_id, local_id, note, father_name, father_phone, father_occupation,
     mother_name, mother_phone, mother_occupation, status, branch_id
@@ -50,7 +50,7 @@ SELECT
     'Female', DATE_SUB(CURDATE(), INTERVAL 7 YEAR), 'DEMO-BR-FULL-001',
     COALESCE((SELECT start_date FROM academic_years WHERE id = @sample_year_id), CURDATE()),
     'Demo Primary School (sample)',
-    'House 12, Demo Road, Dhaka (sample only)', 'Demo value', 'Demo value',
+    'Demo value', 'Demo value',
     '01000000001', CONCAT('student.', @sample_year_name, '.full001@example.invalid'),
     'O+', 125.00, 27.00, CURDATE(), 'Demo: no known medical conditions',
     'House 12, Demo Road, Dhaka (sample only)', 'Village Demo, Dhaka (sample only)',

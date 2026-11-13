@@ -206,7 +206,7 @@ final class Student
         return [$where, $params];
     }
 
-    public static function listing(string $search = '', int $classId = 0, string $status = '', int $limit = 25, int $offset = 0): array
+    public static function listing(string $search = '', int $classId = 0, string $status = '', int $limit = 25, int $offset = 0, int $yearId = 0): array
     {
         $sql = 'SELECT s.id, s.student_id, s.name, s.roll_no, s.gender, s.status,
                        c.name AS class_name, sec.name AS section_name, ay.name AS year_name
@@ -215,7 +215,7 @@ final class Student
                 INNER JOIN sections sec ON sec.id = s.section_id AND sec.branch_id=s.branch_id
                 INNER JOIN academic_years ay ON ay.id = s.academic_year_id AND ay.branch_id=s.branch_id
                 WHERE s.branch_id=:branch_id';
-        [$filters, $params] = self::listingFilters($search, $classId, $status);
+        [$filters, $params] = self::listingFilters($search, $classId, $status, $yearId);
         $params['branch_id'] = BranchContext::id();
         $sql .= $filters . ' ORDER BY c.numeric_level, sec.name, s.roll_no, s.name LIMIT :limit OFFSET :offset';
         $stmt = Database::connection()->prepare($sql);
@@ -228,21 +228,21 @@ final class Student
         return $stmt->fetchAll();
     }
 
-    public static function countListing(string $search = '', int $classId = 0, string $status = ''): int
+    public static function countListing(string $search = '', int $classId = 0, string $status = '', int $yearId = 0): int
     {
         $sql = 'SELECT COUNT(*) FROM students s'
             . ' INNER JOIN classes c ON c.id = s.class_id AND c.branch_id=s.branch_id'
             . ' INNER JOIN sections sec ON sec.id = s.section_id AND sec.branch_id=s.branch_id'
             . ' INNER JOIN academic_years ay ON ay.id = s.academic_year_id AND ay.branch_id=s.branch_id'
             . ' WHERE s.branch_id=:branch_id';
-        [$filters, $params] = self::listingFilters($search, $classId, $status);
+        [$filters, $params] = self::listingFilters($search, $classId, $status, $yearId);
         $params['branch_id'] = BranchContext::id();
         $stmt = Database::connection()->prepare($sql . $filters);
         $stmt->execute($params);
         return (int) $stmt->fetchColumn();
     }
 
-    private static function listingFilters(string $search, int $classId, string $status): array
+    private static function listingFilters(string $search, int $classId, string $status, int $yearId = 0): array
     {
         $filters = '';
         $params = [];
@@ -260,6 +260,10 @@ final class Student
         if (in_array($status, ['active', 'inactive', 'graduated'], true)) {
             $filters .= ' AND s.status = :status';
             $params['status'] = $status;
+        }
+        if ($yearId > 0) {
+            $filters .= ' AND s.academic_year_id = :listing_year_id';
+            $params['listing_year_id'] = $yearId;
         }
         return [$filters, $params];
     }
@@ -485,8 +489,8 @@ final class Student
     public static function create(array $data): int
     {
         $stmt = Database::connection()->prepare(
-            'INSERT INTO students (student_id, name, class_id, section_id, shift, academic_year_id, roll_no, gender, status, photo, date_of_birth, birth_registration_no, admission_date, previous_school, address, '
-            . implode(', ', self::EXTRA_COLUMNS) . ', branch_id) VALUES (:student_id, :name, :class_id, :section_id, :shift, :year_id, :roll_no, :gender, :status, :photo, :date_of_birth, :birth_registration_no, :admission_date, :previous_school, :address, :'
+            'INSERT INTO students (student_id, name, class_id, section_id, shift, academic_year_id, roll_no, gender, status, photo, date_of_birth, birth_registration_no, admission_date, previous_school, '
+            . implode(', ', self::EXTRA_COLUMNS) . ', branch_id) VALUES (:student_id, :name, :class_id, :section_id, :shift, :year_id, :roll_no, :gender, :status, :photo, :date_of_birth, :birth_registration_no, :admission_date, :previous_school, :'
             . implode(', :', self::EXTRA_COLUMNS) . ', :branch_id)'
         );
         $stmt->execute($data + ['branch_id' => BranchContext::id()]);
@@ -500,7 +504,7 @@ final class Student
             unset($data['year_id']);
         }
         $allowed = array_merge(
-            ['name', 'class_id', 'section_id', 'shift', 'academic_year_id', 'roll_no', 'gender', 'status', 'photo', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'address'],
+            ['name', 'class_id', 'section_id', 'shift', 'academic_year_id', 'roll_no', 'gender', 'status', 'photo', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school'],
             self::EXTRA_COLUMNS
         );
         $data = array_intersect_key($data, array_flip($allowed));

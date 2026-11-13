@@ -127,7 +127,7 @@ use App\Core\View;
                 <article class="rounded-xl border border-white/5 bg-black/20 p-3">
                     <div class="flex items-center gap-2 text-xs text-emerald-100/40">
                         <span class="rounded-full border border-white/10 px-2 py-0.5"><?= View::escape((string) $notice['type']) ?></span>
-                        <span><?= View::escape((string) $notice['published_date']) ?></span>
+                        <span><?= View::escape(\App\Core\DateFormatter::format($notice['published_date'])) ?></span>
                     </div>
                     <h3 class="mt-2 text-sm font-semibold"><?= View::escape((string) $notice['title']) ?></h3>
                     <p class="mt-1 text-xs leading-5 text-emerald-100/60"><?= View::escape((string) $notice['content']) ?></p>

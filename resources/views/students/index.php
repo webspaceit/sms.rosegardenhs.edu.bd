@@ -7,6 +7,7 @@ $paginationUrl = static fn (int $targetPage): string => Url::to('/students') . '
     'q' => $search,
     'class_id' => $selectedClass,
     'status' => $selectedStatus,
+    'year_id' => $selectedYear,
     'per_page' => $perPage,
     'page' => $targetPage,
 ]);
@@ -21,13 +22,13 @@ $columnCount = $canDeleteStudents ? 9 : 8;
             <p class="mt-1 text-sm text-white">Admissions, class placement, and student status</p>
         </div>
         <div class="flex flex-wrap gap-2">
-            <a href="<?= Url::to('/students/export?' . http_build_query(['q' => $search, 'class_id' => $selectedClass, 'status' => $selectedStatus])) ?>" class="form-action-button">Export CSV</a>
+            <a href="<?= Url::to('/students/export?' . http_build_query(['q' => $search, 'class_id' => $selectedClass, 'status' => $selectedStatus, 'year_id' => $selectedYear])) ?>" class="form-action-button">Export CSV</a>
             <a href="<?= Url::to('/students/new') ?>" class="rounded-lg border border-green-100/20 px-4 py-2.5 text-sm text-green-100 hover:border-green-300">Full admission</a>
             <a href="<?= Url::to('/students/quick-admit') ?>" class="form-action-button">Quick admit</a>
         </div>
     </header>
 
-    <form method="get" action="<?= Url::to('/students') ?>" class="mt-7 grid gap-3 rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-4 sm:grid-cols-2 xl:grid-cols-[1fr_220px_180px_140px_auto_auto]">
+    <form method="get" action="<?= Url::to('/students') ?>" class="mt-7 grid gap-3 rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-4 sm:grid-cols-2 xl:grid-cols-[1fr_190px_170px_170px_140px_auto_auto]">
         <label class="sr-only" for="student-search">Search students</label>
         <input id="student-search" name="q" value="<?= View::escape($search) ?>" placeholder="Search name, ID, or roll" class="rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm text-slate-100 shadow-inner shadow-black/10 transition placeholder:text-slate-500 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/15">
         <label class="sr-only" for="student-class">Class</label>
@@ -39,6 +40,11 @@ $columnCount = $canDeleteStudents ? 9 : 8;
         <select id="student-status" name="status" class="rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm text-slate-100 shadow-inner shadow-black/10 transition hover:border-green-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/15">
             <option value="">All statuses</option>
             <?php foreach (['active' => 'Active', 'inactive' => 'Inactive', 'graduated' => 'Graduated'] as $value => $label): ?><option value="<?= $value ?>" <?= $selectedStatus === $value ? 'selected' : '' ?>><?= $label ?></option><?php endforeach; ?>
+        </select>
+        <label class="sr-only" for="student-year">Academic year</label>
+        <select id="student-year" name="year_id" class="rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm text-slate-100 shadow-inner shadow-black/10 transition hover:border-green-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/15">
+            <option value="0" <?= $selectedYear === 0 ? 'selected' : '' ?>>All academic years</option>
+            <?php foreach ($academicYears as $academicYear): ?><option value="<?= (int) $academicYear['id'] ?>" <?= $selectedYear === (int) $academicYear['id'] ? 'selected' : '' ?>><?= View::escape($academicYear['name']) ?><?= $academicYear['is_current'] ? ' · Current' : '' ?></option><?php endforeach; ?>
         </select>
         <label class="flex items-center gap-2 text-xs text-white" for="student-per-page">Per page
             <select id="student-per-page" name="per_page" onchange="this.form.submit()" class="rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm text-slate-100">
@@ -61,6 +67,7 @@ $columnCount = $canDeleteStudents ? 9 : 8;
                     <input type="hidden" name="q" value="<?= View::escape($search) ?>">
                     <input type="hidden" name="class_id" value="<?= $selectedClass ?>">
                     <input type="hidden" name="status" value="<?= View::escape($selectedStatus) ?>">
+                    <input type="hidden" name="year_id" value="<?= $selectedYear ?>">
                     <input type="hidden" name="per_page" value="<?= $perPage ?>">
                     <input type="hidden" name="page" value="<?= $page ?>">
                     <span id="student-selection-count" class="text-sm text-slate-300" aria-live="polite">0 selected</span>

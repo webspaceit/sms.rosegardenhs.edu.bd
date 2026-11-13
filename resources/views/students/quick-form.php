@@ -99,8 +99,8 @@ $suggestedRoll = $selectedSection['next_roll'] ?? 1;
                     </select>
                 </label>
                 <label class="block sm:col-span-2">
-                    <span class="mb-1.5 block text-sm text-slate-300">Address</span>
-                    <textarea name="address" rows="2" placeholder="Student address" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400"><?= View::escape((string) ($old['address'] ?? '')) ?></textarea>
+                    <span class="mb-1.5 block text-sm text-slate-300">Current Address</span>
+                    <textarea name="current_address" rows="2" placeholder="Current address" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400"><?= View::escape((string) ($old['current_address'] ?? '')) ?></textarea>
                 </label>
             </div>
         </section>

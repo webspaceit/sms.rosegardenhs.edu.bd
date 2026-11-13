@@ -101,7 +101,6 @@ CREATE TABLE IF NOT EXISTS students (
     birth_registration_no VARCHAR(50) NULL,
     admission_date DATE NULL,
     previous_school VARCHAR(190) NULL,
-    address TEXT NULL,
     religion VARCHAR(50) NULL,
     caste VARCHAR(100) NULL,
     mobile_number VARCHAR(20) NULL,

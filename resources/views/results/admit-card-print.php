@@ -45,7 +45,7 @@ $photoUrl = $photo !== '' ? Url::to('/' . ltrim($photo, '/')) : '';
                         if (trim((string) ($paper['start_time'] ?? '')) !== '') { $time = date('g:i A', strtotime((string) $paper['start_time'])); }
                         if (trim((string) ($paper['end_time'] ?? '')) !== '') { $time .= ($time !== '' ? ' – ' : '') . date('g:i A', strtotime((string) $paper['end_time'])); }
                     ?>
-                    <tr><td><?= (int) $scheduleIndex + 1 ?></td><td><?= View::escape((string) $paper['subject_name']) ?></td><td><?= $date ? View::escape($date->format('d M Y')) : '—' ?></td><td><?= $date ? View::escape($date->format('l')) : '—' ?></td><td><?= View::escape(implode(' · ', array_filter([$time, trim((string) ($paper['hall'] ?? ''))]))) ?: '—' ?></td></tr>
+                    <tr><td><?= (int) $scheduleIndex + 1 ?></td><td><?= View::escape((string) $paper['subject_name']) ?></td><td><?= $date ? View::escape(\App\Core\DateFormatter::format($date->format('Y-m-d'))) : '—' ?></td><td><?= $date ? View::escape($date->format('l')) : '—' ?></td><td><?= View::escape(implode(' · ', array_filter([$time, trim((string) ($paper['hall'] ?? ''))]))) ?: '—' ?></td></tr>
                 <?php endforeach; endif; ?>
             </tbody></table>
             <section class="admit-card-guidelines"><h2 class="mb-1 text-[.82rem] font-bold">পরীক্ষার্থীদের জন্য নির্দেশনা</h2><ol class="list-decimal space-y-0.5 pl-5"><li>প্রবেশপত্র ছাড়া কোনো পরীক্ষার্থী পরীক্ষাকক্ষে প্রবেশ করতে পারবে না।</li><li>পরীক্ষা শুরুর অন্তত ৩০ মিনিট আগে কেন্দ্রে উপস্থিত হতে হবে।</li><li>মোবাইল ফোন বা অননুমোদিত সামগ্রী পরীক্ষাকক্ষে আনা যাবে না।</li></ol></section>

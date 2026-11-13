@@ -127,7 +127,7 @@ use App\Core\View;
                         ?>
                         <tr>
                             <td><?= View::escape((string) $scheduledPaper['subject_name']) ?></td>
-                            <td><?= $scheduleDate ? View::escape($scheduleDate->format('d M Y')) : '—' ?></td>
+                            <td><?= $scheduleDate ? View::escape(\App\Core\DateFormatter::format($scheduleDate->format('Y-m-d'))) : '—' ?></td>
                             <td><?= $scheduleDate ? View::escape($scheduleDate->format('l')) : '—' ?></td>
                             <td><?= View::escape(implode(' · ', array_filter([$examTime, $examVenue]))) ?: '—' ?></td>
                         </tr>

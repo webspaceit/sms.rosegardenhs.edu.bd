@@ -66,7 +66,7 @@ $name = $settings['school_name'] ?? 'WSIT School';
                         <article class="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                             <div class="flex items-center gap-2 text-xs text-emerald-100/40">
                                 <span class="rounded-full border border-white/10 px-2 py-0.5"><?= View::escape((string) $notice['type']) ?></span>
-                                <span><?= View::escape((string) $notice['published_date']) ?></span>
+                                <span><?= View::escape(\App\Core\DateFormatter::format($notice['published_date'])) ?></span>
                             </div>
                             <h3 class="mt-2 font-semibold"><?= View::escape((string) $notice['title']) ?></h3>
                             <p class="mt-1 text-sm leading-6 text-emerald-100/60"><?= View::escape((string) $notice['content']) ?></p>
@@ -86,7 +86,7 @@ $name = $settings['school_name'] ?? 'WSIT School';
                             <span class="h-10 w-1 shrink-0 rounded-full" style="background: <?= View::escape((string) $event['color']) ?>"></span>
                             <div>
                                 <p class="font-semibold"><?= View::escape((string) $event['title']) ?></p>
-                                <p class="mt-0.5 text-xs text-emerald-100/50"><?= View::escape((string) $event['start_date']) ?></p>
+                                <p class="mt-0.5 text-xs text-emerald-100/50"><?= View::escape(\App\Core\DateFormatter::format($event['start_date'])) ?></p>
                                 <?php if ((string) ($event['description'] ?? '') !== ''): ?>
                                     <p class="mt-1 text-sm text-emerald-100/60"><?= View::escape((string) $event['description']) ?></p>
                                 <?php endif; ?>
@@ -98,7 +98,7 @@ $name = $settings['school_name'] ?? 'WSIT School';
                             <span class="h-10 w-1 shrink-0 rounded-full bg-amber-400"></span>
                             <div>
                                 <p class="font-semibold"><?= View::escape((string) $holiday['title']) ?></p>
-                                <p class="mt-0.5 text-xs text-emerald-100/50"><?= View::escape((string) $holiday['date']) ?></p>
+                                <p class="mt-0.5 text-xs text-emerald-100/50"><?= View::escape(\App\Core\DateFormatter::format($holiday['date'])) ?></p>
                             </div>
                         </article>
                     <?php endforeach; ?>

@@ -60,6 +60,22 @@ final class SchoolSettingController
                     'school_footer_url' => ['label' => 'Footer link', 'type' => 'text', 'max' => 255],
                 ],
             ],
+            'display' => [
+                'title' => 'Display preferences',
+                'hint' => 'Choose how calendar dates appear across the school system.',
+                'fields' => [
+                    'date_format' => [
+                        'label' => 'Date format',
+                        'type' => 'select',
+                        'options' => [
+                            'd-m-Y' => 'DD-MM-YYYY (13-11-2026)',
+                            'd/m/Y' => 'DD/MM/YYYY (13/11/2026)',
+                            'Y-m-d' => 'YYYY-MM-DD (2026-11-13)',
+                            'M j, Y' => 'Month day, year (Nov 13, 2026)',
+                        ],
+                    ],
+                ],
+            ],
             'modules' => [
                 'title' => 'Admission form modules',
                 'hint' => 'Toggle the optional sections shown on the student admission form.',
@@ -110,6 +126,11 @@ final class SchoolSettingController
             foreach ($group['fields'] as $key => $field) {
                 if (($field['type'] ?? 'text') === 'checkbox') {
                     $value = $request->input($key) === '1' ? '1' : '0';
+                } elseif (($field['type'] ?? 'text') === 'select') {
+                    $value = (string) $request->input($key, '');
+                    if (!array_key_exists($value, $field['options'] ?? [])) {
+                        continue;
+                    }
                 } else {
                     $value = trim((string) $request->input($key, ''));
                     if ($value === '') {

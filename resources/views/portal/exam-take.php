@@ -30,7 +30,7 @@ use App\Core\View;
         <p class="font-mono text-xs uppercase tracking-[0.2em] text-green-300/80">Already submitted</p>
         <p class="mt-3 text-4xl font-semibold text-green-100"><?= number_format((float) $submission['score'], 2) ?></p>
         <p class="mt-2 text-sm text-emerald-100/60">out of <?= (int) $exam['total_marks'] ?> marks</p>
-        <p class="mt-1 text-xs text-emerald-100/40">Submitted on <?= View::escape((string) ($submission['submitted_at'] ?? '—')) ?></p>
+        <p class="mt-1 text-xs text-emerald-100/40">Submitted on <?= View::escape(\App\Core\DateFormatter::format($submission['submitted_at'] ?? '')) ?></p>
     </div>
 <?php elseif ($questions === []): ?>
     <div class="mt-7 rounded-2xl border border-dashed border-white/10 p-10 text-center text-sm text-emerald-100/40">This examination has no questions yet.</div>

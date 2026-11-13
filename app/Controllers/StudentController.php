@@ -26,16 +26,24 @@ final class StudentController
         $search = trim((string) $request->input('q', ''));
         $classId = max(0, (int) $request->input('class_id', 0));
         $status = (string) $request->input('status', '');
+        $academicYears = Student::academicYears();
+        $currentYear = Student::currentYear();
+        $requestedYear = $request->input('year_id');
+        $yearId = $requestedYear === null ? (int) ($currentYear['id'] ?? 0) : max(0, (int) $requestedYear);
+        $validYearIds = array_map(static fn (array $year): int => (int) $year['id'], $academicYears);
+        if ($yearId > 0 && !in_array($yearId, $validYearIds, true)) $yearId = (int) ($currentYear['id'] ?? 0);
         $perPageOption = (int) $request->input('per_page', 25);
         $perPage = in_array($perPageOption, [10, 25, 50, 100], true) ? $perPageOption : 25;
-        $totalStudents = Student::countListing($search, $classId, $status);
+        $totalStudents = Student::countListing($search, $classId, $status, $yearId);
         $totalPages = max(1, (int) ceil($totalStudents / $perPage));
         $page = min($totalPages, max(1, (int) $request->input('page', 1)));
         View::render('students/index', [
             'title' => 'Students',
             'user' => Auth::user(),
-            'students' => Student::listing($search, $classId, $status, $perPage, ($page - 1) * $perPage),
+            'students' => Student::listing($search, $classId, $status, $perPage, ($page - 1) * $perPage, $yearId),
             'classes' => Student::classes(),
+            'academicYears' => $academicYears,
+            'selectedYear' => $yearId,
             'search' => $search,
             'selectedClass' => $classId,
             'selectedStatus' => $status,
@@ -54,15 +62,22 @@ final class StudentController
         $classId = max(0, (int) $request->input('class_id', 0));
         $status = (string) $request->input('status', '');
         if (!in_array($status, ['', 'active', 'inactive', 'graduated'], true)) $status = '';
+        $academicYears = Student::academicYears();
+        $currentYear = Student::currentYear();
+        $requestedYear = $request->input('year_id');
+        $yearId = $requestedYear === null ? (int) ($currentYear['id'] ?? 0) : max(0, (int) $requestedYear);
+        $validYearIds = array_map(static fn (array $year): int => (int) $year['id'], $academicYears);
+        if ($yearId > 0 && !in_array($yearId, $validYearIds, true)) $yearId = (int) ($currentYear['id'] ?? 0);
 
         $sql = 'SELECT s.student_id, s.name, c.name AS class_name, sec.name AS section_name, '
             . 's.roll_no, ay.name AS academic_year, s.gender, s.date_of_birth, s.birth_registration_no, '
-            . 's.admission_date, s.address '
+            . 's.admission_date, s.current_address '
             . 'FROM students s JOIN classes c ON c.id=s.class_id AND c.branch_id=s.branch_id JOIN sections sec ON sec.id=s.section_id AND sec.branch_id=s.branch_id '
             . 'JOIN academic_years ay ON ay.id=s.academic_year_id AND ay.branch_id=s.branch_id WHERE s.branch_id=:branch_id';
         $bindings = ['branch_id' => BranchContext::id()];
         if ($classId > 0) { $sql .= ' AND s.class_id=:class_id'; $bindings['class_id'] = $classId; }
         if ($status !== '') { $sql .= ' AND s.status=:status'; $bindings['status'] = $status; }
+        if ($yearId > 0) { $sql .= ' AND s.academic_year_id=:year_id'; $bindings['year_id'] = $yearId; }
         if ($search !== '') {
             $sql .= ' AND (s.name LIKE :q1 OR s.student_id LIKE :q2 OR CAST(s.roll_no AS CHAR) LIKE :q3)';
             for ($i = 1; $i <= 3; $i++) $bindings['q' . $i] = '%' . $search . '%';
@@ -71,13 +86,13 @@ final class StudentController
         $statement = Database::connection()->prepare($sql);
         $statement->execute($bindings);
 
-        AuditLog::record('students.exported', 'students', null, ['count' => (int) Student::countListing($search, $classId, $status)]);
+        AuditLog::record('students.exported', 'students', null, ['count' => (int) Student::countListing($search, $classId, $status, $yearId)]);
         header('Content-Type: text/csv; charset=UTF-8');
         header('Content-Disposition: attachment; filename="students-' . date('Y-m-d') . '.csv"');
         header('X-Content-Type-Options: nosniff');
         $output = fopen('php://output', 'wb');
         fwrite($output, "\xEF\xBB\xBF");
-        fputcsv($output, ['Student ID', 'Name', 'Class', 'Section', 'Roll', 'Academic Year', 'Gender', 'Date of Birth', 'Birth Registration No.', 'Admission Date', 'Address']);
+        fputcsv($output, ['Student ID', 'Name', 'Class', 'Section', 'Roll', 'Academic Year', 'Gender', 'Date of Birth', 'Birth Registration No.', 'Admission Date', 'Current Address']);
         while ($row = $statement->fetch()) {
             fputcsv($output, array_map(static function (mixed $value): string {
                 $value = (string) ($value ?? '');
@@ -431,7 +446,13 @@ final class StudentController
         $perPage = (int) $request->input('per_page', 25);
         if (!in_array($perPage, [10, 25, 50, 100], true)) $perPage = 25;
         $page = max(1, (int) $request->input('page', 1));
-        $query = http_build_query(['q' => $search, 'class_id' => $classId, 'status' => $status, 'per_page' => $perPage, 'page' => $page]);
+        $academicYears = Student::academicYears();
+        $currentYear = Student::currentYear();
+        $requestedYear = $request->input('year_id');
+        $yearId = $requestedYear === null ? (int) ($currentYear['id'] ?? 0) : max(0, (int) $requestedYear);
+        $validYearIds = array_map(static fn (array $year): int => (int) $year['id'], $academicYears);
+        if ($yearId > 0 && !in_array($yearId, $validYearIds, true)) $yearId = (int) ($currentYear['id'] ?? 0);
+        $query = http_build_query(['q' => $search, 'class_id' => $classId, 'status' => $status, 'year_id' => $yearId, 'per_page' => $perPage, 'page' => $page]);
         header('Location: ' . Url::to('/students?' . $query)); exit;
     }
 
@@ -486,7 +507,6 @@ final class StudentController
         $birthRegistrationNo = trim((string) $value('birth_registration_no'));
         $admissionDate = trim((string) $value('admission_date'));
         $previousSchool = trim((string) $value('previous_school'));
-        $address = trim((string) $value('address'));
         $religion = trim((string) $value('religion'));
         $caste = trim((string) $value('caste'));
         $mobile = trim((string) $value('mobile_number'));
@@ -536,7 +556,6 @@ final class StudentController
         if ($weight !== '' && !is_numeric($weight)) $validationIssues[] = 'weight (must be numeric)';
         if (strlen($birthRegistrationNo) > 50) $validationIssues[] = 'birth registration number (up to 50 characters)';
         if ($this->textLength($previousSchool) > 190) $validationIssues[] = 'previous school (up to 190 characters)';
-        if ($this->textLength($address) > 10000) $validationIssues[] = 'address (up to 10,000 characters)';
         if ($this->textLength($studentBehaviour) > 5000) $validationIssues[] = 'student behaviour (up to 5,000 characters)';
         if ($validationIssues !== []) {
             $this->rememberForm();
@@ -556,7 +575,6 @@ final class StudentController
             'birth_registration_no' => $birthRegistrationNo !== '' ? $birthRegistrationNo : null,
             'admission_date' => $admissionDate !== '' ? $admissionDate : null,
             'previous_school' => $previousSchool !== '' ? $previousSchool : null,
-            'address' => $address !== '' ? $address : null,
             'religion' => $religion !== '' ? $religion : null,
             'caste' => $caste !== '' ? $caste : null,
             'mobile_number' => $mobile !== '' ? $mobile : null,
@@ -585,7 +603,7 @@ final class StudentController
             'mother_occupation' => $motherOccupation !== '' ? $motherOccupation : null,
         ];
         if (!$new) {
-            foreach (['birth_registration_no', 'address', 'current_address', 'permanent_address', 'national_id', 'local_id', 'note'] as $key) {
+            foreach (['birth_registration_no', 'current_address', 'permanent_address', 'national_id', 'local_id', 'note'] as $key) {
                 if (!$provided($key)) unset($data[$key]);
             }
             if (!$enableTransport) unset($data['transport_route_id'], $data['transport_stop_id'], $data['transport_fees_month']);
@@ -682,7 +700,7 @@ final class StudentController
 
     private function rememberForm(): void
     {
-        $allowed = ['name', 'class_id', 'section_id', 'shift', 'roll_no', 'gender', 'status', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'address', 'religion', 'caste', 'mobile_number', 'email', 'blood_group', 'height', 'weight', 'measurement_date', 'medical_history', 'student_behaviour', 'current_address', 'permanent_address', 'national_id', 'local_id', 'note', 'house_id', 'transport_route_id', 'transport_stop_id', 'transport_fees_month', 'hostel_room_id', 'father_name', 'father_phone', 'father_occupation', 'mother_name', 'mother_phone', 'mother_occupation', 'guardian_mode', 'guardian_action', 'guardian_id', 'guardian_name', 'guardian_relation', 'guardian_phone', 'guardian_email', 'guardian_occupation', 'guardian_address', 'document_count'];
+        $allowed = ['name', 'class_id', 'section_id', 'shift', 'roll_no', 'gender', 'status', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school', 'religion', 'caste', 'mobile_number', 'email', 'blood_group', 'height', 'weight', 'measurement_date', 'medical_history', 'student_behaviour', 'current_address', 'permanent_address', 'national_id', 'local_id', 'note', 'house_id', 'transport_route_id', 'transport_stop_id', 'transport_fees_month', 'hostel_room_id', 'father_name', 'father_phone', 'father_occupation', 'mother_name', 'mother_phone', 'mother_occupation', 'guardian_mode', 'guardian_action', 'guardian_id', 'guardian_name', 'guardian_relation', 'guardian_phone', 'guardian_email', 'guardian_occupation', 'guardian_address', 'document_count'];
         $old = [];
         foreach ($allowed as $key) {
             if (isset($_POST[$key]) && is_scalar($_POST[$key])) $old[$key] = (string) $_POST[$key];

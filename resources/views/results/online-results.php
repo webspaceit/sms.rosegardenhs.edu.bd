@@ -35,7 +35,7 @@ use App\Core\View;
                             <p class="mt-0.5 text-xs text-slate-500"><?= View::escape((string) $row['student_code']) ?></p>
                         </td>
                         <td class="px-5 py-2 text-right font-medium text-teal-200"><?= number_format((float) $row['score'], 2) ?></td>
-                        <td class="px-5 py-2 text-right text-white"><?= View::escape((string) ($row['submitted_at'] ?? '—')) ?></td>
+                        <td class="px-5 py-2 text-right text-white"><?= !empty($row['submitted_at']) ? View::escape(\App\Core\DateFormatter::format($row['submitted_at'], true)) : '—' ?></td>
                     </tr>
                 <?php endforeach; endif; ?>
                 </tbody>

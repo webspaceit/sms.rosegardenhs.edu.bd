@@ -103,7 +103,7 @@ use App\Core\View;
                         <tr><td colspan="3" class="px-5 py-8 text-center text-slate-500">Nothing recorded yet.</td></tr>
                     <?php else: foreach ($recent as $row): ?>
                         <tr>
-                            <td class="px-5 py-2 text-white"><?= View::escape((string) $row['date']) ?></td>
+                            <td class="px-5 py-2 text-white"><?= View::escape(\App\Core\DateFormatter::format($row['date'])) ?></td>
                             <td class="px-5 py-2">
                                 <p class="text-slate-200"><?= View::escape((string) $row['category']) ?></p>
                                 <p class="mt-0.5 text-xs text-slate-500"><?= View::escape((string) ($row['description'] ?? '')) ?></p>

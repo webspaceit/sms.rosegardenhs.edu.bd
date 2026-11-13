@@ -40,7 +40,7 @@ foreach ($activeNotices as $notice) {
     $dashboardAlerts[] = [
         'tone' => 'blue',
         'title' => (string) $notice['title'],
-        'detail' => ucfirst((string) $notice['type']) . ' notice · ' . date('M j, Y', strtotime((string) $notice['published_date'])),
+        'detail' => ucfirst((string) $notice['type']) . ' notice · ' . \App\Core\DateFormatter::format($notice['published_date']),
         'url' => '/notices',
     ];
 }
@@ -86,7 +86,7 @@ $toneClasses = [
             <?php else: foreach ($upcomingEvents as $event): ?>
                 <article class="flex gap-3 py-3.5">
                     <time datetime="<?= View::escape($event['start_date']) ?>" class="grid h-11 w-12 shrink-0 place-content-center rounded-lg border border-green-200/15 bg-green-300/[0.08] text-center"><span class="text-[10px] uppercase text-green-100/65"><?= date('M', strtotime((string) $event['start_date'])) ?></span><span class="text-sm font-semibold text-green-100"><?= date('d', strtotime((string) $event['start_date'])) ?></span></time>
-                    <div class="min-w-0"><h3 class="truncate text-sm font-medium text-green-50"><?= View::escape($event['title']) ?></h3><p class="mt-1 text-xs text-white"><?= date('D, M j, Y', strtotime((string) $event['start_date'])) ?><?php if (!empty($event['end_date']) && $event['end_date'] !== $event['start_date']): ?> – <?= date('M j, Y', strtotime((string) $event['end_date'])) ?><?php endif; ?></p><?php if (!empty($event['description'])): ?><p class="mt-1 line-clamp-1 text-xs text-slate-500"><?= View::escape($event['description']) ?></p><?php endif; ?></div>
+                    <div class="min-w-0"><h3 class="truncate text-sm font-medium text-green-50"><?= View::escape($event['title']) ?></h3><p class="mt-1 text-xs text-white"><?= \App\Core\DateFormatter::format($event['start_date']) ?><?php if (!empty($event['end_date']) && $event['end_date'] !== $event['start_date']): ?> – <?= \App\Core\DateFormatter::format($event['end_date']) ?><?php endif; ?></p><?php if (!empty($event['description'])): ?><p class="mt-1 line-clamp-1 text-xs text-slate-500"><?= View::escape($event['description']) ?></p><?php endif; ?></div>
                 </article>
             <?php endforeach; endif; ?>
         </div>

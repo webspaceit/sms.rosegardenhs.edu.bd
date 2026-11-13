@@ -27,6 +27,15 @@ use App\Core\View;
                                 <input type="checkbox" name="<?= View::escape($key) ?>" value="1" <?= ($values[$key] ?? '1') === '1' ? 'checked' : '' ?> class="h-4 w-4 rounded border-green-700 bg-[#062f2d] text-teal-400 focus:ring-teal-400">
                                 <span><?= View::escape($field['label']) ?></span>
                             </label>
+                        <?php elseif (($field['type'] ?? 'text') === 'select'): ?>
+                            <div>
+                                <label for="setting-<?= View::escape($key) ?>" class="mb-1.5 block text-sm text-slate-300"><?= View::escape($field['label']) ?></label>
+                                <select id="setting-<?= View::escape($key) ?>" name="<?= View::escape($key) ?>" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm text-white outline-none focus:border-teal-400">
+                                    <?php foreach (($field['options'] ?? []) as $optionValue => $optionLabel): ?>
+                                        <option value="<?= View::escape($optionValue) ?>" <?= ($values[$key] ?? 'd-m-Y') === $optionValue ? 'selected' : '' ?>><?= View::escape($optionLabel) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
                         <?php else: ?>
                             <div class="<?= (int) ($field['max'] ?? 0) > 150 ? 'sm:col-span-2' : '' ?>">
                                 <label for="setting-<?= View::escape($key) ?>" class="mb-1.5 block text-sm text-slate-300"><?= View::escape($field['label']) ?></label>

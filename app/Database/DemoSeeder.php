@@ -52,7 +52,7 @@ final class DemoSeeder
                 $sectionStmt->execute(['class_id' => $classId, 'name' => 'A', 'room' => 'Room ' . (100 + $level)]);
             }
 
-            $studentStmt = $database->prepare('INSERT INTO students (student_id, name, class_id, section_id, academic_year_id, roll_no, gender, shift, date_of_birth, birth_registration_no, admission_date, address, religion, caste, mobile_number, email, blood_group, height, weight, measurement_date, medical_history, current_address, permanent_address, note, father_name, father_phone, father_occupation, mother_name, mother_phone, mother_occupation) VALUES (:student_id, :name, :class_id, :section_id, :year_id, :roll_no, :gender, :shift, :date_of_birth, :birth_registration_no, :admission_date, :address, :religion, :caste, :mobile_number, :email, :blood_group, :height, :weight, :measurement_date, :medical_history, :current_address, :permanent_address, :note, :father_name, :father_phone, :father_occupation, :mother_name, :mother_phone, :mother_occupation)');
+            $studentStmt = $database->prepare('INSERT INTO students (student_id, name, class_id, section_id, academic_year_id, roll_no, gender, shift, date_of_birth, birth_registration_no, admission_date, religion, caste, mobile_number, email, blood_group, height, weight, measurement_date, medical_history, current_address, permanent_address, note, father_name, father_phone, father_occupation, mother_name, mother_phone, mother_occupation) VALUES (:student_id, :name, :class_id, :section_id, :year_id, :roll_no, :gender, :shift, :date_of_birth, :birth_registration_no, :admission_date, :religion, :caste, :mobile_number, :email, :blood_group, :height, :weight, :measurement_date, :medical_history, :current_address, :permanent_address, :note, :father_name, :father_phone, :father_occupation, :mother_name, :mother_phone, :mother_occupation)');
             $sectionLookup = $database->prepare('SELECT id FROM sections WHERE class_id = :class_id AND name = :name');
             $sectionIdByLevel = [];
             foreach ($classIdByLevel as $level => $classId) {
@@ -81,7 +81,6 @@ final class DemoSeeder
                     'date_of_birth' => date('Y-m-d', strtotime('-' . (6 + $level) . ' years -2 months')),
                     'birth_registration_no' => sprintf('DEMO-BR-%05d', $index + 1),
                     'admission_date' => $yearName . '-01-02',
-                    'address' => 'Demo address, Dhaka',
                     'religion' => 'Demo value',
                     'caste' => 'Demo value',
                     'mobile_number' => $fakePhone,
