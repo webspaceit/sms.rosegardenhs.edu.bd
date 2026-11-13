@@ -208,7 +208,7 @@ final class Student
 
     public static function listing(string $search = '', int $classId = 0, string $status = '', int $limit = 25, int $offset = 0, int $yearId = 0): array
     {
-        $sql = 'SELECT s.id, s.student_id, s.name, s.roll_no, s.gender, s.status,
+        $sql = 'SELECT s.id, s.student_id, s.name, s.roll_no, s.gender, s.status, s.archive_reason,
                        c.name AS class_name, sec.name AS section_name, ay.name AS year_name
                 FROM students s
                 INNER JOIN classes c ON c.id = s.class_id AND c.branch_id=s.branch_id
@@ -520,10 +520,10 @@ final class Student
         $stmt->execute(['student_id' => $studentId, 'title' => $title, 'file_path' => $filePath, 'branch' => BranchContext::id()]);
     }
 
-    public static function archive(int $id): void
+    public static function archive(int $id, string $reason): void
     {
-        $stmt = Database::connection()->prepare("UPDATE students SET status = 'inactive' WHERE id = :id AND status = 'active' AND branch_id=:branch");
-        $stmt->execute(['id' => $id, 'branch' => BranchContext::id()]);
+        $stmt = Database::connection()->prepare("UPDATE students SET status = 'inactive', archive_reason = :reason WHERE id = :id AND status = 'active' AND branch_id=:branch");
+        $stmt->execute(['reason' => $reason, 'id' => $id, 'branch' => BranchContext::id()]);
     }
 
     /** @return array{0: int, 1: array<int, string>} Number deleted and owned upload paths to remove after commit. */

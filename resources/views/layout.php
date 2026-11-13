@@ -184,6 +184,8 @@ $appUser = Auth::user();
         .student-reference-facts>div{display:flex;justify-content:space-between;gap:1rem;padding:.58rem .9rem;border-bottom:1px solid rgba(167,243,208,.14);font-size:.82rem}
         .student-reference-facts dt{color:#bbf7d0}
         .student-reference-facts dd{margin:0;color:#86efac;font-weight:600;text-align:right}
+        .student-reference-facts>.student-reference-archive-reason{display:block}
+        .student-reference-facts>.student-reference-archive-reason dd{margin-top:.35rem;text-align:left;white-space:pre-wrap}
         .student-reference-code-label{padding:.75rem .9rem .35rem;color:#bbf7d0;font-size:.74rem; text-align:center;}
         .student-reference-code{height:2rem;margin:0 .8rem;background:repeating-linear-gradient(90deg,#a7f3d0 0 2px,transparent 2px 4px,#d1fae5 4px 5px,transparent 5px 8px,#86efac 8px 11px,transparent 11px 13px);opacity:.72}
         .student-reference-code-value{padding:.35rem .9rem .9rem;color:#d1fae5;font-size:.72rem;letter-spacing:.08em;text-align:center}

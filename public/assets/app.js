@@ -33,7 +33,7 @@
     window.setTimeout(() => toast.remove(), 5000);
   }
 
-  function confirmInToast(message, onConfirm) {
+  function confirmInToast(message, onConfirm, options = {}) {
     document.getElementById('app-toast')?.remove();
     const toast = document.createElement('div');
     toast.id = 'app-toast';
@@ -46,6 +46,20 @@
     const text = document.createElement('span');
     text.className = 'min-w-0 flex-1 text-sm';
     text.textContent = message;
+    let reasonInput = null;
+    if (options.reasonLabel) {
+      const prompt = document.createElement('label');
+      prompt.className = 'w-full text-xs font-medium text-green-100/90';
+      prompt.textContent = options.reasonLabel;
+      reasonInput = document.createElement('textarea');
+      reasonInput.name = 'confirmation_reason';
+      reasonInput.rows = 2;
+      reasonInput.maxLength = options.reasonMaxLength || 500;
+      reasonInput.required = true;
+      reasonInput.placeholder = 'Enter a reason';
+      reasonInput.className = 'mt-1 w-full resize-y rounded-lg border border-green-100/20 bg-[#031d17] px-3 py-2 text-sm text-white placeholder:text-green-100/40 focus:border-emerald-300 focus:outline-none';
+      prompt.append(reasonInput);
+    }
     const actions = document.createElement('span');
     actions.className = 'ml-auto flex shrink-0 items-center gap-2';
     const cancel = document.createElement('button');
@@ -56,19 +70,30 @@
     confirm.type = 'button';
     confirm.className = 'rounded-lg border border-green-300/30 bg-green-400/15 px-3 py-2 text-xs font-semibold text-green-100 transition hover:bg-green-400/25';
     confirm.textContent = 'Confirm';
+    if (reasonInput) confirm.disabled = true;
+    reasonInput?.addEventListener('input', () => {
+      confirm.disabled = reasonInput.value.trim().length === 0;
+    });
     const dismiss = () => toast.remove();
     cancel.addEventListener('click', dismiss);
     confirm.addEventListener('click', () => {
+      const reason = reasonInput?.value.trim() || '';
+      if (reasonInput && !reason) {
+        reasonInput.focus();
+        return;
+      }
       dismiss();
-      onConfirm();
+      onConfirm(reason);
     });
     toast.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') dismiss();
     });
     actions.append(cancel, confirm);
-    toast.append(icon, text, actions);
+    toast.append(icon, text);
+    if (reasonInput) toast.append(reasonInput.parentElement);
+    toast.append(actions);
     document.body.append(toast);
-    confirm.focus();
+    (reasonInput || confirm).focus();
     window.setTimeout(dismiss, 15000);
   }
 
@@ -269,11 +294,19 @@
     const submitter = event.submitter;
     if (form.dataset.confirm && !confirmedForms.has(form)) {
       event.preventDefault();
-      confirmInToast(form.dataset.confirm, () => {
+      confirmInToast(form.dataset.confirm, (reason) => {
+        const reasonFieldName = form.dataset.confirmReason;
+        if (reasonFieldName) {
+          const reasonField = [...form.elements].find((element) => element.name === reasonFieldName);
+          if (reasonField) reasonField.value = reason;
+        }
         confirmedForms.add(form);
         if (submitter && submitter.isConnected) form.requestSubmit(submitter);
         else form.requestSubmit();
-      });
+      }, form.dataset.confirmReasonLabel ? {
+        reasonLabel: form.dataset.confirmReasonLabel,
+        reasonMaxLength: Number(form.dataset.confirmReasonMaxlength || 500),
+      } : {});
       return;
     }
     confirmedForms.delete(form);

@@ -130,6 +130,7 @@ CREATE TABLE IF NOT EXISTS students (
     mother_occupation VARCHAR(100) NULL,
     mother_photo VARCHAR(255) NULL,
     status ENUM('active','inactive','graduated') NOT NULL DEFAULT 'active',
+    archive_reason TEXT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE KEY students_student_id_unique (student_id),

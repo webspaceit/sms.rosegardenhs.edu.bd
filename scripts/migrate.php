@@ -170,6 +170,7 @@ $columns = [
         'admission_date' => 'DATE NULL AFTER birth_registration_no',
         'previous_school' => 'VARCHAR(190) NULL AFTER admission_date',
         'address' => 'TEXT NULL AFTER previous_school',
+        'archive_reason' => 'TEXT NULL AFTER status',
     ],
     'academic_report_marks' => [
         'obtained' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 0 AFTER ca_marks',

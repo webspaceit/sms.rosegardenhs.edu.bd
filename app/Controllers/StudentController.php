@@ -398,8 +398,14 @@ final class StudentController
     {
         $this->requireSignIn();
         if (!$this->verifyCsrf($request)) { return; }
-        Student::archive((int) $request->input('id', 0));
-        AuditLog::record('student.archived', 'students', (int) $request->input('id', 0));
+        $id = (int) $request->input('id', 0);
+        $reason = trim((string) $request->input('archive_reason', ''));
+        if ($id < 1 || $reason === '' || mb_strlen($reason) > 500) {
+            Toast::flash('Enter a reason for archiving this student (up to 500 characters).', 'error');
+            header('Location: ' . Url::to('/students')); exit;
+        }
+        Student::archive($id, $reason);
+        AuditLog::record('student.archived', 'students', $id);
         Toast::flash('Student record marked inactive.');
         header('Location: ' . Url::to('/students')); exit;
     }

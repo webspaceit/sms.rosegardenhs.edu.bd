@@ -79,6 +79,7 @@ $statusClass = [
                 <div><dt>Section</dt><dd><?= $detailValue($student['section_name']) ?></dd></div>
                 <div><dt>Gender</dt><dd><?= $detailValue($student['gender']) ?></dd></div>
                 <div><dt>Status</dt><dd><?= View::escape(ucfirst((string) $student['status'])) ?></dd></div>
+                <?php if (($student['status'] ?? '') === 'inactive' && !empty($student['archive_reason'])): ?><div class="student-reference-archive-reason"><dt>Archive reason</dt><dd><?= nl2br($detailValue($student['archive_reason'])) ?></dd></div><?php endif; ?>
             </dl>
             <div class="student-reference-code-label student-reference-qr-label">Open student profile</div>
             <img class="student-reference-qr" src="<?= $studentIdQr ?>" alt="QR code link to student profile <?= View::escape($student['student_id']) ?>" width="112" height="112">
@@ -289,7 +290,7 @@ $statusClass = [
             <colgroup><col class="student-detail-pdf-label-col"><col class="student-detail-pdf-value-col"><col class="student-detail-pdf-photo-col"></colgroup>
             <thead><tr><th colspan="3">STUDENT DETAILS</th></tr></thead>
             <tbody>
-                <tr><th scope="row">Name</th><td><?= View::escape($student['name']) ?></td><td class="student-detail-pdf-student-photo" rowspan="25"><?php if (!empty($student['photo'])): ?><img class="student-detail-pdf-photo" src="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $student['photo'])) ?>" alt="Student photo"><?php else: ?><span class="student-detail-pdf-photo-placeholder">No photo</span><?php endif; ?></td></tr>
+                <tr><th scope="row">Name</th><td><?= View::escape($student['name']) ?></td><td class="student-detail-pdf-student-photo" rowspan="<?= ($student['status'] ?? '') === 'inactive' && !empty($student['archive_reason']) ? 26 : 25 ?>"><?php if (!empty($student['photo'])): ?><img class="student-detail-pdf-photo" src="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $student['photo'])) ?>" alt="Student photo"><?php else: ?><span class="student-detail-pdf-photo-placeholder">No photo</span><?php endif; ?></td></tr>
                 <tr><th scope="row">Admission no.</th><td><?= View::escape($student['student_id']) ?></td></tr>
                 <tr><th scope="row">Roll no.</th><td><?= (int) $student['roll_no'] ?></td></tr>
                 <tr><th scope="row">Class</th><td><?= View::escape($student['class_name']) ?></td></tr>
@@ -297,6 +298,7 @@ $statusClass = [
                 <tr><th scope="row">Shift</th><td><?= $detailValue($student['shift'] ?? null) ?></td></tr>
                 <tr><th scope="row">Gender</th><td><?= $detailValue($student['gender'] ?? null) ?></td></tr>
                 <tr><th scope="row">Status</th><td><?= View::escape(ucfirst((string) $student['status'])) ?></td></tr>
+                <?php if (($student['status'] ?? '') === 'inactive' && !empty($student['archive_reason'])): ?><tr><th scope="row">Archive reason</th><td><?= nl2br($detailValue($student['archive_reason'])) ?></td></tr><?php endif; ?>
                 <tr><th scope="row">Admission date</th><td><?= !empty($student['admission_date']) ? \App\Core\DateFormatter::format($student['admission_date']) : '—' ?></td></tr>
                 <tr><th scope="row">Date of birth</th><td><?= !empty($student['date_of_birth']) ? \App\Core\DateFormatter::format($student['date_of_birth']) : '—' ?></td></tr>
                 <tr><th scope="row">Birth certificate / local ID</th><td><?= $detailValue($student['birth_registration_no'] ?? null) ?></td></tr>
