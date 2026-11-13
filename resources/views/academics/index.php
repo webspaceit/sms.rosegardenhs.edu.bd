@@ -1,6 +1,6 @@
 <?php use App\Core\Url; use App\Core\View; ?>
     <header><a href="<?= Url::to('/dashboard') ?>" class="text-sm text-green-300 hover:text-green-200">← Dashboard</a><h1 class="mt-2 text-3xl font-semibold">Academic setup</h1><p class="mt-1 text-sm text-white">Manage years, classes, shifts, and sections.</p></header>
-    <section class="mt-7 grid min-w-0 gap-5 2xl:grid-cols-2">
+    <section class="mt-7 grid min-w-0 gap-5 xl:grid-cols-[7fr_13fr]">
       <article class="rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5">
         <div class="flex items-start justify-between gap-3">
           <div><h2 class="font-semibold">Academic years</h2><p class="mt-1 text-sm text-slate-500">Select the year used for new admissions.</p></div>
