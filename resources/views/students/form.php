@@ -170,7 +170,7 @@ $removedDocumentIds = array_map('intval', (array) ($old['document_remove_ids'] ?
                     <input class="student-document-title w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" name="document_title_<?= $documentIndex ?>" placeholder="Title" value="<?= View::escape((string) ($old['document_title_' . $documentIndex] ?? $document['title'])) ?>">
                     <input type="file" class="student-document-file w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" name="document_file_<?= $documentIndex ?>">
                     <a href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $document['file_path'])) ?>" target="_blank" rel="noopener" class="rounded-lg border border-green-100/20 px-3 py-2 text-sm text-teal-200">Open</a>
-                    <button type="button" class="student-document-remove-row rounded-lg border border-slate-700 px-3 py-2 text-sm text-rose-200 hover:border-rose-400">Remove</button>
+                    <button type="button" class="student-document-remove-row grid h-11 w-11 place-items-center rounded-lg border border-rose-300/20 text-rose-200 transition hover:border-rose-300/60 hover:bg-rose-400/10" title="Remove document" aria-label="Remove document"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-.9 14H5.9L5 6m4 4v6m6-6v6"/></svg></button>
                 </div>
                 <?php $documentIndex++; endforeach; ?>
                 <?php foreach ($removedDocumentIds as $removedId): ?><input type="hidden" name="document_remove_ids[]" value="<?= (int) $removedId ?>"><?php endforeach; ?>
@@ -178,7 +178,7 @@ $removedDocumentIds = array_map('intval', (array) ($old['document_remove_ids'] ?
                 <div class="student-document-row grid gap-3 sm:grid-cols-[1fr_2fr_auto]" data-existing="0">
                     <input class="student-document-title w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" name="document_title_<?= (int) $newDocumentIndex ?>" placeholder="Title" value="<?= View::escape((string) $fieldValue('document_title_' . $newDocumentIndex)) ?>">
                     <input type="file" class="student-document-file w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" name="document_file_<?= (int) $newDocumentIndex ?>">
-                    <?php if ($newDocumentIndex > 0): ?><button type="button" class="student-document-remove-row rounded-lg border border-slate-700 px-3 py-2 text-sm text-rose-200 hover:border-rose-400">Remove row</button><?php endif; ?>
+                    <?php if ($newDocumentIndex > 0): ?><button type="button" class="student-document-remove-row grid h-11 w-11 place-items-center rounded-lg border border-rose-300/20 text-rose-200 transition hover:border-rose-300/60 hover:bg-rose-400/10" title="Remove document" aria-label="Remove document"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-.9 14H5.9L5 6m4 4v6m6-6v6"/></svg></button><?php endif; ?>
                 </div>
             </div>
             <button type="button" id="add-student-document" class="mt-4 rounded-lg border border-green-100/20 px-4 py-2 text-sm text-teal-200 hover:border-teal-300">+ Add another document</button>
@@ -238,7 +238,14 @@ $removedDocumentIds = array_map('intval', (array) ($old['document_remove_ids'] ?
     const row = button.closest('.student-document-row');
     if (!row) return;
     if (row.dataset.existing === '1') {
-      row.querySelector('.student-document-remove').disabled = false;
+      const idField = row.querySelector('.student-document-id');
+      if (!idField) return;
+      const removal = document.createElement('input');
+      removal.type = 'hidden';
+      removal.name = 'document_remove_ids[]';
+      removal.value = idField.value;
+      row.append(removal);
+      row.querySelectorAll('.student-document-id, .student-document-title, .student-document-file').forEach(field => { field.disabled = true; });
       row.hidden = true;
     } else if (documentRows.querySelectorAll('.student-document-row[data-existing="0"]').length > 1) {
       row.remove();
@@ -255,6 +262,7 @@ $removedDocumentIds = array_map('intval', (array) ($old['document_remove_ids'] ?
 
     const row = document.createElement('div');
     row.className = 'student-document-row grid gap-3 sm:grid-cols-[1fr_2fr_auto]';
+    row.dataset.existing = '0';
 
     const title = document.createElement('input');
     title.name = `document_title_${index}`;
@@ -268,8 +276,10 @@ $removedDocumentIds = array_map('intval', (array) ($old['document_remove_ids'] ?
 
     const remove = document.createElement('button');
     remove.type = 'button';
-    remove.className = 'student-document-remove-row rounded-lg border border-slate-700 px-3 py-2 text-sm text-rose-200 hover:border-rose-400';
-    remove.textContent = 'Remove row';
+    remove.className = 'student-document-remove-row grid h-11 w-11 place-items-center rounded-lg border border-rose-300/20 text-rose-200 transition hover:border-rose-300/60 hover:bg-rose-400/10';
+    remove.title = 'Remove document';
+    remove.setAttribute('aria-label', 'Remove document');
+    remove.innerHTML = '<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-.9 14H5.9L5 6m4 4v6m6-6v6"/></svg>';
     row.append(title, file, remove);
     documentRows.append(row);
     reindexDocuments();
