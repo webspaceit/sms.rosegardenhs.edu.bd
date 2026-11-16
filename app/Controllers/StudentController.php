@@ -199,6 +199,7 @@ final class StudentController
                 $data[$photoField] = Upload::storeJpegImage($photoField, 'student-photos');
                 if ($data[$photoField] !== null) $uploaded[] = $data[$photoField];
             }
+            if (empty($data['photo'])) throw new \RuntimeException('Student photo is required for admission.');
             if ($guardian['mode'] === 'new') {
                 $guardian['data']['photo'] = Upload::storeJpegImage('guardian_photo', 'student-photos');
                 if ($guardian['data']['photo'] !== null) $uploaded[] = $guardian['data']['photo'];
