@@ -33,7 +33,7 @@ final class StudentController
             if ((int) $classOption['id'] === $classId) { $classLevel = (int) $classOption['numeric_level']; break; }
         }
         $showAcademicGroupFilter = $classLevel === 9;
-        $academicGroups = $showAcademicGroupFilter ? AcademicGroup::names() : [];
+        $academicGroups = AcademicGroup::names();
         $academicGroup = trim((string) $request->input('group', ''));
         if (!$showAcademicGroupFilter || !in_array($academicGroup, $academicGroups, true)) $academicGroup = '';
         $academicYears = Student::academicYears();
