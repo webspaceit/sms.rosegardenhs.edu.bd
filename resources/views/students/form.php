@@ -15,20 +15,23 @@ $genderOptions = ['Male', 'Female', 'Other'];
 $relationOptions = ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'Other'];
 $guardian = $primaryGuardian ?? null;
 $removedDocumentIds = array_map('intval', (array) ($old['document_remove_ids'] ?? []));
+$wizardFiles = (array) ($_SESSION['_student_wizard']['files'] ?? []);
 ?>
 <div class="w-full min-w-0">
     <a href="<?= Url::to('/students') ?>" class="text-sm text-green-300 hover:text-green-200">← Student register</a>
     <h1 class="mt-2 text-3xl font-semibold"><?= $editing ? 'Edit Student' : 'Student Admission' ?></h1>
     <p class="mt-1 text-sm text-white"><?= $editing ? 'Update the student record.' : 'Enter the full admission details for the student.' ?></p>
 
+    <?php if (!$editing): ?><div id="student-wizard-progress" class="mt-6 grid grid-cols-4 gap-2" aria-label="Admission steps"><?php foreach (['Student', 'Parent / Guardian', 'More details', 'Documents'] as $stepIndex => $stepTitle): ?><div class="student-wizard-indicator rounded-lg border px-3 py-2 text-center text-xs font-semibold" data-step-indicator="<?= $stepIndex + 1 ?>"><?= ($stepIndex + 1) . '. ' . View::escape($stepTitle) ?></div><?php endforeach; ?></div><?php endif; ?>
     <form id="student-registration-form" method="post" enctype="multipart/form-data" action="<?= Url::to($editing ? '/students/update' : '/students') ?>" data-no-ajax class="mt-7 space-y-5">
         <?= \App\Core\Csrf::field() ?>
         <?php if ($editing): ?><input type="hidden" name="id" value="<?= (int) $student['id'] ?>"><?php endif; ?>
         <input type="hidden" name="academic_year_id" value="<?= (int) ($student['academic_year_id'] ?? ($year['id'] ?? 0)) ?>">
+        <?php if (!$editing): ?><input type="hidden" name="_wizard_finish" id="student-wizard-finish" value="0"><?php endif; ?>
         <?php if (!$editing): ?><input type="hidden" name="status" value="active"><input type="hidden" name="guardian_mode" value="new"><?php endif; ?>
 
         <!-- Student Admission -->
-        <section class="rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
+        <section data-wizard-step="1" class="rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
             <h2 class="text-lg font-semibold">Student Admission</h2>
             <div class="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
                 <label class="block"><span class="mb-2 block text-sm font-medium">Admission No <span class="text-red-300">*</span></span><input readonly name="student_id" value="<?= View::escape((string) $fieldValue('student_id', $nextStudentId)) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2.5 text-sm text-slate-300"></label>
@@ -55,7 +58,7 @@ $removedDocumentIds = array_map('intval', (array) ($old['document_remove_ids'] ?
                 <label class="block"><span class="mb-2 block text-sm font-medium">Height</span><input type="number" step="0.01" name="height" placeholder="Height (cm)" value="<?= View::escape((string) $fieldValue('height')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Weight</span><input type="number" step="0.01" name="weight" placeholder="Weight (kg)" value="<?= View::escape((string) $fieldValue('weight')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Measurement Date</span><input type="date" name="measurement_date" value="<?= View::escape((string) $fieldValue('measurement_date', $editing ? '' : date('Y-m-d'))) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
-                <label class="block"><span class="mb-2 block text-sm font-medium">Student Photo (max 300 × 300 px, saved as JPG)<?= !$editing ? ' <span class="text-red-300">*</span>' : '' ?></span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" <?= !$editing ? 'required' : '' ?> class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><?php if (!empty($student['photo'])): ?><a class="mt-1 block text-xs text-green-300" target="_blank" href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $student['photo'])) ?>">View current photo</a><label class="mt-2 flex items-center gap-2 text-xs text-rose-200"><input type="checkbox" name="remove_photo" value="1"> Delete photo from server</label><?php endif; ?></label>
+                <label class="block"><span class="mb-2 block text-sm font-medium">Student Photo (max 300 × 300 px, saved as JPG)<?= !$editing ? ' <span class="text-red-300">*</span>' : '' ?></span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" <?= !$editing && empty($wizardFiles['photo']) ? 'required' : '' ?> class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><?php if (!$editing && !empty($wizardFiles['photo'])): ?><span class="mt-1 block text-xs text-green-300">Photo saved for this admission.</span><?php endif; ?><?php if (!empty($student['photo'])): ?><a class="mt-1 block text-xs text-green-300" target="_blank" href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $student['photo'])) ?>">View current photo</a><label class="mt-2 flex items-center gap-2 text-xs text-rose-200"><input type="checkbox" name="remove_photo" value="1"> Delete photo from server</label><?php endif; ?></label>
 
                 <label class="block sm:col-span-1 xl:col-span-2"><span class="mb-2 block text-sm font-medium">Medical History</span><textarea name="medical_history" rows="2" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" placeholder="Medical History"><?= View::escape((string) $fieldValue('medical_history')) ?></textarea></label>
                 <label class="block sm:col-span-1 xl:col-span-2"><span class="mb-2 block text-sm font-medium">Student Behaviour</span><textarea name="student_behaviour" maxlength="5000" rows="2" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" placeholder="Record relevant behaviour notes"><?= View::escape((string) $fieldValue('student_behaviour')) ?></textarea></label>
@@ -63,18 +66,18 @@ $removedDocumentIds = array_map('intval', (array) ($old['document_remove_ids'] ?
         </section>
 
         <!-- Parent / Guardian -->
-        <section class="rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
+        <section data-wizard-step="2" class="rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
             <h2 class="text-lg font-semibold">Parent / Guardian Detail</h2>
             <div class="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
                 <label class="block"><span class="mb-2 block text-sm font-medium">Father Name</span><input maxlength="150" name="father_name" placeholder="Father Name" value="<?= View::escape((string) $fieldValue('father_name')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Father Phone</span><input maxlength="20" name="father_phone" placeholder="Father Phone" value="<?= View::escape((string) $fieldValue('father_phone')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Father Occupation</span><input maxlength="100" name="father_occupation" placeholder="Father Occupation" value="<?= View::escape((string) $fieldValue('father_occupation')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
-                <label class="block"><span class="mb-2 block text-sm font-medium">Father Photo (max 300 × 300 px, JPG)</span><input type="file" name="father_photo" accept="image/jpeg,image/png,image/webp" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><?php if (!empty($student['father_photo'])): ?><a class="mt-1 block text-xs text-green-300" target="_blank" href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $student['father_photo'])) ?>">View current photo</a><label class="mt-2 flex items-center gap-2 text-xs text-rose-200"><input type="checkbox" name="remove_father_photo" value="1"> Delete photo from server</label><?php endif; ?></label>
+                <label class="block"><span class="mb-2 block text-sm font-medium">Father Photo (max 300 × 300 px, JPG)</span><input type="file" name="father_photo" accept="image/jpeg,image/png,image/webp" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><?php if (!$editing && !empty($wizardFiles['father_photo'])): ?><span class="mt-1 block text-xs text-green-300">Photo saved for this admission.</span><?php endif; ?><?php if (!empty($student['father_photo'])): ?><a class="mt-1 block text-xs text-green-300" target="_blank" href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $student['father_photo'])) ?>">View current photo</a><label class="mt-2 flex items-center gap-2 text-xs text-rose-200"><input type="checkbox" name="remove_father_photo" value="1"> Delete photo from server</label><?php endif; ?></label>
 
                 <label class="block"><span class="mb-2 block text-sm font-medium">Mother Name</span><input maxlength="150" name="mother_name" placeholder="Mother Name" value="<?= View::escape((string) $fieldValue('mother_name')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Mother Phone</span><input maxlength="20" name="mother_phone" placeholder="Mother Phone" value="<?= View::escape((string) $fieldValue('mother_phone')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Mother Occupation</span><input maxlength="100" name="mother_occupation" placeholder="Mother Occupation" value="<?= View::escape((string) $fieldValue('mother_occupation')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
-                <label class="block"><span class="mb-2 block text-sm font-medium">Mother Photo (max 300 × 300 px, JPG)</span><input type="file" name="mother_photo" accept="image/jpeg,image/png,image/webp" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><?php if (!empty($student['mother_photo'])): ?><a class="mt-1 block text-xs text-green-300" target="_blank" href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $student['mother_photo'])) ?>">View current photo</a><label class="mt-2 flex items-center gap-2 text-xs text-rose-200"><input type="checkbox" name="remove_mother_photo" value="1"> Delete photo from server</label><?php endif; ?></label>
+                <label class="block"><span class="mb-2 block text-sm font-medium">Mother Photo (max 300 × 300 px, JPG)</span><input type="file" name="mother_photo" accept="image/jpeg,image/png,image/webp" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><?php if (!$editing && !empty($wizardFiles['mother_photo'])): ?><span class="mt-1 block text-xs text-green-300">Photo saved for this admission.</span><?php endif; ?><?php if (!empty($student['mother_photo'])): ?><a class="mt-1 block text-xs text-green-300" target="_blank" href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $student['mother_photo'])) ?>">View current photo</a><label class="mt-2 flex items-center gap-2 text-xs text-rose-200"><input type="checkbox" name="remove_mother_photo" value="1"> Delete photo from server</label><?php endif; ?></label>
             </div>
 
             <?php if ($editing): ?>
@@ -120,7 +123,7 @@ $removedDocumentIds = array_map('intval', (array) ($old['document_remove_ids'] ?
         </section>
 
         <!-- Add More Details -->
-        <details open class="rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
+        <details data-wizard-step="3" open class="rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
             <summary class="cursor-pointer text-lg font-semibold">Add More Details</summary>
             <div class="mt-5 space-y-5">
                 <div>
@@ -144,7 +147,7 @@ $removedDocumentIds = array_map('intval', (array) ($old['document_remove_ids'] ?
 
         <?php if ($enableTransport ?? true): ?>
         <!-- Transport -->
-        <section class="rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
+        <section data-wizard-step="3" class="rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
             <h2 class="text-lg font-semibold">Transport Details</h2>
             <div class="mt-5 grid gap-5 sm:grid-cols-3">
                 <label class="block"><span class="mb-2 block text-sm font-medium">Route List</span><select name="transport_route_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach ($transportRoutes as $rid => $rname): ?><option value="<?= (int) $rid ?>" <?= (int) $fieldValue('transport_route_id') === (int) $rid ? 'selected' : '' ?>><?= View::escape($rname) ?></option><?php endforeach; ?></select></label>
@@ -156,7 +159,7 @@ $removedDocumentIds = array_map('intval', (array) ($old['document_remove_ids'] ?
 
         <?php if ($enableHostel ?? true): ?>
         <!-- Hostel -->
-        <section class="rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
+        <section data-wizard-step="3" class="rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
             <h2 class="text-lg font-semibold">Hostel Details</h2>
             <div class="mt-5 grid gap-5 sm:grid-cols-2">
                 <label class="block"><span class="mb-2 block text-sm font-medium">Hostel Room</span><select name="hostel_room_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach ($hostelRooms as $hid => $hname): ?><option value="<?= (int) $hid ?>" <?= (int) $fieldValue('hostel_room_id') === (int) $hid ? 'selected' : '' ?>><?= View::escape($hname) ?></option><?php endforeach; ?></select></label>
@@ -165,7 +168,7 @@ $removedDocumentIds = array_map('intval', (array) ($old['document_remove_ids'] ?
         <?php endif; ?>
 
         <!-- Documents -->
-        <section class="rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
+        <section data-wizard-step="4" class="rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
             <h2 class="text-lg font-semibold">Upload Documents</h2>
             <div id="student-document-rows" class="mt-5 grid gap-4">
                 <?php $documentIndex = 0; foreach (($documents ?? []) as $document): ?>
@@ -182,7 +185,7 @@ $removedDocumentIds = array_map('intval', (array) ($old['document_remove_ids'] ?
                 <?php $newDocumentIndex = $documentIndex; ?>
                 <div class="student-document-row grid gap-3 sm:grid-cols-[1fr_2fr_auto]" data-existing="0">
                     <input class="student-document-title w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" name="document_title_<?= (int) $newDocumentIndex ?>" placeholder="Title" value="<?= View::escape((string) $fieldValue('document_title_' . $newDocumentIndex)) ?>">
-                    <input type="file" class="student-document-file w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" name="document_file_<?= (int) $newDocumentIndex ?>">
+                    <input type="file" class="student-document-file w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" name="document_file_<?= (int) $newDocumentIndex ?>"><?php if (!empty($wizardFiles['document_file_' . $newDocumentIndex])): ?><span class="wizard-file-saved mt-1 block text-xs text-green-300">Document saved for this admission.</span><?php endif; ?>
                     <?php if ($newDocumentIndex > 0): ?><button type="button" class="student-document-remove-row grid h-11 w-11 place-items-center rounded-lg border border-rose-300/20 text-rose-200 transition hover:border-rose-300/60 hover:bg-rose-400/10" title="Remove document" aria-label="Remove document"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-.9 14H5.9L5 6m4 4v6m6-6v6"/></svg></button><?php endif; ?>
                 </div>
             </div>
@@ -190,14 +193,80 @@ $removedDocumentIds = array_map('intval', (array) ($old['document_remove_ids'] ?
             <input type="hidden" id="student-document-count" name="document_count" value="<?= (int) $newDocumentIndex + 1 ?>">
         </section>
 
-        <div class="flex flex-wrap justify-end gap-3 border-t border-green-900/60 pt-5">
+        <div class="flex flex-wrap justify-between gap-3 border-t border-green-900/60 pt-5">
+            <?php if (!$editing): ?><button type="button" id="student-wizard-back" class="hidden rounded-lg border border-green-100/20 px-5 py-2.5 text-sm font-semibold text-white hover:border-green-300">Back</button><span id="student-wizard-spacer" class="flex-1"></span><button type="button" id="student-wizard-next" class="rounded-lg bg-teal-400 px-6 py-2.5 text-sm font-semibold text-slate-950 hover:bg-teal-300">Save and continue</button><?php endif; ?>
             <a href="<?= Url::to('/students') ?>" class="rounded-lg border border-slate-700 px-4 py-2.5 text-sm text-slate-300 hover:border-slate-500">Cancel</a>
-            <button <?= !$year ? 'disabled' : '' ?> class="rounded-lg bg-teal-400 px-6 py-2.5 text-sm font-semibold text-slate-950 hover:bg-teal-300">Save</button>
+            <button id="student-wizard-submit" <?= !$year ? 'disabled' : '' ?> class="<?= !$editing ? 'hidden ' : '' ?>rounded-lg bg-teal-400 px-6 py-2.5 text-sm font-semibold text-slate-950 hover:bg-teal-300">Save</button>
         </div>
     </form>
 </div>
 <script>
 (() => {
+  const admissionForm = document.getElementById('student-registration-form');
+  const nextStepButton = document.getElementById('student-wizard-next');
+  const wizardBackButton = document.getElementById('student-wizard-back');
+  const finishField = document.getElementById('student-wizard-finish');
+  const stepIndicators = [...document.querySelectorAll('[data-step-indicator]')];
+  const wizardSections = [...document.querySelectorAll('[data-wizard-step]')];
+  if (admissionForm && nextStepButton && wizardSections.length) {
+    const maxStep = 4;
+    let step = <?= (int) ($wizardStep ?? 1) ?>;
+    const showStep = value => {
+      step = Math.max(1, Math.min(maxStep, value));
+      wizardSections.forEach(section => { section.hidden = Number(section.dataset.wizardStep) !== step; });
+      stepIndicators.forEach(indicator => {
+        const active = Number(indicator.dataset.stepIndicator) === step;
+        indicator.className = `student-wizard-indicator rounded-lg border px-3 py-2 text-center text-xs font-semibold ${active ? 'border-emerald-300 bg-emerald-400/15 text-emerald-100' : 'border-green-900/60 text-slate-400'}`;
+      });
+      wizardBackButton.classList.toggle('hidden', step === 1);
+      nextStepButton.textContent = step === maxStep ? 'Save and finish admission' : 'Save and continue';
+      document.getElementById('student-wizard-submit').classList.toggle('hidden', true);
+    };
+    const saveStep = async () => {
+      const activeSections = wizardSections.filter(section => Number(section.dataset.wizardStep) === step);
+      const invalid = activeSections.flatMap(section => [...section.querySelectorAll(':invalid')])[0];
+      if (invalid) { invalid.reportValidity(); return false; }
+      nextStepButton.disabled = true;
+      nextStepButton.textContent = 'Saving…';
+      const formData = new FormData(admissionForm);
+      formData.set('_wizard_step', String(step));
+      try {
+        const response = await fetch('<?= Url::to('/students/wizard-save') ?>', { method: 'POST', body: formData, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const result = await response.json();
+        if (!response.ok || !result.ok) throw new Error(result.message || 'Could not save this step.');
+        admissionForm.querySelectorAll('input[type="file"]').forEach(input => {
+          if (input.files.length) input.value = '';
+          const saved = result.savedFiles?.includes(input.name);
+          let status = input.parentElement.querySelector('.wizard-file-saved');
+          if (saved && !status) {
+            status = document.createElement('span');
+            status.className = 'wizard-file-saved mt-1 block text-xs text-green-300';
+            status.textContent = 'File saved for this admission.';
+            input.insertAdjacentElement('afterend', status);
+          }
+          if (!saved) status?.remove();
+        });
+        if (step < maxStep) {
+          showStep(step + 1);
+          window.scrollTo({ top: admissionForm.getBoundingClientRect().top + window.scrollY - 24, behavior: 'smooth' });
+        } else {
+          finishField.value = '1';
+          HTMLFormElement.prototype.submit.call(admissionForm);
+        }
+        return true;
+      } catch (error) {
+        window.alert(error.message || 'Could not save this step. Please try again.');
+        return false;
+      } finally {
+        nextStepButton.disabled = false;
+        if (step < maxStep) nextStepButton.textContent = 'Save and continue';
+      }
+    };
+    nextStepButton.addEventListener('click', saveStep);
+    wizardBackButton.addEventListener('click', () => showStep(step - 1));
+    showStep(step);
+  }
+
   const classField = document.getElementById('student-class-field');
   const sectionField = document.getElementById('student-section-field');
   const academicGroupWrap = document.getElementById('student-academic-group-wrap');

@@ -152,6 +152,49 @@ final class StudentController
         $this->renderForm(null);
     }
 
+    public function saveWizardStep(Request $request): void
+    {
+        $this->requireSignIn();
+        if (!$this->verifyCsrf($request)) {
+            http_response_code(419);
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'message' => 'Your session expired. Reload and try again.']);
+            return;
+        }
+        $draft = $_SESSION['_student_wizard'] ?? ['data' => [], 'files' => []];
+        foreach ($_POST as $key => $value) {
+            if ($key === '_token' || $key === '_wizard_step' || $key === '_wizard_finish' || !is_scalar($value)) continue;
+            $draft['data'][$key] = (string) $value;
+        }
+        $draft['step'] = min(4, max(1, (int) $request->input('_wizard_step', 1) + 1));
+        $documentExtensions = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'webp', 'mp4'];
+        try {
+            foreach (['photo', 'father_photo', 'mother_photo', 'guardian_photo'] as $field) {
+                $path = Upload::storeJpegImage($field, 'student-photos');
+                if ($path !== null) {
+                    if (!empty($draft['files'][$field])) Upload::delete((string) $draft['files'][$field]);
+                    $draft['files'][$field] = $path;
+                }
+            }
+            foreach ($_FILES as $field => $_file) {
+                if (!preg_match('/^document_file_\d+$/', (string) $field)) continue;
+                $path = Upload::store($field, 'student-documents', $documentExtensions, 10485760);
+                if ($path !== null) {
+                    if (!empty($draft['files'][$field])) Upload::delete((string) $draft['files'][$field]);
+                    $draft['files'][$field] = $path;
+                    $draft['original_names'][$field] = basename((string) ($_FILES[$field]['name'] ?? ''));
+                }
+            }
+            $_SESSION['_student_wizard'] = $draft;
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => true, 'step' => max(1, min(4, (int) ($request->input('_wizard_step', 1)))), 'savedFiles' => array_keys($draft['files'])]);
+        } catch (\Throwable $error) {
+            header('Content-Type: application/json');
+            http_response_code(422);
+            echo json_encode(['ok' => false, 'message' => $error->getMessage()]);
+        }
+    }
+
     public function quickCreate(Request $request): void
     {
         $this->requireSignIn();
@@ -185,6 +228,11 @@ final class StudentController
     {
         $this->requireSignIn();
         if (!$this->verifyCsrf($request)) { return; }
+        $wizardDraft = $request->input('_wizard_finish') === '1' ? ($_SESSION['_student_wizard'] ?? null) : null;
+        if (is_array($wizardDraft)) {
+            $_POST = array_merge((array) ($wizardDraft['data'] ?? []), $_POST);
+            $_POST['_token'] = $request->input('_token');
+        }
         $quickAdmission = $request->input('_quick_admission') === '1';
         $formUrl = $quickAdmission ? '/students/quick-admit' : '/students/new';
         $data = $this->validatedInput($request, true);
@@ -196,16 +244,16 @@ final class StudentController
         $uploaded = [];
         try {
             foreach (['photo', 'father_photo', 'mother_photo'] as $photoField) {
-                $data[$photoField] = Upload::storeJpegImage($photoField, 'student-photos');
+                $data[$photoField] = $wizardDraft['files'][$photoField] ?? Upload::storeJpegImage($photoField, 'student-photos');
                 if ($data[$photoField] !== null) $uploaded[] = $data[$photoField];
             }
             if (empty($data['photo'])) throw new \RuntimeException('Student photo is required for admission.');
             if ($guardian['mode'] === 'new') {
-                $guardian['data']['photo'] = Upload::storeJpegImage('guardian_photo', 'student-photos');
+                $guardian['data']['photo'] = $wizardDraft['files']['guardian_photo'] ?? Upload::storeJpegImage('guardian_photo', 'student-photos');
                 if ($guardian['data']['photo'] !== null) $uploaded[] = $guardian['data']['photo'];
             }
         } catch (\RuntimeException $error) {
-            foreach ($uploaded as $path) Upload::delete($path);
+            if (!is_array($wizardDraft)) foreach ($uploaded as $path) Upload::delete($path);
             $this->rememberForm();
             Toast::flash($error->getMessage(), 'error');
             header('Location: ' . Url::to($formUrl)); exit;
@@ -226,12 +274,13 @@ final class StudentController
             for ($i = 0; $i < $documentCount; $i++) {
                 $title = trim((string) $request->input('document_title_' . $i, ''));
                 try {
-                    $path = Upload::store('document_file_' . $i, 'student-documents', $documentExtensions, 10485760);
+                    $field = 'document_file_' . $i;
+                    $path = $wizardDraft['files'][$field] ?? Upload::store($field, 'student-documents', $documentExtensions, 10485760);
                 } catch (\RuntimeException $error) {
                     throw new \RuntimeException('Document ' . ($i + 1) . ': ' . $error->getMessage());
                 }
                 if ($path !== null) {
-                    $originalName = (string) ($_FILES['document_file_' . $i]['name'] ?? '');
+                    $originalName = (string) ($_FILES['document_file_' . $i]['name'] ?? ($wizardDraft['original_names'][$field] ?? ''));
                     $fileTitle = trim((string) pathinfo($originalName, PATHINFO_FILENAME));
                     $documentTitle = $title !== '' ? $title : ($fileTitle !== '' ? $fileTitle : 'Student document ' . ($i + 1));
                     Student::addDocument($studentId, $documentTitle, $path);
@@ -241,19 +290,20 @@ final class StudentController
             $db->commit();
         } catch (PDOException $error) {
             if ($db->inTransaction()) $db->rollBack();
-            foreach (array_merge($uploaded, $documentPaths) as $path) Upload::delete($path);
+            if (!is_array($wizardDraft)) foreach (array_merge($uploaded, $documentPaths) as $path) Upload::delete($path);
             $this->rememberForm();
             error_log((string) $error);
             Toast::flash('The student or guardian could not be saved. Check for a duplicate roll number or invalid details.', 'error');
             header('Location: ' . Url::to($formUrl)); exit;
         } catch (\Throwable $error) {
             if ($db->inTransaction()) $db->rollBack();
-            foreach (array_merge($uploaded, $documentPaths) as $path) Upload::delete($path);
+            if (!is_array($wizardDraft)) foreach (array_merge($uploaded, $documentPaths) as $path) Upload::delete($path);
             $this->rememberForm();
             error_log((string) $error);
             Toast::flash($error instanceof \RuntimeException ? $error->getMessage() : 'The student registration could not be completed. Please try again.', 'error');
             header('Location: ' . Url::to($formUrl)); exit;
         }
+        unset($_SESSION['_student_wizard']);
         AuditLog::record('student.created', 'students', $studentId);
         Toast::flash($quickAdmission ? 'Quick admission complete. You can add the remaining details from the student profile.' : 'Student admitted successfully.');
         header('Location: ' . Url::to($quickAdmission ? '/students/view?id=' . $studentId : '/students')); exit;
@@ -492,6 +542,9 @@ final class StudentController
 
     private function renderForm(?array $student): void
     {
+        if ($student === null && !empty($_SESSION['_student_wizard']['data'])) {
+            $_SESSION['_student_old'] = array_merge((array) ($_SESSION['_student_old'] ?? []), (array) $_SESSION['_student_wizard']['data']);
+        }
         $classes = Student::classes();
         $studentId = (int) ($student['id'] ?? 0);
         $selectedClass = (int) ($student['class_id'] ?? ($_SESSION['_student_old']['class_id'] ?? ($classes[0]['id'] ?? 0)));
@@ -518,6 +571,7 @@ final class StudentController
             'nextStudentId' => $student ? ($student['student_id'] ?? '') : Student::nextStudentId($year['name'] ?? date('Y')),
             'enableTransport' => SchoolSettingController::flag('enable_transport_details'),
             'enableHostel' => SchoolSettingController::flag('enable_hostel_details'),
+            'wizardStep' => max(1, min(4, (int) ($_SESSION['_student_wizard']['step'] ?? 1))),
         ]);
         unset($_SESSION['_student_old']);
     }
