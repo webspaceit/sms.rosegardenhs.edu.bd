@@ -42,7 +42,7 @@ $wizardFiles = (array) ($_SESSION['_student_wizard']['files'] ?? []);
                 <label class="block"><span class="mb-2 block text-sm font-medium">Roll Number <span class="text-red-300">*</span></span><input required min="1" max="65535" type="number" name="roll_no" placeholder="Roll Number" value="<?= View::escape((string) $fieldValue('roll_no')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
 
                 <label class="block"><span class="mb-2 block text-sm font-medium">Student Name <span class="text-red-300">*</span></span><input required maxlength="150" name="name" placeholder="Student Name" value="<?= View::escape((string) $fieldValue('name')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
-                <label class="block"><span class="mb-2 block text-sm font-medium">Gender <span class="text-red-300">*</span></span><select name="gender" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach ($genderOptions as $gender): ?><option value="<?= $gender ?>" <?= $fieldValue('gender') === $gender ? 'selected' : '' ?>><?= $gender ?></option><?php endforeach; ?></select></label>
+                <label class="block"><span class="mb-2 block text-sm font-medium">Gender <span class="text-red-300">*</span></span><select required name="gender" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach ($genderOptions as $gender): ?><option value="<?= $gender ?>" <?= $fieldValue('gender') === $gender ? 'selected' : '' ?>><?= $gender ?></option><?php endforeach; ?></select></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Date Of Birth</span><input type="date" name="date_of_birth" max="<?= date('Y-m-d') ?>" value="<?= View::escape((string) $fieldValue('date_of_birth')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Birth Certificate / Local ID</span><input maxlength="50" name="birth_registration_no" value="<?= View::escape((string) $fieldValue('birth_registration_no')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
                 <?php if ($editing): ?><label class="block"><span class="mb-2 block text-sm font-medium">Status</span><select name="status" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><?php foreach (['active' => 'Active', 'inactive' => 'Inactive', 'graduated' => 'Graduated'] as $statusValue => $statusLabel): ?><option value="<?= $statusValue ?>" <?= $fieldValue('status', 'active') === $statusValue ? 'selected' : '' ?>><?= $statusLabel ?></option><?php endforeach; ?></select></label><?php endif; ?>
@@ -61,7 +61,7 @@ $wizardFiles = (array) ($_SESSION['_student_wizard']['files'] ?? []);
                 <label class="block"><span class="mb-2 block text-sm font-medium">Student Photo (max 300 × 300 px, saved as JPG)<?= !$editing ? ' <span class="text-red-300">*</span>' : '' ?></span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" <?= !$editing && empty($wizardFiles['photo']) ? 'required' : '' ?> class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><?php if (!$editing && !empty($wizardFiles['photo'])): ?><span class="mt-1 block text-xs text-green-300">Photo saved for this admission.</span><?php endif; ?><?php if (!empty($student['photo'])): ?><a class="mt-1 block text-xs text-green-300" target="_blank" href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $student['photo'])) ?>">View current photo</a><label class="mt-2 flex items-center gap-2 text-xs text-rose-200"><input type="checkbox" name="remove_photo" value="1"> Delete photo from server</label><?php endif; ?></label>
 
                 <label class="block sm:col-span-1 xl:col-span-2"><span class="mb-2 block text-sm font-medium">Medical History</span><textarea name="medical_history" rows="2" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" placeholder="Medical History"><?= View::escape((string) $fieldValue('medical_history')) ?></textarea></label>
-                <label class="block sm:col-span-1 xl:col-span-2"><span class="mb-2 block text-sm font-medium">Student Behaviour</span><textarea name="student_behaviour" maxlength="5000" rows="2" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" placeholder="Record relevant behaviour notes"><?= View::escape((string) $fieldValue('student_behaviour')) ?></textarea></label>
+                <label id="student-behaviour-field" class="block sm:col-span-1 xl:col-span-2 <?= $selectedClassLevel === 9 ? 'student-behaviour-class-nine' : '' ?>"><span class="mb-2 block text-sm font-medium">Student Behaviour</span><textarea name="student_behaviour" maxlength="5000" rows="2" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" placeholder="Record relevant behaviour notes"><?= View::escape((string) $fieldValue('student_behaviour')) ?></textarea></label>
             </div>
         </section>
 
@@ -222,10 +222,31 @@ $wizardFiles = (array) ($_SESSION['_student_wizard']['files'] ?? []);
       nextStepButton.textContent = step === maxStep ? 'Save and finish admission' : 'Save and continue';
       document.getElementById('student-wizard-submit').classList.toggle('hidden', true);
     };
+    const showStepError = (message, target = null) => {
+      const section = wizardSections.find(item => Number(item.dataset.wizardStep) === step);
+      if (!section) return;
+      let feedback = section.querySelector('.student-wizard-error');
+      if (!feedback) {
+        feedback = document.createElement('div');
+        feedback.className = 'student-wizard-error mb-4 rounded-lg border border-rose-300/30 bg-rose-950/50 px-4 py-3 text-sm text-rose-100';
+        feedback.setAttribute('role', 'alert');
+        section.insertBefore(feedback, section.firstChild);
+      }
+      feedback.textContent = message;
+      if (target) {
+        target.setAttribute('aria-invalid', 'true');
+        target.focus({ preventScroll: true });
+      }
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    const clearStepError = () => wizardSections
+      .filter(section => Number(section.dataset.wizardStep) === step)
+      .forEach(section => section.querySelector('.student-wizard-error')?.remove());
     const saveStep = async () => {
+      clearStepError();
       const activeSections = wizardSections.filter(section => Number(section.dataset.wizardStep) === step);
       const invalid = activeSections.flatMap(section => [...section.querySelectorAll(':invalid')])[0];
-      if (invalid) { invalid.reportValidity(); return false; }
+      if (invalid) { showStepError(invalid.validationMessage || 'Please correct this field before continuing.', invalid); return false; }
       nextStepButton.disabled = true;
       nextStepButton.textContent = 'Saving…';
       const formData = new FormData(admissionForm);
@@ -255,7 +276,7 @@ $wizardFiles = (array) ($_SESSION['_student_wizard']['files'] ?? []);
         }
         return true;
       } catch (error) {
-        window.alert(error.message || 'Could not save this step. Please try again.');
+        showStepError(error.message || 'Could not save this step. Please try again.');
         return false;
       } finally {
         nextStepButton.disabled = false;
@@ -264,6 +285,11 @@ $wizardFiles = (array) ($_SESSION['_student_wizard']['files'] ?? []);
     };
     nextStepButton.addEventListener('click', saveStep);
     wizardBackButton.addEventListener('click', () => showStep(step - 1));
+    admissionForm.addEventListener('input', event => {
+      if (event.target.matches('[aria-invalid="true"]')) event.target.removeAttribute('aria-invalid');
+      clearStepError();
+    });
+    admissionForm.addEventListener('change', clearStepError);
     showStep(step);
   }
 
@@ -271,12 +297,14 @@ $wizardFiles = (array) ($_SESSION['_student_wizard']['files'] ?? []);
   const sectionField = document.getElementById('student-section-field');
   const academicGroupWrap = document.getElementById('student-academic-group-wrap');
   const academicGroupField = document.getElementById('student-academic-group');
+  const studentBehaviourField = document.getElementById('student-behaviour-field');
   const syncAcademicGroup = () => {
     if (!classField || !academicGroupWrap || !academicGroupField) return;
     const classOption = classField.selectedOptions[0];
     const isClassNine = classOption?.dataset.level === '9';
     academicGroupWrap.classList.toggle('hidden', !isClassNine);
     academicGroupField.required = isClassNine;
+    studentBehaviourField?.classList.toggle('student-behaviour-class-nine', isClassNine);
     if (!isClassNine) academicGroupField.value = '';
   };
   if (classField && sectionField) {

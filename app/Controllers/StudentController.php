@@ -155,20 +155,71 @@ final class StudentController
     public function saveWizardStep(Request $request): void
     {
         $this->requireSignIn();
-        if (!$this->verifyCsrf($request)) {
+        if (!Csrf::verify($request)) {
             http_response_code(419);
             header('Content-Type: application/json');
             echo json_encode(['ok' => false, 'message' => 'Your session expired. Reload and try again.']);
             return;
         }
         $draft = $_SESSION['_student_wizard'] ?? ['data' => [], 'files' => []];
+        $step = min(4, max(1, (int) $request->input('_wizard_step', 1)));
         foreach ($_POST as $key => $value) {
             if ($key === '_token' || $key === '_wizard_step' || $key === '_wizard_finish' || !is_scalar($value)) continue;
             $draft['data'][$key] = (string) $value;
         }
-        $draft['step'] = min(4, max(1, (int) $request->input('_wizard_step', 1) + 1));
+        $draft['step'] = min(4, $step + 1);
         $documentExtensions = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'webp', 'mp4'];
         try {
+            $errors = [];
+            if ($step === 1) {
+                $studentName = trim((string) $request->input('name', ''));
+                $classId = (int) $request->input('class_id', 0);
+                $sectionId = (int) $request->input('section_id', 0);
+                $roll = (int) $request->input('roll_no', 0);
+                $gender = (string) $request->input('gender', '');
+                if ($studentName === '' || $this->textLength($studentName) > 150) $errors[] = 'Enter a student name (up to 150 characters).';
+                if ($classId < 1 || !Student::yearById((int) $request->input('academic_year_id', 0))) $errors[] = 'Select a valid class and academic year.';
+                if ($classId > 0 && !in_array($sectionId, array_map(static fn (array $section): int => (int) $section['id'], Student::sections($classId)), true)) $errors[] = 'Select a section for the chosen class.';
+                if ($roll < 1 || $roll > 65535) $errors[] = 'Enter a roll number from 1 to 65535.';
+                if (!in_array($gender, ['Male', 'Female', 'Other'], true)) $errors[] = 'Select the student’s gender.';
+                if (Student::classLevel($classId) === 9 && !in_array(trim((string) $request->input('academic_group', '')), AcademicGroup::names(), true)) $errors[] = 'Select an academic group for Class 9.';
+                $yearId = (int) $request->input('academic_year_id', 0);
+                if ($classId > 0 && $sectionId > 0 && $yearId > 0 && $roll > 0) {
+                    $duplicate = Database::connection()->prepare('SELECT 1 FROM students WHERE class_id = :class_id AND section_id = :section_id AND academic_year_id = :year_id AND roll_no = :roll_no AND branch_id = :branch_id LIMIT 1');
+                    $duplicate->execute(['class_id' => $classId, 'section_id' => $sectionId, 'year_id' => $yearId, 'roll_no' => $roll, 'branch_id' => BranchContext::id()]);
+                    if ($duplicate->fetchColumn()) $errors[] = 'That roll number is already used in the selected class and academic year.';
+                }
+                $photoUpload = $_FILES['photo'] ?? [];
+                if (empty($draft['files']['photo']) && (int) ($photoUpload['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) $errors[] = 'Upload the student photo to continue.';
+            } elseif ($step === 2) {
+                $guardianName = trim((string) $request->input('guardian_name', ''));
+                $guardianPhone = trim((string) $request->input('guardian_phone', ''));
+                $guardianEmail = trim((string) $request->input('guardian_email', ''));
+                if ($guardianName === '' || $this->textLength($guardianName) > 150) $errors[] = 'Enter a guardian name (up to 150 characters).';
+                if ($guardianPhone === '' || strlen($guardianPhone) > 20) $errors[] = 'Enter a guardian phone number (up to 20 characters).';
+                if ($guardianEmail !== '' && (!filter_var($guardianEmail, FILTER_VALIDATE_EMAIL) || strlen($guardianEmail) > 190)) $errors[] = 'Enter a valid guardian email address.';
+                if ($this->textLength(trim((string) $request->input('guardian_occupation', ''))) > 100) $errors[] = 'Guardian occupation must be 100 characters or fewer.';
+                if ($this->textLength(trim((string) $request->input('guardian_address', ''))) > 10000) $errors[] = 'Guardian address is too long.';
+            } elseif ($step === 3) {
+                $email = trim((string) $request->input('email', ''));
+                if ($email !== '' && (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 190)) $errors[] = 'Enter a valid student email address.';
+                foreach (['date_of_birth' => true, 'admission_date' => false, 'measurement_date' => false] as $field => $notFuture) {
+                    if (!$this->validDate(trim((string) $request->input($field, '')), $notFuture)) $errors[] = 'Check the ' . str_replace('_', ' ', $field) . ' value.';
+                }
+                foreach (['height', 'weight'] as $field) {
+                    $value = trim((string) $request->input($field, ''));
+                    if ($value !== '' && !is_numeric($value)) $errors[] = 'Enter a numeric ' . $field . ' value.';
+                }
+                if (strlen(trim((string) $request->input('birth_registration_no', ''))) > 50) $errors[] = 'Birth certificate / local ID must be 50 characters or fewer.';
+                if ($this->textLength(trim((string) $request->input('previous_school', ''))) > 190) $errors[] = 'Previous school must be 190 characters or fewer.';
+                if ($this->textLength(trim((string) $request->input('student_behaviour', ''))) > 5000) $errors[] = 'Student behaviour must be 5,000 characters or fewer.';
+            }
+            if ($errors !== []) {
+                header('Content-Type: application/json');
+                http_response_code(422);
+                echo json_encode(['ok' => false, 'message' => implode(' ', $errors)]);
+                return;
+            }
             foreach (['photo', 'father_photo', 'mother_photo', 'guardian_photo'] as $field) {
                 $path = Upload::storeJpegImage($field, 'student-photos');
                 if ($path !== null) {

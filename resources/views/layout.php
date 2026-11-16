@@ -16,6 +16,7 @@ $appUser = Auth::user();
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        @media (min-width:1280px){#student-behaviour-field.student-behaviour-class-nine{grid-column:span 1 / span 1}}
         body{font-family:'DM Sans',sans-serif}
         .dashboard-shell{background:radial-gradient(ellipse at 82% 0%,rgba(34,197,94,.14),transparent 38rem),linear-gradient(135deg,#0b4935 0%,#073d30 42%,#062f2d 100%)}
         .dashboard-gradient{background:linear-gradient(180deg,#064e3b 0%,#064039 45%,#052e32 100%)}
