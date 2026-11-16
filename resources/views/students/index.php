@@ -32,7 +32,7 @@ $columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showAcademicGroupFilter ? 1
 
     <form id="student-filters" method="get" action="<?= Url::to('/students') ?>" class="mt-7 grid min-w-0 gap-2 rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-3 sm:grid-cols-2 <?= $showAcademicGroupFilter ? 'xl:grid-cols-[minmax(140px,1.4fr)_minmax(105px,.95fr)_minmax(105px,.95fr)_minmax(105px,.95fr)_minmax(115px,1fr)_auto_auto]' : 'xl:grid-cols-[minmax(140px,1.4fr)_minmax(110px,1fr)_minmax(105px,.95fr)_minmax(115px,1fr)_auto_auto]' ?>">
         <label class="sr-only" for="student-search">Search students</label>
-        <input id="student-search" name="q" value="<?= View::escape($search) ?>" placeholder="Search name, ID, or roll" class="min-w-0 rounded-lg border border-green-800/80 bg-[#062f2d] px-2.5 py-2 text-xs text-slate-100 shadow-inner shadow-black/10 transition placeholder:text-slate-500 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/15">
+        <input id="student-search" name="q" value="<?= View::escape($search) ?>" placeholder="Search name, ID, or roll" class="h-11 min-w-0 rounded-lg border border-green-800/80 bg-[#062f2d] px-2.5 py-2 text-xs text-slate-100 shadow-inner shadow-black/10 transition placeholder:text-slate-500 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/15">
         <label class="sr-only" for="student-class">Class</label>
         <select id="student-class" name="class_id" class="h-11 min-w-0 rounded-lg border border-green-800/80 bg-[#062f2d] px-2 py-2 text-xs text-slate-100 shadow-inner shadow-black/10 transition hover:border-green-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/15">
             <option value="0">All classes</option>
@@ -40,17 +40,17 @@ $columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showAcademicGroupFilter ? 1
         </select>
         <label id="student-group-filter-wrap" class="<?= $showAcademicGroupFilter ? '' : 'hidden' ?> min-w-0"><span class="sr-only">Academic group</span><select id="student-group" name="group" class="h-11 w-full min-w-0 rounded-lg border border-green-800/80 bg-[#062f2d] px-2 py-2 text-xs text-slate-100 shadow-inner shadow-black/10 transition hover:border-green-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/15"><option value="">All groups</option><?php foreach ($academicGroups as $group): ?><option value="<?= View::escape($group) ?>" <?= $selectedAcademicGroup === $group ? 'selected' : '' ?>><?= View::escape($group) ?></option><?php endforeach; ?></select></label>
         <label class="sr-only" for="student-status">Status</label>
-        <select id="student-status" name="status" class="min-w-0 rounded-lg border border-green-800/80 bg-[#062f2d] px-2 py-2 text-xs text-slate-100 shadow-inner shadow-black/10 transition hover:border-green-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/15">
+        <select id="student-status" name="status" class="h-11 min-w-0 rounded-lg border border-green-800/80 bg-[#062f2d] px-2 py-2 text-xs text-slate-100 shadow-inner shadow-black/10 transition hover:border-green-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/15">
             <option value="">All statuses</option>
             <?php foreach (['active' => 'Active', 'inactive' => 'Inactive', 'graduated' => 'Graduated'] as $value => $label): ?><option value="<?= $value ?>" <?= $selectedStatus === $value ? 'selected' : '' ?>><?= $label ?></option><?php endforeach; ?>
         </select>
         <label class="sr-only" for="student-year">Academic year</label>
-        <select id="student-year" name="year_id" class="min-w-0 rounded-lg border border-green-800/80 bg-[#062f2d] px-2 py-2 text-xs text-slate-100 shadow-inner shadow-black/10 transition hover:border-green-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/15">
+        <select id="student-year" name="year_id" class="h-11 min-w-0 rounded-lg border border-green-800/80 bg-[#062f2d] px-2 py-2 text-xs text-slate-100 shadow-inner shadow-black/10 transition hover:border-green-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/15">
             <option value="0" <?= $selectedYear === 0 ? 'selected' : '' ?>>All academic years</option>
             <?php foreach ($academicYears as $academicYear): ?><option value="<?= (int) $academicYear['id'] ?>" <?= $selectedYear === (int) $academicYear['id'] ? 'selected' : '' ?>><?= View::escape($academicYear['name']) ?><?= $academicYear['is_current'] ? ' · Current' : '' ?></option><?php endforeach; ?>
         </select>
-        <button class="rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-medium hover:border-green-400">Filter</button>
-        <a href="<?= Url::to('/students') ?>" class="rounded-lg px-4 py-2.5 text-center text-sm text-white hover:text-white">Clear</a>
+        <button class="h-11 rounded-lg border border-slate-700 px-4 text-sm font-medium hover:border-green-400">Filter</button>
+        <a href="<?= Url::to('/students') ?>" class="inline-flex h-11 items-center justify-center rounded-lg px-4 text-center text-sm text-white hover:text-white">Clear</a>
     </form>
 
     <section class="mt-5 overflow-hidden rounded-2xl border border-green-900/60 bg-[#0b3425]/80">
