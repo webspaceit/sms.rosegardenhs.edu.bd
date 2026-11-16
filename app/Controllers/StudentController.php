@@ -192,18 +192,16 @@ final class StudentController
         $guardian = $data['_registration_guardian'] ?? ['mode' => 'none'];
         unset($data['_registration_guardian']);
 
-        $photoExtensions = ['jpg', 'jpeg', 'png', 'webp'];
         $documentExtensions = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'webp', 'mp4'];
         $uploaded = [];
         try {
-            $data['photo'] = Upload::store('photo', 'student-photos', $photoExtensions, 5242880);
-            $data['father_photo'] = Upload::store('father_photo', 'student-photos', $photoExtensions, 5242880);
-            $data['mother_photo'] = Upload::store('mother_photo', 'student-photos', $photoExtensions, 5242880);
-            if ($guardian['mode'] === 'new') {
-                $guardian['data']['photo'] = Upload::store('guardian_photo', 'student-photos', $photoExtensions, 5242880);
+            foreach (['photo', 'father_photo', 'mother_photo'] as $photoField) {
+                $data[$photoField] = Upload::storeJpegImage($photoField, 'student-photos');
+                if ($data[$photoField] !== null) $uploaded[] = $data[$photoField];
             }
-            foreach ([$data['photo'] ?? null, $data['father_photo'] ?? null, $data['mother_photo'] ?? null, $guardian['data']['photo'] ?? null] as $path) {
-                if ($path !== null) $uploaded[] = $path;
+            if ($guardian['mode'] === 'new') {
+                $guardian['data']['photo'] = Upload::storeJpegImage('guardian_photo', 'student-photos');
+                if ($guardian['data']['photo'] !== null) $uploaded[] = $guardian['data']['photo'];
             }
         } catch (\RuntimeException $error) {
             foreach ($uploaded as $path) Upload::delete($path);
@@ -289,19 +287,26 @@ final class StudentController
         try {
             foreach (['photo' => 'student-photos', 'father_photo' => 'student-photos', 'mother_photo' => 'student-photos'] as $field => $directory) {
                 $oldPath = $existing[$field] ?? null;
-                $newPath = Upload::store($field, $directory, ['jpg', 'jpeg', 'png', 'webp'], 5242880);
+                $newPath = Upload::storeJpegImage($field, $directory);
                 if ($newPath !== null) {
                     $data[$field] = $newPath;
                     $newPaths[] = $newPath;
                     if ($oldPath) $oldPaths[] = $oldPath;
                 } else {
-                    $data[$field] = $oldPath;
+                    if ($request->input('remove_' . $field) === '1' && $oldPath) {
+                        $data[$field] = null;
+                        $oldPaths[] = (string) $oldPath;
+                    } else {
+                        $data[$field] = $oldPath;
+                    }
                 }
             }
 
             $guardianId = (int) $request->input('guardian_id', 0);
             $guardianMode = (string) $request->input('guardian_mode', $guardianId > 0 ? 'existing' : 'none');
             $guardianAction = (string) $request->input('guardian_action', 'none');
+            $removeGuardianPhoto = $request->input('remove_guardian_photo') === '1';
+            if ($removeGuardianPhoto && $guardianAction === 'none') $guardianAction = 'update';
             $createGuardian = $request->input('create_guardian') === '1';
             $guardianToReplaceId = 0;
             $guardian = null;
@@ -318,7 +323,7 @@ final class StudentController
             $guardianFields = null;
             $guardianPhoto = null;
             if ($createGuardian) {
-                $guardianPhoto = Upload::store('guardian_photo', 'student-photos', ['jpg', 'jpeg', 'png', 'webp'], 5242880);
+                $guardianPhoto = Upload::storeJpegImage('guardian_photo', 'student-photos');
                 if ($guardianPhoto !== null) $newPaths[] = $guardianPhoto;
                 $guardianFields = $this->validatedGuardian($request, null);
                 $guardianFields['photo'] = $guardianPhoto;
@@ -328,18 +333,18 @@ final class StudentController
                 $guardianToReplaceId = $guardianId;
             } elseif ($guardianAction === 'update') {
                 if ($guardian === null) throw new \RuntimeException('The linked guardian could not be found.');
-                $guardianPhoto = Upload::store('guardian_photo', 'student-photos', ['jpg', 'jpeg', 'png', 'webp'], 5242880);
+                $guardianPhoto = Upload::storeJpegImage('guardian_photo', 'student-photos');
                 if ($guardianPhoto !== null) $newPaths[] = $guardianPhoto;
                 $candidate = $this->validatedGuardian($request, $guardian);
-                $candidate['photo'] = $guardianPhoto ?? ($guardian['photo'] ?? null);
-                if ($this->guardianDataChanged($guardian, $candidate) || $guardianPhoto !== null) {
+                $candidate['photo'] = $guardianPhoto ?? ($removeGuardianPhoto ? null : ($guardian['photo'] ?? null));
+                if ($this->guardianDataChanged($guardian, $candidate) || $guardianPhoto !== null || $removeGuardianPhoto) {
                     if ((int) ($guardian['linked_students'] ?? 1) > 1) {
                         $guardianFields = $candidate;
-                        $guardianFields['photo'] = $guardianPhoto;
+                        $guardianFields['photo'] = $candidate['photo'];
                         $guardianToReplaceId = $guardianId;
                     } else {
                         $guardianFields = $candidate;
-                        if ($guardianPhoto !== null && !empty($guardian['photo'])) $oldPaths[] = (string) $guardian['photo'];
+                        if (($guardianPhoto !== null || $removeGuardianPhoto) && !empty($guardian['photo'])) $oldPaths[] = (string) $guardian['photo'];
                     }
                 }
             } elseif ($guardianAction !== 'none') {

@@ -187,7 +187,15 @@ $statusClass = [
             <div class="student-reference-panel" role="tabpanel" id="student-panel-documents" aria-labelledby="student-tab-documents" data-student-panel="documents" hidden>
                 <div class="student-reference-panel-heading"><h2>Documents</h2><p>Files attached to this student record</p></div>
                 <div class="student-reference-table-wrap"><table><thead><tr><th>Document</th><th>Uploaded</th><th>File</th></tr></thead><tbody>
-                    <?php if (empty($documents)): ?><tr><td colspan="3" class="student-reference-empty">No documents uploaded.</td></tr><?php else: foreach ($documents as $document): ?><tr><td><?= View::escape($document['title']) ?></td><td><?= \App\Core\DateFormatter::format($document['created_at']) ?></td><td><a href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $document['file_path'])) ?>" target="_blank" rel="noopener">Open file</a></td></tr><?php endforeach; endif; ?>
+                    <?php if (empty($documents)): ?><tr><td colspan="3" class="student-reference-empty">No documents uploaded.</td></tr><?php else: foreach ($documents as $document): ?><?php
+                        $documentPath = (string) $document['file_path'];
+                        $documentExtension = strtolower(pathinfo($documentPath, PATHINFO_EXTENSION));
+                        $documentUrl = Url::to('/uploads/file?path=' . rawurlencode($documentPath));
+                        $canPreviewDocument = in_array($documentExtension, ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'mp4'], true);
+                    ?>
+                        <tr><td><?= View::escape($document['title']) ?></td><td><?= \App\Core\DateFormatter::format($document['created_at']) ?></td><td><a href="<?= $documentUrl ?>" target="_blank" rel="noopener">Open file</a></td></tr>
+                        <?php if ($canPreviewDocument): ?><tr><td colspan="3" class="student-reference-document-preview-cell"><iframe class="student-reference-document-preview" src="<?= $documentUrl ?>" title="Preview: <?= View::escape($document['title']) ?>" loading="lazy"></iframe></td></tr><?php endif; ?>
+                    <?php endforeach; endif; ?>
                 </tbody></table></div>
             </div>
 
