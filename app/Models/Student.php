@@ -206,16 +206,16 @@ final class Student
         return [$where, $params];
     }
 
-    public static function listing(string $search = '', int $classId = 0, string $status = '', int $limit = 25, int $offset = 0, int $yearId = 0): array
+    public static function listing(string $search = '', int $classId = 0, string $status = '', int $limit = 25, int $offset = 0, int $yearId = 0, string $academicGroup = ''): array
     {
-        $sql = 'SELECT s.id, s.student_id, s.name, s.roll_no, s.gender, s.status, s.archive_reason, s.academic_group,
-                       c.name AS class_name, sec.name AS section_name, ay.name AS year_name
+        $sql = 'SELECT s.id, s.student_id, s.name, s.roll_no, s.mobile_number, s.shift, s.photo, s.gender, s.status, s.archive_reason, s.academic_group,
+                       c.name AS class_name, c.numeric_level AS class_level, sec.name AS section_name, ay.name AS year_name
                 FROM students s
                 INNER JOIN classes c ON c.id = s.class_id AND c.branch_id=s.branch_id
                 INNER JOIN sections sec ON sec.id = s.section_id AND sec.branch_id=s.branch_id
                 INNER JOIN academic_years ay ON ay.id = s.academic_year_id AND ay.branch_id=s.branch_id
                 WHERE s.branch_id=:branch_id';
-        [$filters, $params] = self::listingFilters($search, $classId, $status, $yearId);
+        [$filters, $params] = self::listingFilters($search, $classId, $status, $yearId, $academicGroup);
         $params['branch_id'] = BranchContext::id();
         $sql .= $filters . ' ORDER BY c.numeric_level, sec.name, s.roll_no, s.name LIMIT :limit OFFSET :offset';
         $stmt = Database::connection()->prepare($sql);
@@ -228,21 +228,21 @@ final class Student
         return $stmt->fetchAll();
     }
 
-    public static function countListing(string $search = '', int $classId = 0, string $status = '', int $yearId = 0): int
+    public static function countListing(string $search = '', int $classId = 0, string $status = '', int $yearId = 0, string $academicGroup = ''): int
     {
         $sql = 'SELECT COUNT(*) FROM students s'
             . ' INNER JOIN classes c ON c.id = s.class_id AND c.branch_id=s.branch_id'
             . ' INNER JOIN sections sec ON sec.id = s.section_id AND sec.branch_id=s.branch_id'
             . ' INNER JOIN academic_years ay ON ay.id = s.academic_year_id AND ay.branch_id=s.branch_id'
             . ' WHERE s.branch_id=:branch_id';
-        [$filters, $params] = self::listingFilters($search, $classId, $status, $yearId);
+        [$filters, $params] = self::listingFilters($search, $classId, $status, $yearId, $academicGroup);
         $params['branch_id'] = BranchContext::id();
         $stmt = Database::connection()->prepare($sql . $filters);
         $stmt->execute($params);
         return (int) $stmt->fetchColumn();
     }
 
-    private static function listingFilters(string $search, int $classId, string $status, int $yearId = 0): array
+    private static function listingFilters(string $search, int $classId, string $status, int $yearId = 0, string $academicGroup = ''): array
     {
         $filters = '';
         $params = [];
@@ -264,6 +264,10 @@ final class Student
         if ($yearId > 0) {
             $filters .= ' AND s.academic_year_id = :listing_year_id';
             $params['listing_year_id'] = $yearId;
+        }
+        if ($academicGroup !== '') {
+            $filters .= ' AND s.academic_group = :academic_group';
+            $params['academic_group'] = $academicGroup;
         }
         return [$filters, $params];
     }

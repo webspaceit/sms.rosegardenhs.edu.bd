@@ -25,7 +25,7 @@ $linkType = (string) $value('link_type', '');
     <h1 class="mt-2 text-3xl font-semibold"><?= $editing ? 'Edit account' : 'New account' ?></h1>
     <p class="mt-1 text-sm text-white">A teacher, student or parent account needs to be linked to its person record to reach the portal.</p>
 
-    <form method="post" action="<?= Url::to($editing ? '/users/update' : '/users') ?>" class="mt-7 rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-6">
+    <form method="post" action="<?= Url::to($editing ? '/users/update' : '/users') ?>" data-no-ajax class="mt-7 rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-6">
         <?= Csrf::field() ?>
         <?php if ($editing): ?><input type="hidden" name="id" value="<?= (int) $account['id'] ?>"><?php endif; ?>
 

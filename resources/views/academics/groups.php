@@ -14,7 +14,7 @@ use App\Core\View;
 
     <section class="mt-6 rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
         <h2 class="text-lg font-semibold">Add academic group</h2>
-        <form method="post" action="<?= Url::to('/academic-groups/create') ?>" class="mt-4 flex flex-wrap gap-3">
+        <form method="post" action="<?= Url::to('/academic-groups') ?>" data-no-ajax class="mt-4 flex flex-wrap gap-3">
             <?= Csrf::field() ?>
             <label class="min-w-[220px] flex-1">
                 <span class="sr-only">Group name</span>

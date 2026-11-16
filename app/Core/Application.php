@@ -168,6 +168,9 @@ final class Application
         $router->post('/academics/classes', [$academics, 'storeClass']);
         $router->post('/academics/sections', [$academics, 'storeSection']);
         $router->get('/academic-groups', [$academics, 'academicGroups']);
+        // Use the resource URL for the create form, and keep the explicit
+        // /create alias for links rendered by older browser sessions.
+        $router->post('/academic-groups', [$academics, 'storeAcademicGroup']);
         $router->post('/academic-groups/create', [$academics, 'storeAcademicGroup']);
         $router->post('/academic-groups/update', [$academics, 'updateAcademicGroup']);
         $router->post('/academic-groups/delete', [$academics, 'deleteAcademicGroup']);

@@ -107,10 +107,12 @@ final class Person
     /** @return array<int, string> id => label */
     public static function guardianOptions(): array
     {
-        $rows = Database::connection()->query('SELECT id, name FROM guardians WHERE branch_id=' . BranchContext::id() . ' ORDER BY name')->fetchAll();
+        $rows = Database::connection()->query('SELECT id, name, phone FROM guardians WHERE branch_id=' . BranchContext::id() . ' ORDER BY name')->fetchAll();
         $options = [];
         foreach ($rows as $row) {
-            $options[(int) $row['id']] = (string) $row['name'] . ' · ' . (string) $row['phone'];
+            $phone = trim((string) ($row['phone'] ?? ''));
+            $label = (string) ($row['name'] ?? 'Guardian');
+            $options[(int) $row['id']] = $phone === '' ? $label : $label . ' · ' . $phone;
         }
         return $options;
     }

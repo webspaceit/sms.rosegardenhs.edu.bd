@@ -27,6 +27,15 @@ final class StudentController
         $search = trim((string) $request->input('q', ''));
         $classId = max(0, (int) $request->input('class_id', 0));
         $status = (string) $request->input('status', '');
+        $classes = Student::classes();
+        $classLevel = 0;
+        foreach ($classes as $classOption) {
+            if ((int) $classOption['id'] === $classId) { $classLevel = (int) $classOption['numeric_level']; break; }
+        }
+        $showAcademicGroupFilter = $classLevel === 9;
+        $academicGroups = $showAcademicGroupFilter ? AcademicGroup::names() : [];
+        $academicGroup = trim((string) $request->input('group', ''));
+        if (!$showAcademicGroupFilter || !in_array($academicGroup, $academicGroups, true)) $academicGroup = '';
         $academicYears = Student::academicYears();
         $currentYear = Student::currentYear();
         $requestedYear = $request->input('year_id');
@@ -35,14 +44,17 @@ final class StudentController
         if ($yearId > 0 && !in_array($yearId, $validYearIds, true)) $yearId = (int) ($currentYear['id'] ?? 0);
         $perPageOption = (int) $request->input('per_page', 25);
         $perPage = in_array($perPageOption, [10, 25, 50, 100], true) ? $perPageOption : 25;
-        $totalStudents = Student::countListing($search, $classId, $status, $yearId);
+        $totalStudents = Student::countListing($search, $classId, $status, $yearId, $academicGroup);
         $totalPages = max(1, (int) ceil($totalStudents / $perPage));
         $page = min($totalPages, max(1, (int) $request->input('page', 1)));
         View::render('students/index', [
             'title' => 'Students',
             'user' => Auth::user(),
-            'students' => Student::listing($search, $classId, $status, $perPage, ($page - 1) * $perPage, $yearId),
-            'classes' => Student::classes(),
+            'students' => Student::listing($search, $classId, $status, $perPage, ($page - 1) * $perPage, $yearId, $academicGroup),
+            'classes' => $classes,
+            'academicGroups' => $academicGroups,
+            'selectedAcademicGroup' => $academicGroup,
+            'showAcademicGroupFilter' => $showAcademicGroupFilter,
             'academicYears' => $academicYears,
             'selectedYear' => $yearId,
             'search' => $search,
@@ -63,6 +75,13 @@ final class StudentController
         $classId = max(0, (int) $request->input('class_id', 0));
         $status = (string) $request->input('status', '');
         if (!in_array($status, ['', 'active', 'inactive', 'graduated'], true)) $status = '';
+        $classLevel = 0;
+        foreach (Student::classes() as $classOption) {
+            if ((int) $classOption['id'] === $classId) { $classLevel = (int) $classOption['numeric_level']; break; }
+        }
+        $academicGroups = $classLevel === 9 ? AcademicGroup::names() : [];
+        $academicGroup = trim((string) $request->input('group', ''));
+        if ($academicGroups === [] || !in_array($academicGroup, $academicGroups, true)) $academicGroup = '';
         $academicYears = Student::academicYears();
         $currentYear = Student::currentYear();
         $requestedYear = $request->input('year_id');
@@ -77,6 +96,7 @@ final class StudentController
             . 'JOIN academic_years ay ON ay.id=s.academic_year_id AND ay.branch_id=s.branch_id WHERE s.branch_id=:branch_id';
         $bindings = ['branch_id' => BranchContext::id()];
         if ($classId > 0) { $sql .= ' AND s.class_id=:class_id'; $bindings['class_id'] = $classId; }
+        if ($academicGroup !== '') { $sql .= ' AND s.academic_group=:academic_group'; $bindings['academic_group'] = $academicGroup; }
         if ($status !== '') { $sql .= ' AND s.status=:status'; $bindings['status'] = $status; }
         if ($yearId > 0) { $sql .= ' AND s.academic_year_id=:year_id'; $bindings['year_id'] = $yearId; }
         if ($search !== '') {
@@ -87,7 +107,7 @@ final class StudentController
         $statement = Database::connection()->prepare($sql);
         $statement->execute($bindings);
 
-        AuditLog::record('students.exported', 'students', null, ['count' => (int) Student::countListing($search, $classId, $status, $yearId)]);
+        AuditLog::record('students.exported', 'students', null, ['count' => (int) Student::countListing($search, $classId, $status, $yearId, $academicGroup)]);
         header('Content-Type: text/csv; charset=UTF-8');
         header('Content-Disposition: attachment; filename="students-' . date('Y-m-d') . '.csv"');
         header('X-Content-Type-Options: nosniff');
@@ -460,7 +480,8 @@ final class StudentController
         $yearId = $requestedYear === null ? (int) ($currentYear['id'] ?? 0) : max(0, (int) $requestedYear);
         $validYearIds = array_map(static fn (array $year): int => (int) $year['id'], $academicYears);
         if ($yearId > 0 && !in_array($yearId, $validYearIds, true)) $yearId = (int) ($currentYear['id'] ?? 0);
-        $query = http_build_query(['q' => $search, 'class_id' => $classId, 'status' => $status, 'year_id' => $yearId, 'per_page' => $perPage, 'page' => $page]);
+        $academicGroup = trim((string) $request->input('group', ''));
+        $query = http_build_query(['q' => $search, 'class_id' => $classId, 'group' => $academicGroup, 'status' => $status, 'year_id' => $yearId, 'per_page' => $perPage, 'page' => $page]);
         header('Location: ' . Url::to('/students?' . $query)); exit;
     }
 
