@@ -15,7 +15,7 @@ $paginationUrl = static fn (int $targetPage): string => Url::to('/students') . '
 $firstStudent = $totalStudents === 0 ? 0 : (($page - 1) * $perPage + 1);
 $lastStudent = min($page * $perPage, $totalStudents);
 $showArchiveReasonColumn = $selectedStatus === 'inactive';
-$columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showArchiveReasonColumn ? 1 : 0);
+$columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showAcademicGroupFilter ? 1 : 0) + ($showArchiveReasonColumn ? 1 : 0);
 ?>
     <header class="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -86,6 +86,7 @@ $columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showArchiveReasonColumn ? 1
                         <th class="px-3 py-3 font-medium">Mobile No</th>
                         <th class="px-3 py-3 font-medium">Class</th>
                         <th class="px-3 py-3 font-medium">Section</th>
+                        <?php if ($showAcademicGroupFilter): ?><th class="px-3 py-3 font-medium">Group</th><?php endif; ?>
                         <th class="px-3 py-3 font-medium">Shift</th>
                         <th class="px-3 py-3 font-medium">Session</th>
                         <th class="px-3 py-3 font-medium">Status</th>
@@ -108,6 +109,7 @@ $columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showArchiveReasonColumn ? 1
                             <td class="px-3 py-2 text-white"><?= View::escape($student['mobile_number'] ?: '—') ?></td>
                             <td class="whitespace-nowrap px-3 py-2 text-slate-300"><?= View::escape($student['class_name']) ?></td>
                             <td class="px-3 py-2 text-slate-300"><?= View::escape($student['section_name']) ?></td>
+                            <?php if ($showAcademicGroupFilter): ?><td class="px-3 py-2 text-slate-300"><?= View::escape($student['academic_group'] ?: '—') ?></td><?php endif; ?>
                             <td class="px-3 py-2 text-slate-300"><?= View::escape($student['shift'] ?: '—') ?></td>
                             <td class="px-3 py-2 text-white"><?= View::escape($student['year_name']) ?></td>
                             <td class="px-3 py-2"><span class="rounded-full px-2.5 py-1 text-xs <?= $student['status'] === 'active' ? 'bg-green-400/10 text-green-200' : 'bg-slate-700 text-slate-300' ?>"><?= View::escape(ucfirst($student['status'])) ?></span></td>
@@ -145,31 +147,6 @@ $columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showArchiveReasonColumn ? 1
             </nav>
         </div>
     </section>
-
-    <script>
-    (() => {
-        const filterForm = document.getElementById('student-filters');
-        const classSelect = document.getElementById('student-class');
-        const groupWrap = document.getElementById('student-group-filter-wrap');
-        const groupSelect = document.getElementById('student-group');
-        if (!filterForm || !classSelect || !groupWrap || !groupSelect) return;
-
-        const columnsWithoutGroup = 'minmax(140px,1.4fr) minmax(110px,1fr) minmax(105px,.95fr) minmax(115px,1fr) auto auto';
-        const columnsWithGroup = 'minmax(140px,1.4fr) minmax(105px,.95fr) minmax(105px,.95fr) minmax(105px,.95fr) minmax(115px,1fr) auto auto';
-        const syncGroupFilter = () => {
-            const isClassNine = classSelect.selectedOptions[0]?.dataset.numericLevel === '9';
-            groupWrap.classList.toggle('hidden', !isClassNine);
-            if (!isClassNine) groupSelect.value = '';
-            filterForm.style.gridTemplateColumns = window.matchMedia('(min-width: 1280px)').matches
-                ? (isClassNine ? columnsWithGroup : columnsWithoutGroup)
-                : '';
-        };
-
-        classSelect.addEventListener('change', syncGroupFilter);
-        window.addEventListener('resize', syncGroupFilter);
-        syncGroupFilter();
-    })();
-    </script>
 
     <script>
     (() => {
@@ -214,6 +191,31 @@ $columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showArchiveReasonColumn ? 1
                 tooltip.style.display = 'none';
             }
         });
+    })();
+    </script>
+
+    <script>
+    (() => {
+        const filterForm = document.getElementById('student-filters');
+        const classSelect = document.getElementById('student-class');
+        const groupWrap = document.getElementById('student-group-filter-wrap');
+        const groupSelect = document.getElementById('student-group');
+        if (!filterForm || !classSelect || !groupWrap || !groupSelect) return;
+
+        const columnsWithoutGroup = 'minmax(140px,1.4fr) minmax(110px,1fr) minmax(105px,.95fr) minmax(115px,1fr) auto auto';
+        const columnsWithGroup = 'minmax(140px,1.4fr) minmax(105px,.95fr) minmax(105px,.95fr) minmax(105px,.95fr) minmax(115px,1fr) auto auto';
+        const syncGroupFilter = () => {
+            const isClassNine = classSelect.selectedOptions[0]?.dataset.numericLevel === '9';
+            groupWrap.classList.toggle('hidden', !isClassNine);
+            if (!isClassNine) groupSelect.value = '';
+            filterForm.style.gridTemplateColumns = window.matchMedia('(min-width: 1280px)').matches
+                ? (isClassNine ? columnsWithGroup : columnsWithoutGroup)
+                : '';
+        };
+
+        classSelect.addEventListener('change', syncGroupFilter);
+        window.addEventListener('resize', syncGroupFilter);
+        syncGroupFilter();
     })();
     </script>
 
