@@ -16,7 +16,7 @@ $relationOptions = ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'O
 $guardian = $primaryGuardian ?? null;
 $removedDocumentIds = array_map('intval', (array) ($old['document_remove_ids'] ?? []));
 ?>
-<div class="mx-auto max-w-6xl">
+<div class="w-full min-w-0">
     <a href="<?= Url::to('/students') ?>" class="text-sm text-green-300 hover:text-green-200">← Student register</a>
     <h1 class="mt-2 text-3xl font-semibold"><?= $editing ? 'Edit Student' : 'Student Admission' ?></h1>
     <p class="mt-1 text-sm text-white"><?= $editing ? 'Update the student record.' : 'Enter the full admission details for the student.' ?></p>
