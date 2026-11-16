@@ -232,12 +232,11 @@ final class StudentController
                     throw new \RuntimeException('Document ' . ($i + 1) . ': ' . $error->getMessage());
                 }
                 if ($path !== null) {
-                    if ($title !== '') {
-                        Student::addDocument($studentId, $title, $path);
-                        $documentPaths[] = $path;
-                    } else {
-                        Upload::delete($path);
-                    }
+                    $originalName = (string) ($_FILES['document_file_' . $i]['name'] ?? '');
+                    $fileTitle = trim((string) pathinfo($originalName, PATHINFO_FILENAME));
+                    $documentTitle = $title !== '' ? $title : ($fileTitle !== '' ? $fileTitle : 'Student document ' . ($i + 1));
+                    Student::addDocument($studentId, $documentTitle, $path);
+                    $documentPaths[] = $path;
                 }
             }
             $db->commit();
