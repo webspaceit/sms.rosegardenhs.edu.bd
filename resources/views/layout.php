@@ -276,6 +276,8 @@ $appUser = Auth::user();
         .dashboard-shell main .student-reference-table-wrap table tbody tr,.dashboard-shell main .student-reference-table-wrap table tbody td{background:transparent!important}
         .dashboard-shell main .student-reference-table-wrap table thead th{background:rgba(2,44,34,.34)!important}
         .toast-enter{animation:toast-in .2s ease-out}
+        .toast-focusable{transition:box-shadow .15s ease,transform .15s ease}
+        .toast-focusable:hover,.toast-focusable:focus-within{box-shadow:0 0 0 2px rgba(248,113,113,.45),0 20px 40px rgba(0,0,0,.4);transform:translateY(-2px)}
         @keyframes toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
         .nav-group>summary{list-style:none;cursor:pointer}
         .nav-group>summary::-webkit-details-marker{display:none}
@@ -311,11 +313,11 @@ $appUser = Auth::user();
     <?= $content ?>
     <?php endif; ?>
 
-    <?php if ($toast): ?><div id="app-toast" role="<?= $toast['type'] === 'error' ? 'alert' : 'status' ?>" aria-live="<?= $toast['type'] === 'error' ? 'assertive' : 'polite' ?>" class="toast-enter fixed bottom-5 right-5 z-50 flex max-w-sm items-center gap-3 rounded-xl border px-4 py-3 shadow-2xl <?= $toast['type'] === 'error' ? 'border-red-400/30 bg-red-950 text-red-100' : 'border-green-400/30 bg-slate-900 text-slate-100' ?>">
+    <?php if ($toast): ?><div id="app-toast" data-autodismiss-ms="4200" role="<?= $toast['type'] === 'error' ? 'alert' : 'status' ?>" aria-live="<?= $toast['type'] === 'error' ? 'assertive' : 'polite' ?>" class="toast-enter fixed bottom-5 right-5 z-50 flex max-w-sm items-center gap-3 rounded-xl border px-4 py-3 shadow-2xl <?= $toast['type'] === 'error' ? 'border-red-400/30 bg-red-950 text-red-100' : 'border-green-400/30 bg-slate-900 text-slate-100' ?>">
         <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full <?= $toast['type'] === 'error' ? 'bg-red-400/15 text-red-300' : 'bg-green-400/15 text-green-300' ?>"><?= $toast['type'] === 'error' ? '!' : '✓' ?></span>
         <span class="text-sm"><?= View::escape($toast['message']) ?></span>
         <button type="button" onclick="this.parentElement.remove()" class="ml-2 text-white hover:text-white" aria-label="Dismiss">×</button>
-    </div><script>setTimeout(()=>document.getElementById('app-toast')?.remove(),4200)</script><?php endif; ?>
+    </div><?php endif; ?>
 
     <script>
     (function () {

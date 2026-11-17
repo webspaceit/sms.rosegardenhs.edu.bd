@@ -239,31 +239,119 @@ $wizardFiles = (array) ($_SESSION['_student_wizard']['files'] ?? []);
       nextStepButton.textContent = step === maxStep ? 'Save and finish admission' : 'Save and continue';
       document.getElementById('student-wizard-submit').classList.toggle('hidden', true);
     };
-    const showStepError = (message, target = null) => {
+    const showStepError = (message, target = null, invalidFields = []) => {
       const section = wizardSections.find(item => Number(item.dataset.wizardStep) === step);
       if (!section) return;
       let feedback = section.querySelector('.student-wizard-error');
       if (!feedback) {
         feedback = document.createElement('div');
-        feedback.className = 'student-wizard-error mb-4 rounded-lg border border-rose-300/30 bg-rose-950/50 px-4 py-3 text-sm text-rose-100';
+        feedback.className = 'student-wizard-error mb-5 flex gap-3 rounded-xl border border-amber-300/25 bg-gradient-to-r from-amber-950/75 to-rose-950/60 p-4 text-sm text-amber-50 shadow-lg shadow-black/10';
         feedback.setAttribute('role', 'alert');
         section.insertBefore(feedback, section.firstChild);
       }
-      feedback.textContent = message;
+      feedback.replaceChildren();
+      const icon = document.createElement('span');
+      icon.className = 'grid h-9 w-9 shrink-0 place-items-center rounded-full border border-amber-200/20 bg-amber-300/10 font-bold text-amber-200';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = '!';
+      const content = document.createElement('div');
+      content.className = 'min-w-0 flex-1';
+      const fieldEntries = [];
+      if (Array.isArray(message)) {
+        const heading = document.createElement('div');
+        heading.className = 'flex flex-wrap items-center gap-2';
+        const title = document.createElement('p');
+        title.className = 'student-wizard-error-title font-semibold text-amber-100';
+        title.textContent = 'A few details need your attention';
+        const count = document.createElement('span');
+        count.className = 'student-wizard-error-count rounded-full border border-amber-200/15 bg-amber-200/10 px-2 py-0.5 text-xs font-medium text-amber-100/80';
+        count.textContent = `${message.length} ${message.length === 1 ? 'field' : 'fields'}`;
+        heading.append(title, count);
+        const hint = document.createElement('p');
+        hint.className = 'mt-0.5 text-xs text-amber-100/65';
+        hint.textContent = 'Complete these before continuing.';
+        const list = document.createElement('ul');
+        list.className = 'mt-3 grid gap-2 sm:grid-cols-2';
+        message.forEach((item, index) => {
+          const entry = document.createElement('li');
+          entry.className = 'flex items-start gap-2 rounded-lg border border-amber-100/10 bg-black/10 px-3 py-2 text-[13px] leading-5';
+          const mark = document.createElement('span');
+          mark.className = 'mt-0.5 text-amber-300';
+          mark.setAttribute('aria-hidden', 'true');
+          mark.textContent = '•';
+          const text = document.createElement('span');
+          text.textContent = item;
+          entry.append(mark, text);
+          list.append(entry);
+          fieldEntries.push({ field: invalidFields[index], entry });
+        });
+        content.append(heading, hint, list);
+      } else {
+        const title = document.createElement('p');
+        title.className = 'font-semibold text-amber-100';
+        title.textContent = 'Could not continue';
+        const detail = document.createElement('p');
+        detail.className = 'mt-1 text-amber-100/80';
+        detail.textContent = message;
+        content.append(title, detail);
+      }
+      feedback.append(icon, content);
+      feedback._fieldEntries = fieldEntries;
+      invalidFields.forEach(field => field.setAttribute('aria-invalid', 'true'));
       if (target) {
         target.setAttribute('aria-invalid', 'true');
         target.focus({ preventScroll: true });
       }
       section.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
+    const refreshStepError = () => {
+      const section = wizardSections.find(item => Number(item.dataset.wizardStep) === step);
+      const feedback = section?.querySelector('.student-wizard-error');
+      if (!feedback) return;
+      if (!Array.isArray(feedback._fieldEntries)) {
+        feedback.remove();
+        return;
+      }
+      feedback._fieldEntries = feedback._fieldEntries.filter(({ field, entry }) => {
+        if (!field.isConnected || field.validity.valid) {
+          field.removeAttribute('aria-invalid');
+          entry.remove();
+          return false;
+        }
+        return true;
+      });
+      const remaining = feedback._fieldEntries.length;
+      if (!remaining) {
+        feedback.remove();
+        return;
+      }
+      const count = feedback.querySelector('.student-wizard-error-count');
+      if (count) count.textContent = `${remaining} ${remaining === 1 ? 'field' : 'fields'}`;
+      const title = feedback.querySelector('.student-wizard-error-title');
+      if (title) title.textContent = remaining === 1 ? 'One detail needs your attention' : 'A few details need your attention';
+    };
     const clearStepError = () => wizardSections
       .filter(section => Number(section.dataset.wizardStep) === step)
       .forEach(section => section.querySelector('.student-wizard-error')?.remove());
+    const setSpecificFieldMessage = field => {
+      if (!field.required || !field.validity.valueMissing) return;
+      const label = field.labels?.[0];
+      const labelText = label?.querySelector('span')?.textContent || label?.textContent || field.name;
+      const fieldName = labelText.replace(/\([^)]*\)/g, '').replace(/\*/g, '').replace(/\s+/g, ' ').trim() || field.name.replace(/[_-]+/g, ' ');
+      if (field instanceof HTMLSelectElement) field.setCustomValidity(`Choose an option for ${fieldName}.`);
+      else if (field instanceof HTMLInputElement && field.type === 'file') field.setCustomValidity(`Choose a file for ${fieldName}.`);
+      else field.setCustomValidity(`Enter ${fieldName}.`);
+    };
     const saveStep = async () => {
       clearStepError();
       const activeSections = wizardSections.filter(section => Number(section.dataset.wizardStep) === step);
-      const invalid = activeSections.flatMap(section => [...section.querySelectorAll(':invalid')])[0];
-      if (invalid) { showStepError(invalid.validationMessage || 'Please correct this field before continuing.', invalid); return false; }
+      const invalidFields = activeSections.flatMap(section => [...section.querySelectorAll(':invalid')]);
+      if (invalidFields.length) {
+        invalidFields.forEach(setSpecificFieldMessage);
+        const messages = invalidFields.map(field => field.validationMessage || 'Please complete this required field.');
+        showStepError(messages, invalidFields[0], invalidFields);
+        return false;
+      }
       nextStepButton.disabled = true;
       nextStepButton.textContent = 'Saving…';
       const formData = new FormData(admissionForm);
@@ -303,10 +391,15 @@ $wizardFiles = (array) ($_SESSION['_student_wizard']['files'] ?? []);
     nextStepButton.addEventListener('click', saveStep);
     wizardBackButton.addEventListener('click', () => showStep(step - 1));
     admissionForm.addEventListener('input', event => {
-      if (event.target.matches('[aria-invalid="true"]')) event.target.removeAttribute('aria-invalid');
-      clearStepError();
+      event.target.setCustomValidity?.('');
+      if (event.target.matches('[aria-invalid="true"]') && event.target.validity.valid) event.target.removeAttribute('aria-invalid');
+      refreshStepError();
     });
-    admissionForm.addEventListener('change', clearStepError);
+    admissionForm.addEventListener('change', event => {
+      event.target.setCustomValidity?.('');
+      if (event.target.matches('[aria-invalid="true"]') && event.target.validity.valid) event.target.removeAttribute('aria-invalid');
+      refreshStepError();
+    });
     showStep(step);
   }
 

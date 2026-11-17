@@ -5,6 +5,51 @@
   let requestNumber = 0;
   const confirmedForms = new WeakSet();
 
+  function setRequiredSelectMessage(field) {
+    if (!(field instanceof HTMLSelectElement) || !field.required || !field.validity.valueMissing) return;
+    const label = field.labels?.[0];
+    const text = label?.querySelector('span')?.textContent || label?.textContent || field.name;
+    const name = text.replace(/\*/g, '').replace(/\s+/g, ' ').trim();
+    field.setCustomValidity(`Please select an option for ${name}.`);
+  }
+
+  document.addEventListener('invalid', event => setRequiredSelectMessage(event.target), true);
+  document.addEventListener('change', event => {
+    if (event.target instanceof HTMLSelectElement) event.target.setCustomValidity('');
+  });
+
+  function enableToastFocus(toast, duration) {
+    toast.classList.add('toast-focusable');
+    let timeout = 0;
+    let paused = false;
+    const dismiss = () => {
+      if (!paused && toast.isConnected) toast.remove();
+    };
+    const startTimer = () => {
+      window.clearTimeout(timeout);
+      if (!paused) timeout = window.setTimeout(dismiss, duration);
+    };
+    const pause = () => {
+      paused = true;
+      window.clearTimeout(timeout);
+    };
+    const resume = () => {
+      paused = false;
+      startTimer();
+    };
+    toast.addEventListener('pointerenter', pause);
+    toast.addEventListener('pointerleave', resume);
+    toast.addEventListener('focusin', pause);
+    toast.addEventListener('focusout', (event) => {
+      if (!toast.contains(event.relatedTarget)) resume();
+    });
+    startTimer();
+  }
+
+  document.querySelectorAll('#app-toast[data-autodismiss-ms]').forEach((toast) => {
+    enableToastFocus(toast, Number(toast.dataset.autodismissMs) || 4200);
+  });
+
   const progressStyle = document.createElement('style');
   progressStyle.textContent = 'body[data-ajax-loading="true"]::before{content:"";position:fixed;z-index:9999;inset:0 100% auto 0;height:2px;background:#22c55e;animation:ajax-progress 1.1s ease-in-out infinite}@keyframes ajax-progress{0%{inset-inline-end:100%}55%{inset-inline-end:18%}100%{inset-inline-end:0}}';
   document.head.append(progressStyle);
@@ -30,7 +75,7 @@
     dismiss.addEventListener('click', () => toast.remove());
     toast.append(icon, text, dismiss);
     document.body.append(toast);
-    window.setTimeout(() => toast.remove(), 5000);
+    enableToastFocus(toast, 5000);
   }
 
   function confirmInToast(message, onConfirm, options = {}) {
