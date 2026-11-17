@@ -36,7 +36,7 @@ $suggestedRoll = $selectedSection === null ? 1 : (int) ($selectedSection['next_r
         <a href="<?= Url::to('/students/new') ?>" class="rounded-lg border border-green-100/20 px-4 py-2.5 text-sm text-green-100 hover:border-green-300">Full admission form</a>
     </div>
 
-    <form id="quick-admission-form" method="post" action="<?= Url::to('/students') ?>" class="mt-6 rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
+    <form id="quick-admission-form" method="post" enctype="multipart/form-data" action="<?= Url::to('/students/quick-admit') ?>" class="mt-6 rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
         <?= Csrf::field() ?>
         <input type="hidden" name="_quick_admission" value="1">
         <input type="hidden" name="academic_year_id" value="<?= (int) $year['id'] ?>">
@@ -91,7 +91,7 @@ $suggestedRoll = $selectedSection === null ? 1 : (int) ($selectedSection['next_r
                 <label class="block">
                     <span class="mb-1.5 block text-sm text-slate-300">Gender</span>
                     <select name="gender" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
-                        <option value="">Select if known</option>
+                        <option value="">Select Gender</option>
                         <?php foreach (['Male', 'Female', 'Other'] as $gender): ?>
                             <option value="<?= $gender ?>" <?= ($old['gender'] ?? '') === $gender ? 'selected' : '' ?>><?= $gender ?></option>
                         <?php endforeach; ?>

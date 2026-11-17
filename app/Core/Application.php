@@ -141,6 +141,7 @@ final class Application
         $router->get('/students/new', [$students, 'create']);
         $router->post('/students/wizard-save', [$students, 'saveWizardStep']);
         $router->get('/students/quick-admit', [$students, 'quickCreate']);
+        $router->post('/students/quick-admit', [$students, 'store']);
         $router->get('/students/create', [$students, 'create']); // alias
         $router->post('/students', [$students, 'store']);
         $router->get('/students/edit', [$students, 'edit']);

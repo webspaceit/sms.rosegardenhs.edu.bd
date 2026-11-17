@@ -24,6 +24,15 @@ final class Request
             $path = substr($path, strlen('/public')) ?: '/';
         }
 
+        // If Apache exposes the project prefix but reports SCRIPT_NAME as
+        // /public/index.php, the public segment can remain nested in the URL
+        // (for example /project/public/students). Strip through that front-
+        // controller segment as well so the router receives /students.
+        $nestedPublicPosition = strpos($path, '/public/');
+        if ($nestedPublicPosition !== false) {
+            $path = substr($path, $nestedPublicPosition + strlen('/public')) ?: '/';
+        }
+
         return '/' . trim($path, '/');
     }
     public function input(string $key, mixed $default = null): mixed { return $_POST[$key] ?? $_GET[$key] ?? $default; }

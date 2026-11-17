@@ -292,6 +292,7 @@ final class StudentController
         $formUrl = $quickAdmission ? '/students/quick-admit' : '/students/new';
         $data = $this->validatedInput($request, true);
         if ($data === null) { header('Location: ' . Url::to($formUrl)); exit; }
+        $data['registration_status'] = $quickAdmission ? 'pending' : 'completed';
         $guardian = $data['_registration_guardian'] ?? ['mode' => 'none'];
         unset($data['_registration_guardian']);
 
@@ -302,7 +303,7 @@ final class StudentController
                 $data[$photoField] = $wizardDraft['files'][$photoField] ?? Upload::storeJpegImage($photoField, 'student-photos');
                 if ($data[$photoField] !== null) $uploaded[] = $data[$photoField];
             }
-            if (empty($data['photo'])) throw new \RuntimeException('Student photo is required for admission.');
+            if (!$quickAdmission && empty($data['photo'])) throw new \RuntimeException('Student photo is required for admission.');
             if ($guardian['mode'] === 'new') {
                 $guardian['data']['photo'] = $wizardDraft['files']['guardian_photo'] ?? Upload::storeJpegImage('guardian_photo', 'student-photos');
                 if ($guardian['data']['photo'] !== null) $uploaded[] = $guardian['data']['photo'];
@@ -387,6 +388,7 @@ final class StudentController
         }
         $data = $this->validatedInput($request, false);
         if ($data === null) { header('Location: ' . Url::to('/students/edit?id=' . $id)); exit; }
+        $data['registration_status'] = 'completed';
         $existing = Student::find($id);
         $oldPaths = [];
         $newPaths = [];
@@ -407,6 +409,9 @@ final class StudentController
                         $data[$field] = $oldPath;
                     }
                 }
+            }
+            if (empty($data['photo'])) {
+                throw new \RuntimeException('Student photo is required for full admission. Upload a photo before saving.');
             }
 
             $guardianId = (int) $request->input('guardian_id', 0);

@@ -502,8 +502,8 @@ final class Student
     public static function create(array $data): int
     {
         $stmt = Database::connection()->prepare(
-            'INSERT INTO students (student_id, name, class_id, section_id, shift, academic_year_id, roll_no, gender, status, photo, date_of_birth, birth_registration_no, admission_date, previous_school, '
-            . implode(', ', self::EXTRA_COLUMNS) . ', branch_id) VALUES (:student_id, :name, :class_id, :section_id, :shift, :year_id, :roll_no, :gender, :status, :photo, :date_of_birth, :birth_registration_no, :admission_date, :previous_school, :'
+            'INSERT INTO students (student_id, name, class_id, section_id, shift, academic_year_id, roll_no, gender, status, registration_status, photo, date_of_birth, birth_registration_no, admission_date, previous_school, '
+            . implode(', ', self::EXTRA_COLUMNS) . ', branch_id) VALUES (:student_id, :name, :class_id, :section_id, :shift, :year_id, :roll_no, :gender, :status, :registration_status, :photo, :date_of_birth, :birth_registration_no, :admission_date, :previous_school, :'
             . implode(', :', self::EXTRA_COLUMNS) . ', :branch_id)'
         );
         $stmt->execute($data + ['branch_id' => BranchContext::id()]);
@@ -517,7 +517,7 @@ final class Student
             unset($data['year_id']);
         }
         $allowed = array_merge(
-            ['name', 'class_id', 'section_id', 'shift', 'academic_year_id', 'roll_no', 'gender', 'status', 'photo', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school'],
+            ['name', 'class_id', 'section_id', 'shift', 'academic_year_id', 'roll_no', 'gender', 'status', 'registration_status', 'photo', 'date_of_birth', 'birth_registration_no', 'admission_date', 'previous_school'],
             self::EXTRA_COLUMNS
         );
         $data = array_intersect_key($data, array_flip($allowed));

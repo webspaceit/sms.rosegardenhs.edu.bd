@@ -69,7 +69,7 @@ $groups = Nav::visibleGroups();
         <p id="nav-search-empty" class="hidden rounded-xl border border-dashed border-green-100/15 px-3 py-5 text-center text-sm text-green-100/55" aria-live="polite">No menu items match your search.</p>
     </nav>
 
-    <div class="relative shrink-0 border-t border-emerald-100/10 bg-emerald-950/20 px-4 py-4">
+    <div class="hidden relative shrink-0 border-t border-emerald-100/10 bg-emerald-950/20 px-4 py-4">
         <form method="post" action="<?= Url::to('/logout') ?>" data-no-ajax>
             <?= \App\Core\Csrf::field() ?>
             <button type="submit" class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-emerald-100/65 transition hover:bg-red-400/10 hover:text-red-100">

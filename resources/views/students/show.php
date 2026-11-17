@@ -29,6 +29,7 @@ $statusClass = [
                 <span class="student-detail-status rounded-full border px-3 py-1 text-xs font-medium <?= $statusClass ?>"><?= View::escape(ucfirst((string) $student['status'])) ?></span>
             </div>
             <p class="mt-1 text-sm text-white">Student ID: <?= View::escape($student['student_id']) ?></p>
+            <?php if (($student['registration_status'] ?? 'completed') === 'pending'): ?><div class="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-amber-200/20 bg-amber-950/50 px-4 py-3"><div><p class="text-sm font-semibold text-amber-100">Full registration pending</p><p class="mt-0.5 text-xs text-amber-100/65">Complete this student’s full profile to clear the staff notification.</p></div><a href="<?= Url::to('/students/edit?id=' . (int) $student['id']) ?>" class="rounded-lg border border-amber-100/20 px-3 py-2 text-xs font-semibold text-amber-50 hover:bg-amber-100/10">Complete registration →</a></div><?php endif; ?>
         </div>
         <div class="student-detail-actions flex flex-wrap gap-2">
             <button type="button" class="form-action-button" onclick="window.print()">Print details</button>

@@ -8,6 +8,26 @@ use App\Core\BranchContext;
 
 final class DashboardData
 {
+    /** @return array{count:int,students:array<int,array<string,mixed>>} */
+    public static function pendingStudentRegistrations(): array
+    {
+        $database = Database::connection();
+        $branch = BranchContext::id();
+        $countQuery = $database->prepare("SELECT COUNT(*) FROM students WHERE branch_id=:branch AND registration_status='pending'");
+        $countQuery->execute(['branch' => $branch]);
+        $studentsQuery = $database->prepare(
+            "SELECT s.id, s.student_id, s.name, s.created_at, c.name AS class_name, sec.name AS section_name, ay.name AS year_name"
+            . ' FROM students s'
+            . ' JOIN classes c ON c.id=s.class_id AND c.branch_id=s.branch_id'
+            . ' JOIN sections sec ON sec.id=s.section_id AND sec.branch_id=s.branch_id'
+            . ' JOIN academic_years ay ON ay.id=s.academic_year_id AND ay.branch_id=s.branch_id'
+            . " WHERE s.branch_id=:branch AND s.registration_status='pending'"
+            . ' ORDER BY s.created_at DESC, s.id DESC LIMIT 100'
+        );
+        $studentsQuery->execute(['branch' => $branch]);
+        return ['count' => (int) $countQuery->fetchColumn(), 'students' => $studentsQuery->fetchAll()];
+    }
+
     public static function summary(): array
     {
         $database = Database::read();
