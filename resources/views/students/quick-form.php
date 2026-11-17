@@ -9,16 +9,22 @@ use App\Core\View;
 $old = $_SESSION['_student_old'] ?? [];
 $selectedClassId = (int) ($old['class_id'] ?? ($classes[0]['id'] ?? 0));
 $selectedClassLevel = 0;
+$selectedClassShift = 'Day';
 foreach ($classes as $classOption) {
-    if ((int) $classOption['id'] === $selectedClassId) { $selectedClassLevel = (int) $classOption['numeric_level']; break; }
+    if ((int) $classOption['id'] === $selectedClassId) {
+        $selectedClassLevel = (int) $classOption['numeric_level'];
+        $selectedClassShift = in_array($classOption['shift'] ?? '', ['Morning', 'Day'], true) ? (string) $classOption['shift'] : 'Day';
+        break;
+    }
 }
+$selectedShift = (string) ($old['shift'] ?? $selectedClassShift);
 $classSections = array_values(array_filter($sections, static fn (array $section): bool => (int) $section['class_id'] === $selectedClassId));
 $selectedSectionId = (int) ($old['section_id'] ?? ($classSections[0]['id'] ?? 0));
 $selectedSection = null;
 foreach ($classSections as $section) {
     if ((int) $section['id'] === $selectedSectionId) { $selectedSection = $section; break; }
 }
-$suggestedRoll = $selectedSection['next_roll'] ?? 1;
+$suggestedRoll = $selectedSection === null ? 1 : (int) ($selectedSection['next_roll_' . strtolower($selectedShift)] ?? $selectedSection['next_roll'] ?? 1);
 ?>
 <div class="mx-auto max-w-4xl">
     <a href="<?= Url::to('/students') ?>" class="text-sm text-green-300 hover:text-green-200">← Student register</a>
@@ -52,7 +58,7 @@ $suggestedRoll = $selectedSection['next_roll'] ?? 1;
                     <span class="mb-1.5 block text-sm text-slate-300">Class <span class="text-rose-300">*</span></span>
                     <select id="quick-class" required name="class_id" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
                         <?php foreach ($classes as $class): ?>
-                        <option value="<?= (int) $class['id'] ?>" data-level="<?= (int) $class['numeric_level'] ?>" <?= $selectedClassId === (int) $class['id'] ? 'selected' : '' ?>><?= View::escape($class['name']) ?></option>
+                        <option value="<?= (int) $class['id'] ?>" data-level="<?= (int) $class['numeric_level'] ?>" data-shift="<?= View::escape((string) ($class['shift'] ?? 'Day')) ?>" <?= $selectedClassId === (int) $class['id'] ? 'selected' : '' ?>><?= View::escape($class['name']) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </label>
@@ -67,14 +73,20 @@ $suggestedRoll = $selectedSection['next_roll'] ?? 1;
                     <span class="mb-1.5 block text-sm text-slate-300">Section <span class="text-rose-300">*</span></span>
                     <select id="quick-section" required name="section_id" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
                         <?php foreach ($sections as $section): ?>
-                            <option value="<?= (int) $section['id'] ?>" data-class-id="<?= (int) $section['class_id'] ?>" data-next-roll="<?= (int) $section['next_roll'] ?>" <?= $selectedSectionId === (int) $section['id'] ? 'selected' : '' ?>><?= View::escape($section['name']) ?></option>
+                            <option value="<?= (int) $section['id'] ?>" data-class-id="<?= (int) $section['class_id'] ?>" data-next-roll="<?= (int) $section['next_roll'] ?>" data-next-roll-morning="<?= (int) $section['next_roll_morning'] ?>" data-next-roll-day="<?= (int) $section['next_roll_day'] ?>" <?= $selectedSectionId === (int) $section['id'] ? 'selected' : '' ?>><?= View::escape($section['name']) ?></option>
                         <?php endforeach; ?>
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="mb-1.5 block text-sm text-slate-300">Shift</span>
+                    <select id="quick-shift" name="shift" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
+                        <?php foreach (['Morning', 'Day'] as $shift): ?><option value="<?= $shift ?>" <?= $selectedShift === $shift ? 'selected' : '' ?>><?= $shift ?></option><?php endforeach; ?>
                     </select>
                 </label>
                 <label class="block">
                     <span class="mb-1.5 block text-sm text-slate-300">Roll number <span class="text-rose-300">*</span></span>
                     <input id="quick-roll" required type="number" min="1" max="65535" name="roll_no" value="<?= (int) ($old['roll_no'] ?? $suggestedRoll) ?>"<?= isset($old['roll_no']) ? ' data-edited="1"' : '' ?> class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
-                    <span class="mt-1 block text-xs text-slate-500">Suggested from the next available roll in this section.</span>
+                    <span class="mt-1 block text-xs text-slate-500">Suggested from the next available roll for this class, section, and shift.</span>
                 </label>
                 <label class="block">
                     <span class="mb-1.5 block text-sm text-slate-300">Gender</span>
@@ -150,13 +162,14 @@ $suggestedRoll = $selectedSection['next_roll'] ?? 1;
   const form = document.getElementById('quick-admission-form');
   const classField = document.getElementById('quick-class');
   const sectionField = document.getElementById('quick-section');
+  const shiftField = document.getElementById('quick-shift');
   const academicGroupWrap = document.getElementById('quick-academic-group-wrap');
   const academicGroupField = document.getElementById('quick-academic-group');
   const rollField = document.getElementById('quick-roll');
   const guardianName = document.getElementById('quick-guardian-name');
   const guardianPhone = document.getElementById('quick-guardian-phone');
   const guardianMode = document.getElementById('guardian-mode');
-  if (!form || !classField || !sectionField || !rollField) return;
+  if (!form || !classField || !sectionField || !shiftField || !rollField) return;
   const syncAcademicGroup = () => {
     const isClassNine = classField.selectedOptions[0]?.dataset.level === '9';
     if (academicGroupWrap) academicGroupWrap.classList.toggle('hidden', !isClassNine);
@@ -165,7 +178,12 @@ $suggestedRoll = $selectedSection['next_roll'] ?? 1;
       if (!isClassNine) academicGroupField.value = '';
     }
   };
-  const syncSections = () => {
+  const syncSuggestedRoll = () => {
+    const selected = sectionField.selectedOptions[0];
+    const key = shiftField.value.toLowerCase();
+    if (selected) rollField.value = selected.dataset[`nextRoll${key.charAt(0).toUpperCase()}${key.slice(1)}`] || selected.dataset.nextRoll || '1';
+  };
+  const syncSections = (updateRoll = false) => {
     let first = null;
     for (const option of sectionField.options) {
       const visible = option.dataset.classId === classField.value;
@@ -176,12 +194,16 @@ $suggestedRoll = $selectedSection['next_roll'] ?? 1;
       if (first) sectionField.value = first.value;
     }
     const selected = sectionField.selectedOptions[0];
-    if (selected && !rollField.dataset.edited) rollField.value = selected.dataset.nextRoll || '1';
+    if (selected && updateRoll) syncSuggestedRoll();
     syncAcademicGroup();
   };
-  rollField.addEventListener('input', () => { rollField.dataset.edited = '1'; });
-  classField.addEventListener('change', syncSections);
-  sectionField.addEventListener('change', syncSections);
+  classField.addEventListener('change', () => {
+    const configuredShift = classField.selectedOptions[0]?.dataset.shift;
+    shiftField.value = ['Morning', 'Day'].includes(configuredShift) ? configuredShift : 'Day';
+    syncSections(true);
+  });
+  sectionField.addEventListener('change', () => syncSections(true));
+  shiftField.addEventListener('change', syncSuggestedRoll);
   form.addEventListener('submit', () => {
     guardianMode.value = guardianName.value.trim() || guardianPhone.value.trim() ? 'new' : 'none';
   });

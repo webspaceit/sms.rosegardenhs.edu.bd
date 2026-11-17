@@ -476,15 +476,16 @@ final class Student
         return sprintf('STU-%s-%03d', $year, (int) $stmt->fetchColumn());
     }
 
-    public static function nextRollNumber(int $classId, int $sectionId, int $yearId): int
+    public static function nextRollNumber(int $classId, int $sectionId, int $yearId, ?string $shift = null): int
     {
         $statement = Database::connection()->prepare(
-            'SELECT COALESCE(MAX(roll_no), 0) + 1 FROM students WHERE class_id=:class_id AND section_id=:section_id AND academic_year_id=:year_id AND branch_id=:branch'
+            'SELECT COALESCE(MAX(roll_no), 0) + 1 FROM students WHERE class_id=:class_id AND section_id=:section_id AND academic_year_id=:year_id AND shift <=> :shift AND branch_id=:branch'
         );
         $statement->execute([
             'class_id' => $classId,
             'section_id' => $sectionId,
             'year_id' => $yearId,
+            'shift' => $shift,
             'branch' => BranchContext::id(),
         ]);
         return (int) $statement->fetchColumn();

@@ -177,17 +177,19 @@ final class StudentController
                 $sectionId = (int) $request->input('section_id', 0);
                 $roll = (int) $request->input('roll_no', 0);
                 $gender = (string) $request->input('gender', '');
+                $shift = trim((string) $request->input('shift', ''));
                 if ($studentName === '' || $this->textLength($studentName) > 150) $errors[] = 'Enter a student name (up to 150 characters).';
                 if ($classId < 1 || !Student::yearById((int) $request->input('academic_year_id', 0))) $errors[] = 'Select a valid class and academic year.';
                 if ($classId > 0 && !in_array($sectionId, array_map(static fn (array $section): int => (int) $section['id'], Student::sections($classId)), true)) $errors[] = 'Select a section for the chosen class.';
                 if ($roll < 1 || $roll > 65535) $errors[] = 'Enter a roll number from 1 to 65535.';
+                if (!in_array($shift, ['', 'Morning', 'Day'], true)) $errors[] = 'Select a valid shift.';
                 if (!in_array($gender, ['Male', 'Female', 'Other'], true)) $errors[] = 'Select the student’s gender.';
                 if (Student::classLevel($classId) === 9 && !in_array(trim((string) $request->input('academic_group', '')), AcademicGroup::names(), true)) $errors[] = 'Select an academic group for Class 9.';
                 $yearId = (int) $request->input('academic_year_id', 0);
                 if ($classId > 0 && $sectionId > 0 && $yearId > 0 && $roll > 0) {
-                    $duplicate = Database::connection()->prepare('SELECT 1 FROM students WHERE class_id = :class_id AND section_id = :section_id AND academic_year_id = :year_id AND roll_no = :roll_no AND branch_id = :branch_id LIMIT 1');
-                    $duplicate->execute(['class_id' => $classId, 'section_id' => $sectionId, 'year_id' => $yearId, 'roll_no' => $roll, 'branch_id' => BranchContext::id()]);
-                    if ($duplicate->fetchColumn()) $errors[] = 'That roll number is already used in the selected class and academic year.';
+                    $duplicate = Database::connection()->prepare('SELECT 1 FROM students WHERE class_id = :class_id AND section_id = :section_id AND academic_year_id = :year_id AND shift <=> :shift AND roll_no = :roll_no AND branch_id = :branch_id LIMIT 1');
+                    $duplicate->execute(['class_id' => $classId, 'section_id' => $sectionId, 'year_id' => $yearId, 'shift' => $shift !== '' ? $shift : null, 'roll_no' => $roll, 'branch_id' => BranchContext::id()]);
+                    if ($duplicate->fetchColumn()) $errors[] = 'That roll number is already used in the selected class, section, shift, and academic year.';
                 }
                 $photoUpload = $_FILES['photo'] ?? [];
                 if (empty($draft['files']['photo']) && (int) ($photoUpload['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) $errors[] = 'Upload the student photo to continue.';
@@ -259,7 +261,9 @@ final class StudentController
 
         $sections = Student::allSections();
         foreach ($sections as &$section) {
-            $section['next_roll'] = Student::nextRollNumber((int) $section['class_id'], (int) $section['id'], (int) $year['id']);
+            $section['next_roll'] = Student::nextRollNumber((int) $section['class_id'], (int) $section['id'], (int) $year['id'], null);
+            $section['next_roll_morning'] = Student::nextRollNumber((int) $section['class_id'], (int) $section['id'], (int) $year['id'], 'Morning');
+            $section['next_roll_day'] = Student::nextRollNumber((int) $section['class_id'], (int) $section['id'], (int) $year['id'], 'Day');
         }
         unset($section);
 
@@ -344,7 +348,8 @@ final class StudentController
             if (!is_array($wizardDraft)) foreach (array_merge($uploaded, $documentPaths) as $path) Upload::delete($path);
             $this->rememberForm();
             error_log((string) $error);
-            Toast::flash('The student or guardian could not be saved. Check for a duplicate roll number or invalid details.', 'error');
+            $duplicateRoll = (int) ($error->errorInfo[1] ?? 0) === 1062;
+            Toast::flash($duplicateRoll ? 'That roll number is already used in the selected class, section, shift, and academic year.' : 'The student or guardian could not be saved. Check the details and try again.', 'error');
             header('Location: ' . Url::to($formUrl)); exit;
         } catch (\Throwable $error) {
             if ($db->inTransaction()) $db->rollBack();
@@ -511,7 +516,7 @@ final class StudentController
             if ($error instanceof PDOException) {
                 error_log((string) $error);
                 $isDuplicateKey = (int) ($error->errorInfo[1] ?? 0) === 1062;
-                Toast::flash($isDuplicateKey ? 'That roll number is already used in the selected class and year.' : 'The student record could not be updated. Please try again or contact the administrator.', 'error');
+                Toast::flash($isDuplicateKey ? 'That roll number is already used in the selected class, section, shift, and academic year.' : 'The student record could not be updated. Please try again or contact the administrator.', 'error');
             } else {
                 Toast::flash($error->getMessage(), 'error');
             }
@@ -600,6 +605,15 @@ final class StudentController
         $studentId = (int) ($student['id'] ?? 0);
         $selectedClass = (int) ($student['class_id'] ?? ($_SESSION['_student_old']['class_id'] ?? ($classes[0]['id'] ?? 0)));
         $year = isset($student['academic_year_id']) ? Student::yearById((int) $student['academic_year_id']) : Student::currentYear();
+        $sections = Student::allSections();
+        if ($student === null && $year !== null) {
+            foreach ($sections as &$section) {
+                $section['next_roll'] = Student::nextRollNumber((int) $section['class_id'], (int) $section['id'], (int) $year['id'], null);
+                $section['next_roll_morning'] = Student::nextRollNumber((int) $section['class_id'], (int) $section['id'], (int) $year['id'], 'Morning');
+                $section['next_roll_day'] = Student::nextRollNumber((int) $section['class_id'], (int) $section['id'], (int) $year['id'], 'Day');
+            }
+            unset($section);
+        }
         if ($year === null) {
             Toast::flash('There is no current academic year. Set one up before admitting students.', 'error');
         }
@@ -609,7 +623,7 @@ final class StudentController
             'student' => $student,
             'classes' => $classes,
             'academicGroups' => AcademicGroup::names(),
-            'sections' => Student::allSections(),
+            'sections' => $sections,
             'guardians' => Student::guardianOptions(),
             'linkedGuardians' => $studentId > 0 ? Student::guardians($studentId) : [],
             'primaryGuardian' => $studentId > 0 ? Student::primaryGuardian($studentId) : null,

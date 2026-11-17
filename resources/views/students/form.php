@@ -6,6 +6,24 @@ $editing = $student !== null;
 $old = $_SESSION['_student_old'] ?? [];
 $fieldValue = static fn (string $key, mixed $fallback = ''): mixed => $old[$key] ?? ($student[$key] ?? $fallback);
 $selectedClassId = (int) $fieldValue('class_id', $classes[0]['id'] ?? 0);
+$selectedSectionId = (int) $fieldValue('section_id', $student['section_id'] ?? 0);
+$selectedShift = (string) $fieldValue('shift', '');
+if (!$editing && $selectedShift === '') {
+    foreach ($classes as $classOption) {
+        if ((int) $classOption['id'] === $selectedClassId) {
+            $selectedShift = in_array($classOption['shift'] ?? '', ['Morning', 'Day'], true) ? (string) $classOption['shift'] : 'Day';
+            break;
+        }
+    }
+}
+$suggestedRoll = 1;
+foreach ($sections as $sectionOption) {
+    if ((int) $sectionOption['class_id'] === $selectedClassId && $selectedSectionId === 0) $selectedSectionId = (int) $sectionOption['id'];
+    if ((int) $sectionOption['id'] === $selectedSectionId) {
+        $rollKey = $selectedShift === 'Morning' ? 'next_roll_morning' : ($selectedShift === 'Day' ? 'next_roll_day' : 'next_roll');
+        $suggestedRoll = (int) ($sectionOption[$rollKey] ?? 1);
+    }
+}
 $selectedClassLevel = 0;
 foreach ($classes as $classOption) {
     if ((int) $classOption['id'] === $selectedClassId) { $selectedClassLevel = (int) $classOption['numeric_level']; break; }
@@ -36,11 +54,10 @@ $wizardFiles = (array) ($_SESSION['_student_wizard']['files'] ?? []);
             <div class="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
                 <label class="block"><span class="mb-2 block text-sm font-medium">Admission No <span class="text-red-300">*</span></span><input readonly name="student_id" value="<?= View::escape((string) $fieldValue('student_id', $nextStudentId)) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2.5 text-sm text-slate-300"></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Class <span class="text-red-300">*</span></span><select required id="student-class-field" name="class_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach ($classes as $class): ?><option value="<?= (int) $class['id'] ?>" data-level="<?= (int) $class['numeric_level'] ?>" data-shift="<?= View::escape((string) ($class['shift'] ?? 'Day')) ?>" <?= $selectedClassId === (int) $class['id'] ? 'selected' : '' ?>><?= View::escape($class['name']) ?></option><?php endforeach; ?></select></label>
-                <label class="block"><span class="mb-2 block text-sm font-medium">Section <span class="text-red-300">*</span></span><select required id="student-section-field" name="section_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><?php foreach ($sections as $section): ?><option data-class-id="<?= (int) $section['class_id'] ?>" value="<?= (int) $section['id'] ?>" <?= (int) $fieldValue('section_id', $student['section_id'] ?? 0) === (int) $section['id'] ? 'selected' : '' ?>><?= View::escape($section['class_name'] . ' · ' . $section['name']) ?></option><?php endforeach; ?></select></label>
+                <label class="block"><span class="mb-2 block text-sm font-medium">Section <span class="text-red-300">*</span></span><select required id="student-section-field" name="section_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><?php foreach ($sections as $section): ?><option data-class-id="<?= (int) $section['class_id'] ?>" data-next-roll="<?= (int) ($section['next_roll'] ?? 1) ?>" data-next-roll-morning="<?= (int) ($section['next_roll_morning'] ?? 1) ?>" data-next-roll-day="<?= (int) ($section['next_roll_day'] ?? 1) ?>" value="<?= (int) $section['id'] ?>" <?= $selectedSectionId === (int) $section['id'] ? 'selected' : '' ?>><?= View::escape($section['class_name'] . ' · ' . $section['name']) ?></option><?php endforeach; ?></select></label>
                 <label id="student-academic-group-wrap" class="block <?= $selectedClassLevel === 9 ? '' : 'hidden' ?>"><span class="mb-2 block text-sm font-medium">Academic Group <span class="text-red-300">*</span></span><select id="student-academic-group" name="academic_group" <?= $selectedClassLevel === 9 ? 'required' : '' ?> class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select group</option><?php foreach ($academicGroups as $group): ?><option value="<?= View::escape($group) ?>" <?= (string) $fieldValue('academic_group') === $group ? 'selected' : '' ?>><?= View::escape($group) ?></option><?php endforeach; ?></select></label>
-                <label class="block"><span class="mb-2 block text-sm font-medium">Shift</span><select id="student-shift-field" name="shift" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach (['Morning', 'Day'] as $shiftOpt): ?><option value="<?= $shiftOpt ?>" <?= $fieldValue('shift') === $shiftOpt ? 'selected' : '' ?>><?= $shiftOpt ?></option><?php endforeach; ?></select></label>
-                <label class="block"><span class="mb-2 block text-sm font-medium">Roll Number <span class="text-red-300">*</span></span><input required min="1" max="65535" type="number" name="roll_no" placeholder="Roll Number" value="<?= View::escape((string) $fieldValue('roll_no')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
-
+                <label class="block"><span class="mb-2 block text-sm font-medium">Shift</span><select id="student-shift-field" name="shift" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach (['Morning', 'Day'] as $shiftOpt): ?><option value="<?= $shiftOpt ?>" <?= $selectedShift === $shiftOpt ? 'selected' : '' ?>><?= $shiftOpt ?></option><?php endforeach; ?></select></label>
+                <label class="block"><span class="mb-2 block text-sm font-medium">Roll Number <span class="text-red-300">*</span></span><input required min="1" max="65535" type="number" id="student-roll-field" data-auto-roll="<?= !$editing ? '1' : '0' ?>" name="roll_no" placeholder="Roll Number" value="<?= View::escape((string) $fieldValue('roll_no', $editing ? '' : $suggestedRoll)) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><span class="mt-1 block text-xs text-slate-400">Suggested from the next available roll for this class, section, and shift.</span></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Student Name <span class="text-red-300">*</span></span><input required maxlength="150" name="name" placeholder="Student Name" value="<?= View::escape((string) $fieldValue('name')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Gender <span class="text-red-300">*</span></span><select required name="gender" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach ($genderOptions as $gender): ?><option value="<?= $gender ?>" <?= $fieldValue('gender') === $gender ? 'selected' : '' ?>><?= $gender ?></option><?php endforeach; ?></select></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Date Of Birth</span><input type="date" name="date_of_birth" max="<?= date('Y-m-d') ?>" value="<?= View::escape((string) $fieldValue('date_of_birth')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
@@ -295,6 +312,7 @@ $wizardFiles = (array) ($_SESSION['_student_wizard']['files'] ?? []);
 
   const classField = document.getElementById('student-class-field');
   const sectionField = document.getElementById('student-section-field');
+  const rollField = document.getElementById('student-roll-field');
   const academicGroupWrap = document.getElementById('student-academic-group-wrap');
   const academicGroupField = document.getElementById('student-academic-group');
   const studentBehaviourField = document.getElementById('student-behaviour-field');
@@ -308,6 +326,12 @@ $wizardFiles = (array) ($_SESSION['_student_wizard']['files'] ?? []);
     if (!isClassNine) academicGroupField.value = '';
   };
   if (classField && sectionField) {
+    const syncSuggestedRoll = () => {
+      const selected = sectionField.selectedOptions[0];
+      const shiftValue = document.getElementById('student-shift-field')?.value || '';
+      const suffix = shiftValue === 'Morning' ? 'Morning' : (shiftValue === 'Day' ? 'Day' : '');
+      if (rollField?.dataset.autoRoll === '1' && selected) rollField.value = selected.dataset[`nextRoll${suffix}`] || '1';
+    };
     const syncSections = () => {
       const classId = classField.value;
       let firstVisible = null;
@@ -320,8 +344,15 @@ $wizardFiles = (array) ($_SESSION['_student_wizard']['files'] ?? []);
         if (firstVisible) sectionField.value = firstVisible.value;
       }
       syncAcademicGroup();
+      syncSuggestedRoll();
     };
-    classField.addEventListener('change', syncSections);
+    classField.addEventListener('change', () => {
+      const configuredShift = classField.selectedOptions[0]?.dataset.shift;
+      if (['Morning', 'Day'].includes(configuredShift)) document.getElementById('student-shift-field').value = configuredShift;
+      syncSections();
+    });
+    sectionField.addEventListener('change', syncSuggestedRoll);
+    document.getElementById('student-shift-field')?.addEventListener('change', syncSuggestedRoll);
     syncSections();
   } else {
     syncAcademicGroup();
