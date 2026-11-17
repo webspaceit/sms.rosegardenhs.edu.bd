@@ -303,8 +303,8 @@ if ($appUser !== null && in_array($appUser['role'] ?? '', ['admin', 'superadmin'
     <?php if ($appUser !== null && empty($publicPage)): ?>
     <div class="dashboard-shell min-h-screen lg:flex">
         <?php require BASE_PATH . '/resources/views/partials/sidebar.php'; ?>
-        <main class="min-w-0 flex-1 p-5 sm:p-8">
-            <div class="mb-3 flex min-h-8 items-center justify-end gap-2">
+        <main class="min-w-0 flex-1 p-5 pt-2 sm:p-8 sm:pt-2">
+            <div class="mb-1 flex min-h-8 items-center justify-end gap-2">
                 <?php if (($pendingRegistrations['count'] ?? 0) > 0): ?>
                 <details class="group relative">
                     <summary class="inline-flex cursor-pointer list-none items-center gap-2 rounded-full border border-amber-200/25 bg-amber-950/65 px-3 py-2 text-xs font-semibold text-amber-100 shadow-md shadow-amber-950/20 transition hover:border-amber-200/50 hover:bg-amber-900/70"><span class="relative flex h-2 w-2"><span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-300 opacity-60"></span><span class="relative inline-flex h-2 w-2 rounded-full bg-amber-300"></span></span><span>Full registration pending</span><span class="rounded-full bg-amber-200/15 px-2 py-0.5"><?= number_format((int) $pendingRegistrations['count']) ?></span></summary>
