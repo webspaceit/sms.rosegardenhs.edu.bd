@@ -47,28 +47,30 @@ if ($appUser !== null && in_array($appUser['role'] ?? '', ['admin', 'superadmin'
         .admit-card-page{width:100%;max-width:980px;margin:1.25rem auto;padding:1rem;border-radius:1.15rem;background:#fff;color:#0f172a;box-shadow:0 20px 55px rgba(0,0,0,.28)}
         .admit-card-sheet{position:relative;isolation:isolate;overflow:hidden;min-height:480px;border:6px double #0f172a;padding:1rem;background-color:#fff;background-image:linear-gradient(rgba(255,255,255,.9),rgba(255,255,255,.9)),radial-gradient(circle at 50% 60%,rgba(16,185,129,.12),transparent 48%);color:#111827}
         .admit-card-watermark{position:absolute;z-index:-1;top:50%;left:50%;width:300px;height:300px;object-fit:contain;opacity:.055;transform:translate(-50%,-50%);pointer-events:none}
-        .admit-card-school-head{display:grid;grid-template-columns:76px minmax(0,1fr) 96px;align-items:center;gap:1rem;border-bottom:2px solid #0f766e;padding-bottom:.75rem;text-align:center}
+        .admit-card-school-head{display:grid;grid-template-columns:76px minmax(0,1fr) 68px;align-items:center;gap:1rem;border-bottom:2px solid #0f766e;padding-bottom:.75rem;text-align:center}
         .admit-card-school-logo{width:72px;height:72px;object-fit:contain}
         .admit-card-exam-title{margin:0;text-align:center;color:#0f172a;font-size:1.35rem;font-weight:800;line-height:1.2}
         .admit-card-band{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:.75rem;margin:.7rem 0 .5rem}
         .admit-card-band-label{border:2px solid #0f172a;border-radius:999px;padding:.2rem .7rem;font-size:.75rem;font-weight:700;white-space:nowrap}
         .admit-card-badge{border-radius:999px;background:#020617;padding:.25rem 1.2rem;color:#fff;font-size:1.15rem;font-weight:800;white-space:nowrap}
-        .admit-card-details{display:grid;grid-template-columns:minmax(0,1fr) 88px;gap:1rem;margin:.65rem 0}
+        .admit-card-details{display:block;margin:.65rem 0}
         .admit-card-fields{display:grid;grid-template-columns:1fr 1fr;gap:.32rem 1.1rem;font-size:.82rem}
+        .admit-card-fields-column{display:grid;align-content:start;gap:.32rem;min-width:0}
         .admit-card-field{display:grid;grid-template-columns:115px minmax(0,1fr);gap:.25rem;align-items:baseline}
         .admit-card-field dt{font-weight:700;color:#1e293b}
         .admit-card-field dd{margin:0;min-width:0;font-weight:600;color:#111827;overflow-wrap:anywhere}
-        .admit-card-photo{width:84px;height:100px;object-fit:cover;border:1px solid #334155;background:#f1f5f9}
+        .admit-card-photo{width:59px;height:70px;object-fit:cover;border:1px solid #334155;background:#f1f5f9}
+        .admit-student-avatar{display:grid;place-items:center;overflow:hidden;background:#eaf2f8;print-color-adjust:exact;-webkit-print-color-adjust:exact}.admit-student-avatar svg{display:block;width:100%;height:100%}
         .admit-card-schedule{width:100%;border-collapse:collapse;margin:.55rem 0;color:#111827;font-size:.76rem}
         .admit-card-schedule th,.admit-card-schedule td{border:1px solid #334155;padding:.12rem .35rem;text-align:center}
         .admit-card-schedule th{background:#ecfdf5;font-weight:700;font-size:.9rem}
         .admit-card-guidelines{margin:.35rem 0;color:#111827;font-family:'Noto Sans Bengali','Nirmala UI',sans-serif;font-size:.76rem;line-height:1.45}
         .admit-card-signatures{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem;margin-top:.9rem;text-align:center}
-        .admit-card-signature{border-top:1px solid #334155;padding-top:.2rem;font-size:.67rem;font-weight:600;color:#111827}
+        .admit-card-signature{display:flex;min-width:0;flex-direction:column;align-items:center;justify-content:flex-end;font-size:.67rem;font-weight:600;color:#111827}.admit-card-signature img{display:block;width:auto;max-width:100%;height:12mm;max-height:38px;object-fit:contain;margin:0 auto 1mm}.admit-card-signature span{display:block;width:100%;border-top:1px solid #334155;padding-top:.2rem}
         .dashboard-shell main .admit-card-page .admit-card-schedule{width:100%;margin:.55rem 0;border:1px solid #334155;border-collapse:collapse;border-radius:0;background:#fff;box-shadow:none;color:#111827;font-size:.76rem}
         .dashboard-shell main .admit-card-page .admit-card-schedule th,.dashboard-shell main .admit-card-page .admit-card-schedule td{border:1px solid #334155;padding:.12rem .35rem;text-align:center}
         .dashboard-shell main .admit-card-page .admit-card-schedule thead{background:#ecfdf5;color:#111827;font-size:.9rem}
-        @media screen and (max-width:640px){.admit-card-page{padding:.65rem}.admit-card-sheet{padding:.7rem}.admit-card-school-head{grid-template-columns:48px minmax(0,1fr);gap:.5rem;text-align:left}.admit-card-school-logo{width:46px;height:46px}.admit-card-school-head>div:last-child{display:none}.admit-card-details{grid-template-columns:minmax(0,1fr) 64px;gap:.5rem}.admit-card-photo{width:62px;height:78px}.admit-card-fields{grid-template-columns:1fr}.admit-card-band{gap:.3rem}.admit-card-band-label{padding:.2rem .4rem;font-size:.62rem}.admit-card-badge{padding:.25rem .6rem;font-size:.9rem}}
+        @media screen and (max-width:640px){.admit-card-page{padding:.65rem}.admit-card-sheet{padding:.7rem}.admit-card-school-head{grid-template-columns:48px minmax(0,1fr) 38px;gap:.5rem;text-align:left}.admit-card-school-logo{width:46px;height:46px}.admit-card-photo{width:35px;height:43px}.admit-card-details{display:block}.admit-card-fields{grid-template-columns:1fr}.admit-card-band{gap:.3rem}.admit-card-band-label{padding:.2rem .4rem;font-size:.62rem}.admit-card-badge{padding:.25rem .6rem;font-size:.9rem}}
         @media print{
             @page{size:A4 portrait;margin:0}
             html,body{margin:0!important;min-height:0!important;background:#fff!important}
@@ -78,13 +80,14 @@ if ($appUser !== null && in_array($appUser['role'] ?? '', ['admin', 'superadmin'
             body:has(#admit-cards-print) .admit-card-page{display:block;width:210mm;height:297mm;max-width:none;margin:0;padding:8mm;border:0;border-radius:0;background:#fff;box-shadow:none;break-after:page;page-break-after:always}
             body:has(#admit-cards-print) .admit-card-page:last-child{break-after:auto;page-break-after:auto}
             body:has(#admit-cards-print) .admit-card-sheet{width:194mm;height:auto;min-height:137mm;overflow:visible;margin:0;border:1.2mm double #0f172a;padding:4mm;background-color:#fff!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
-            body:has(#admit-cards-print) .admit-card-school-head{grid-template-columns:18mm minmax(0,1fr) 22mm;gap:3mm;padding-bottom:2mm}
+            body:has(#admit-cards-print) .admit-card-school-head{grid-template-columns:18mm minmax(0,1fr) 16mm;gap:3mm;padding-bottom:2mm}
             body:has(#admit-cards-print) .admit-card-school-logo{width:17mm;height:17mm}
             body:has(#admit-cards-print) .admit-card-exam-title{font-size:14pt}
-            body:has(#admit-cards-print) .admit-card-details{grid-template-columns:minmax(0,1fr) 22mm;gap:3mm}
+            body:has(#admit-cards-print) .admit-card-details{display:block}
             body:has(#admit-cards-print) .admit-card-fields{gap:1mm 3mm;font-size:8pt}
+            body:has(#admit-cards-print) .admit-card-fields-column{gap:1mm}
             body:has(#admit-cards-print) .admit-card-field{grid-template-columns:30mm minmax(0,1fr);gap:1mm}
-            body:has(#admit-cards-print) .admit-card-photo{width:21mm;height:25mm}
+            body:has(#admit-cards-print) .admit-card-photo{width:15mm;height:18mm}
             body:has(#admit-cards-print) .admit-card-schedule{font-size:7pt}
             body:has(#admit-cards-print) .admit-card-schedule th{font-size:8.5pt;font-weight:700}
             body:has(#admit-cards-print) .admit-card-schedule th,body:has(#admit-cards-print) .admit-card-schedule td{padding:.5mm}
@@ -247,13 +250,13 @@ if ($appUser !== null && in_array($appUser['role'] ?? '', ['admin', 'superadmin'
         .admit-list-heading h1{margin:0;font-size:1.55rem;font-weight:700;color:#f0fdf4}.admit-list-heading p:not(.admit-list-eyebrow){margin:.3rem 0 0;color:#a7c7bb;font-size:.88rem}
         .admit-list-eyebrow{margin:0 0 .25rem;color:#6ee7b7;font-size:.66rem;font-weight:700;letter-spacing:.16em}
         .admit-list-total{display:grid;gap:.1rem;text-align:right;color:#a7c7bb;font-size:.75rem}.admit-list-total strong{color:#d1fae5;font-size:1.35rem}
-        .admit-list-filters{display:grid;grid-template-columns:minmax(140px,1fr) minmax(140px,1fr) minmax(190px,1.5fr) auto auto auto;align-items:end;gap:.75rem;padding:1rem 1.25rem;border-bottom:1px solid rgba(134,239,172,.15);background:rgba(2,44,34,.35)}
+        .admit-list-filters{display:grid;grid-template-columns:minmax(130px,1fr) minmax(130px,1fr) minmax(180px,1.5fr) minmax(145px,1fr) auto auto auto;align-items:end;gap:.75rem;padding:1rem 1.25rem;border-bottom:1px solid rgba(134,239,172,.15);background:rgba(2,44,34,.35)}
         .admit-list-filters label{display:grid;gap:.35rem;color:#b7d2c5;font-size:.72rem;font-weight:600}.admit-list-filters select,.admit-list-filters input{width:100%;min-height:42px;border:1px solid rgba(74,222,128,.23);border-radius:.65rem;background:#073b32;color:#f0fdf4;padding:.55rem .75rem;font-size:.85rem}
         .admit-list-filter-button,.admit-list-clear,.admit-list-action{display:inline-flex;min-height:42px;align-items:center;justify-content:center;gap:.45rem;border:1px solid rgba(134,239,172,.28);border-radius:.65rem;background:rgba(16,185,129,.12);padding:.5rem .85rem;color:#d1fae5;font-size:.8rem;font-weight:700;text-decoration:none;white-space:nowrap;transition:.18s}
         .admit-list-filter-button::before,.admit-list-filter-button::after,.admit-list-clear::before,.admit-list-clear::after,.admit-list-action::before,.admit-list-action::after{display:none!important;content:none!important}
         .admit-list-filter-button:hover,.admit-list-clear:hover,.admit-list-action:hover{border-color:#6ee7b7;background:rgba(16,185,129,.22);color:#fff}
         .admit-list-clear{background:transparent;color:#a7c7bb}
-        .admit-list-per-page{max-width:110px}.admit-list-table-wrap{overflow-x:auto}
+        .admit-list-per-page{max-width:110px}.admit-bulk-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.75rem}.admit-list-table-wrap{width:100%;overflow-x:auto}
         .dashboard-shell main table.admit-list-table{width:100%;min-width:980px;border:0;border-radius:0;background:transparent;box-shadow:none;border-collapse:separate;border-spacing:0;color:#d8e8df}
         .dashboard-shell main table.admit-list-table th{border-right:1px solid rgba(167,243,208,.16);border-bottom:1px solid rgba(167,243,208,.26);background:linear-gradient(180deg,#087557,#066347);padding:.5rem .8rem;color:#eafff3;font-size:.85rem;font-weight:700;letter-spacing:.07em;white-space:nowrap}
         .dashboard-shell main table.admit-list-table td{border-right:1px solid rgba(134,239,172,.11);border-bottom:1px solid rgba(134,239,172,.13);padding:.4rem .8rem;color:#bfd4ca;font-size:.78rem;line-height:1.35;vertical-align:middle}

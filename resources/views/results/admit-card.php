@@ -9,6 +9,10 @@
  */
 use App\Core\Url;
 use App\Core\View;
+
+$signatureUrl = static fn (string $key): string => trim((string) ($schoolSettings[$key] ?? '')) !== ''
+    ? Url::to('/uploads/file?path=' . rawurlencode((string) $schoolSettings[$key]))
+    : '';
 ?>
 <div>
     <?php require BASE_PATH . '/resources/views/results/partials/config-bar.php'; ?>
@@ -146,10 +150,9 @@ use App\Core\View;
                 </section>
 
                 <div class="admit-card-signatures">
-                    <div class="admit-card-signature">Class teacher</div>
-                    <div class="admit-card-signature">Invigilator</div>
-                    <div class="admit-card-signature">Exam controller</div>
-                    <div class="admit-card-signature">Head teacher</div>
+                    <?php foreach (['class_teacher_signature' => 'Class teacher', 'invigilator_signature' => 'Invigilator', 'exam_controller_signature' => 'Exam controller', 'head_teacher_signature' => 'Head teacher'] as $signatureKey => $signatureLabel): ?>
+                        <div class="admit-card-signature"><?php if (($signature = $signatureUrl($signatureKey)) !== ''): ?><img src="<?= View::escape($signature) ?>" alt="<?= View::escape($signatureLabel) ?> signature"><?php endif; ?><span><?= View::escape($signatureLabel) ?></span></div>
+                    <?php endforeach; ?>
                 </div>
                 <footer class="mt-2 border-t border-slate-300 pt-1 text-center text-[9px] text-slate-600">
                     This admit card is valid only for <?= View::escape((string) ($config['exam_name'] ?? 'the examination')) ?>, <?= View::escape((string) ($config['academic_year'] ?? '')) ?>. Please bring it to every examination.

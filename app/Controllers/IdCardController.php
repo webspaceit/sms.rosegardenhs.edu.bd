@@ -23,9 +23,10 @@ final class IdCardController
         $classId = (int) $request->input('class_id', 0);
         $sectionId = (int) $request->input('section_id', 0);
 
-        $sql = 'SELECT s.id, s.name, s.student_id, s.roll_no, s.photo,'
+        $sql = 'SELECT s.id, s.name, s.student_id, s.roll_no, s.photo, ay.name AS academic_year,'
             . ' c.name AS class_name, sec.name AS section_name, g.phone AS guardian_phone'
             . ' FROM students s JOIN classes c ON c.id = s.class_id AND c.branch_id=s.branch_id JOIN sections sec ON sec.id = s.section_id AND sec.branch_id=s.branch_id'
+            . ' LEFT JOIN academic_years ay ON ay.id=s.academic_year_id AND ay.branch_id=s.branch_id'
             . ' LEFT JOIN student_guardian sg ON sg.student_id = s.id AND sg.branch_id=s.branch_id AND sg.is_primary = 1'
             . ' LEFT JOIN guardians g ON g.id = sg.guardian_id AND g.branch_id=sg.branch_id'
             . ' WHERE s.class_id = :class_id AND s.branch_id=:branch';
@@ -39,6 +40,10 @@ final class IdCardController
 
         $statement = Database::connection()->prepare($sql);
         $statement->execute($bindings);
+        $schoolSettings = [];
+        foreach (Database::read()->query("SELECT `key`, value FROM school_settings WHERE branch_id=" . BranchContext::id())->fetchAll() as $setting) {
+            $schoolSettings[(string) $setting['key']] = (string) ($setting['value'] ?? '');
+        }
 
         View::render('results/id-cards', [
             'title' => 'ID cards',
@@ -48,6 +53,7 @@ final class IdCardController
             'classId' => $classId,
             'sectionId' => $sectionId,
             'students' => $statement->fetchAll(),
+            'schoolSettings' => $schoolSettings,
         ]);
     }
 }

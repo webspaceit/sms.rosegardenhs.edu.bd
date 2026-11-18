@@ -13,7 +13,9 @@ final class Student
     {
         [$where, $params] = self::admitCardFilters($yearId, $classId, $search);
         $sql = 'SELECT s.id, s.student_id, s.name, s.roll_no, s.photo, c.name AS class_name,'
-            . ' sec.name AS section_name, ay.name AS year_name, parents.father_name, parents.mother_name'
+            . ' sec.name AS section_name, ay.name AS year_name,'
+            . ' COALESCE(NULLIF(TRIM(s.father_name), \'\'), parents.father_name) AS father_name,'
+            . ' COALESCE(NULLIF(TRIM(s.mother_name), \'\'), parents.mother_name) AS mother_name'
             . ' FROM students s JOIN classes c ON c.id = s.class_id AND c.branch_id=s.branch_id'
             . ' JOIN sections sec ON sec.id = s.section_id AND sec.branch_id=s.branch_id'
             . ' JOIN academic_years ay ON ay.id = s.academic_year_id AND ay.branch_id=s.branch_id'
@@ -48,7 +50,8 @@ final class Student
         $statement = Database::connection()->prepare(
             'SELECT s.id, s.student_id, s.name, s.roll_no, s.photo, s.gender, s.status, s.class_id,'
             . ' c.name AS class_name, sec.name AS section_name, ay.id AS academic_year_id, ay.name AS year_name,'
-            . ' parents.father_name, parents.mother_name, parents.guardian_name'
+            . ' COALESCE(NULLIF(TRIM(s.father_name), \'\'), parents.father_name) AS father_name,'
+            . ' COALESCE(NULLIF(TRIM(s.mother_name), \'\'), parents.mother_name) AS mother_name, parents.guardian_name'
             . ' FROM students s JOIN classes c ON c.id = s.class_id AND c.branch_id=s.branch_id'
             . ' JOIN sections sec ON sec.id = s.section_id AND sec.branch_id=s.branch_id'
             . ' JOIN academic_years ay ON ay.id = s.academic_year_id AND ay.branch_id=s.branch_id'
@@ -208,7 +211,12 @@ final class Student
 
     public static function listing(string $search = '', int $classId = 0, string $status = '', int $limit = 25, int $offset = 0, int $yearId = 0, string $academicGroup = ''): array
     {
-        $sql = 'SELECT s.id, s.student_id, s.name, s.roll_no, s.mobile_number, s.shift, s.photo, s.gender, s.status, s.archive_reason, s.academic_group,
+        $sql = 'SELECT s.id, s.student_id, s.name, s.roll_no,'
+                . ' COALESCE(NULLIF(TRIM(s.mobile_number), \'\'),'
+                . ' (SELECT NULLIF(TRIM(g.phone), \'\') FROM student_guardian sg JOIN guardians g ON g.id=sg.guardian_id AND g.branch_id=sg.branch_id'
+                . ' WHERE sg.student_id=s.id AND sg.branch_id=s.branch_id ORDER BY sg.is_primary DESC, sg.id ASC LIMIT 1),'
+                . ' NULLIF(TRIM(s.father_phone), \'\'), NULLIF(TRIM(s.mother_phone), \'\')) AS contact_number,'
+                . ' s.shift, s.photo, s.gender, s.status, s.archive_reason, s.academic_group,
                        c.name AS class_name, c.numeric_level AS class_level, sec.name AS section_name, ay.name AS year_name
                 FROM students s
                 INNER JOIN classes c ON c.id = s.class_id AND c.branch_id=s.branch_id

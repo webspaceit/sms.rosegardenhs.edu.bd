@@ -228,6 +228,10 @@ final class BulkMarkController
         $students = $this->students($classId);
         $subjects = $this->subjects($classId);
         $marks = $this->marks($classId, $examName, $academicYear);
+        $schoolSettings = [];
+        foreach (Database::connection()->query('SELECT `key`, value FROM school_settings WHERE branch_id=' . BranchContext::id())->fetchAll() as $setting) {
+            $schoolSettings[(string) $setting['key']] = (string) ($setting['value'] ?? '');
+        }
 
         $rows = [];
         foreach ($students as $student) {
@@ -253,6 +257,7 @@ final class BulkMarkController
             'className' => $this->className($classId),
             'examName' => $examName,
             'academicYear' => $academicYear,
+            'schoolSettings' => $schoolSettings,
             'subjects' => $subjects,
             'rows' => $rows,
         ]);

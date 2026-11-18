@@ -37,6 +37,12 @@ final class UploadController
     {
         $user = Auth::user();
         if (!$user) return false;
+        if (str_starts_with($relative, 'school-signatures/')) {
+            if (!Guard::isStaff()) return false;
+            $query = Database::connection()->prepare('SELECT 1 FROM school_settings WHERE value=:path AND branch_id=:branch LIMIT 1');
+            $query->execute(['path' => $relative, 'branch' => BranchContext::id()]);
+            return (bool) $query->fetchColumn();
+        }
         if (str_starts_with($relative, 'student-photos/')) {
             if (Guard::can('students.view')) {
                 $query = Database::connection()->prepare(

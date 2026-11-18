@@ -11,6 +11,7 @@ use App\Core\Guard;
 use App\Core\Request;
 use App\Core\Toast;
 use App\Core\Url;
+use App\Core\Upload;
 use App\Core\View;
 
 /**
@@ -76,6 +77,17 @@ final class SchoolSettingController
                     ],
                 ],
             ],
+            'print_signatures' => [
+                'title' => 'Print signatures',
+                'hint' => 'Upload JPG, PNG, or WebP signature images. They will appear on admit cards and printable result sheets.',
+                'fields' => [
+                    'class_teacher_signature' => ['label' => 'Class teacher signature', 'type' => 'file', 'max' => 2097152],
+                    'invigilator_signature' => ['label' => 'Invigilator signature', 'type' => 'file', 'max' => 2097152],
+                    'exam_controller_signature' => ['label' => 'Exam controller signature', 'type' => 'file', 'max' => 2097152],
+                    'head_teacher_signature' => ['label' => 'Head teacher signature', 'type' => 'file', 'max' => 2097152],
+                    'principal_signature' => ['label' => 'Principal signature', 'type' => 'file', 'max' => 2097152],
+                ],
+            ],
             'modules' => [
                 'title' => 'Admission form modules',
                 'hint' => 'Toggle the optional sections shown on the student admission form.',
@@ -112,7 +124,7 @@ final class SchoolSettingController
 
         $database = Database::connection();
         $findSetting = $database->prepare(
-            'SELECT id FROM school_settings WHERE `key` = :key AND branch_id = :branch ORDER BY id DESC LIMIT 1'
+            'SELECT id, value FROM school_settings WHERE `key` = :key AND branch_id = :branch ORDER BY id DESC LIMIT 1'
         );
         $updateSetting = $database->prepare(
             'UPDATE school_settings SET value = :value, updated_at = CURRENT_TIMESTAMP WHERE id = :id'
@@ -124,9 +136,39 @@ final class SchoolSettingController
         $saved = 0;
         foreach (self::groups() as $group) {
             foreach ($group['fields'] as $key => $field) {
-                if (($field['type'] ?? 'text') === 'checkbox') {
+                $fieldType = (string) ($field['type'] ?? 'text');
+                if ($fieldType === 'file') {
+                    $file = $_FILES[$key] ?? [];
+                    $hasUpload = is_array($file) && (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+                    $removeUpload = $request->input('remove_' . $key) === '1';
+                    if (!$hasUpload && !$removeUpload) continue;
+                    $findSetting->execute(['key' => $key, 'branch' => BranchContext::id()]);
+                    $existingSetting = $findSetting->fetch();
+                    $settingId = $existingSetting ? (int) $existingSetting['id'] : false;
+                    $oldPath = (string) ($existingSetting['value'] ?? '');
+                    $value = '';
+                    if ($hasUpload) {
+                        try {
+                            $value = Upload::store($key, 'school-signatures', ['jpg', 'jpeg', 'png', 'webp'], (int) $field['max']) ?? '';
+                        } catch (\RuntimeException $exception) {
+                            Toast::flash($exception->getMessage(), 'error');
+                            header('Location: ' . Url::to('/settings/school'));
+                            exit;
+                        }
+                        if ($value === '') continue;
+                    }
+                    if ($settingId !== false) {
+                        $updateSetting->execute(['id' => $settingId, 'value' => $value]);
+                    } else {
+                        $insertSetting->execute(['key' => $key, 'value' => $value, 'branch' => BranchContext::id()]);
+                    }
+                    if ($oldPath !== '' && $oldPath !== $value) Upload::delete($oldPath);
+                    $saved++;
+                    continue;
+                }
+                if ($fieldType === 'checkbox') {
                     $value = $request->input($key) === '1' ? '1' : '0';
-                } elseif (($field['type'] ?? 'text') === 'select') {
+                } elseif ($fieldType === 'select') {
                     $value = (string) $request->input($key, '');
                     if (!array_key_exists($value, $field['options'] ?? [])) {
                         continue;
@@ -138,10 +180,10 @@ final class SchoolSettingController
                     }
                 }
                 $branchId = BranchContext::id();
-                $findSetting->execute(['key' => $key, 'branch' => $branchId]);
-                $settingId = $findSetting->fetchColumn();
-                if ($settingId !== false) {
-                    $updateSetting->execute(['id' => (int) $settingId, 'value' => $value]);
+                $findSetting->execute(['key' => $key, 'branch' => BranchContext::id()]);
+                $existingSetting = $findSetting->fetch();
+                if ($existingSetting !== false) {
+                    $updateSetting->execute(['id' => (int) $existingSetting['id'], 'value' => $value]);
                 } else {
                     $insertSetting->execute(['key' => $key, 'value' => $value, 'branch' => $branchId]);
                 }

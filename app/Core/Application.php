@@ -259,6 +259,7 @@ final class Application
         $router->get('/merit-lists', [$results, 'meritLists']);
         $router->get('/admit-cards', [$results, 'admitCards']);
         $router->get('/admit-cards/print', [$results, 'printAdmitCard']);
+        $router->get('/admit-cards/bulk-print', [$results, 'bulkPrintAdmitCards']);
         $this->crud($router, new Crud(ExamSuggestion::module()), '/exam-suggestions');
         $this->crud($router, new Crud(ExamAttendance::module()), '/exam-attendances');
         $router->get('/id-cards', [$idCards, 'index']);

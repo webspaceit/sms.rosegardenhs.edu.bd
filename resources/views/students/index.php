@@ -83,7 +83,7 @@ $columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showAcademicGroupFilter ? 1
                         <th class="px-3 py-3 font-medium">Student ID</th>
                         <th class="px-3 py-3 font-medium">Name</th>
                         <th class="px-3 py-3 font-medium">Roll</th>
-                        <th class="px-3 py-3 font-medium">Mobile No</th>
+                        <th class="px-3 py-3 font-medium" title="Student mobile number; falls back to guardian or parent phone when empty">Contact No.</th>
                         <th class="px-3 py-3 font-medium">Class</th>
                         <th class="px-3 py-3 font-medium">Section</th>
                         <?php if ($showAcademicGroupFilter): ?><th class="px-3 py-3 font-medium">Group</th><?php endif; ?>
@@ -106,7 +106,7 @@ $columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showAcademicGroupFilter ? 1
                             <td class="px-3 py-2 text-white"><?= View::escape($student['student_id']) ?></td>
                             <td class="px-3 py-2"><p class="font-medium"><?= View::escape($student['name']) ?></p></td>
                             <td class="px-3 py-2 text-white"><?= (int) $student['roll_no'] ?></td>
-                            <td class="px-3 py-2 text-white"><?= View::escape($student['mobile_number'] ?: '—') ?></td>
+                            <td class="px-3 py-2 text-white"><?= View::escape((string) ($student['contact_number'] ?? '') ?: '—') ?></td>
                             <td class="whitespace-nowrap px-3 py-2 text-slate-300"><?= View::escape($student['class_name']) ?></td>
                             <td class="px-3 py-2 text-slate-300"><?= View::escape($student['section_name']) ?></td>
                             <?php if ($showAcademicGroupFilter): ?><td class="px-3 py-2 text-slate-300"><?= View::escape($student['academic_group'] ?: '—') ?></td><?php endif; ?>

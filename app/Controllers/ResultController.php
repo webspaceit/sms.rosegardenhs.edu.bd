@@ -241,6 +241,8 @@ final class ResultController
         }
         $classId = max(0, (int) $request->input('class_id', 0));
         $search = trim((string) $request->input('q', ''));
+        $format = (string) $request->input('format', 'existing');
+        if (!in_array($format, ['existing', 'new'], true)) $format = 'existing';
         $perPage = (int) $request->input('per_page', 20);
         $perPage = in_array($perPage, [10, 20, 50, 100], true) ? $perPage : 20;
         $total = \App\Models\Student::countAdmitCards($yearId, $classId, $search);
@@ -260,6 +262,7 @@ final class ResultController
             'classes' => Catalogue::classes(),
             'classId' => $classId,
             'search' => $search,
+            'format' => $format,
             'perPage' => $perPage,
             'page' => $page,
             'totalPages' => $totalPages,
@@ -271,6 +274,8 @@ final class ResultController
     public function printAdmitCard(Request $request): void
     {
         Guard::requirePermission('reports.view');
+        $format = (string) $request->input('format', 'existing');
+        if (!in_array($format, ['existing', 'new'], true)) $format = 'existing';
         $student = \App\Models\Student::admitCardDetails((int) $request->input('id', 0));
         if ($student === null) {
             Toast::flash('Student record not found.', 'error');
@@ -295,12 +300,78 @@ final class ResultController
             $schoolSettings[(string) $setting['key']] = (string) ($setting['value'] ?? '');
         }
 
-        View::render('results/admit-card-print', [
+        View::render($format === 'new' ? 'results/admit-card-print-new' : 'results/admit-card-print', [
             'title' => 'Admit card · ' . (string) $student['name'],
             'user' => Auth::user(),
             'student' => $student,
             'examName' => $examName,
             'schedule' => $schedule,
+            'schoolSettings' => $schoolSettings,
+            'format' => $format,
+        ]);
+    }
+
+    public function bulkPrintAdmitCards(Request $request): void
+    {
+        Guard::requirePermission('reports.view');
+        $rawIds = $request->input('student_ids', []);
+        if (!is_array($rawIds)) $rawIds = [];
+        $ids = [];
+        foreach ($rawIds as $rawId) {
+            if (is_scalar($rawId) && filter_var((string) $rawId, FILTER_VALIDATE_INT) !== false && (int) $rawId > 0) {
+                $ids[] = (int) $rawId;
+            }
+        }
+        $ids = array_slice(array_values(array_unique($ids)), 0, 100);
+        if ($ids === []) {
+            Toast::flash('Select at least one student to print admit cards.', 'error');
+            header('Location: ' . Url::to('/admit-cards'));
+            exit;
+        }
+        $format = (string) $request->input('format', 'existing');
+        if (!in_array($format, ['existing', 'new'], true)) $format = 'existing';
+
+        $scheduleStatement = Database::read()->prepare(
+            'SELECT e.name AS exam_name, s.name AS subject_name, es.date, es.start_time, es.end_time, es.hall'
+            . ' FROM exam_schedules es JOIN exams e ON e.id=es.exam_id AND e.branch_id=es.branch_id'
+            . ' JOIN subjects s ON s.id=es.subject_id AND s.branch_id=es.branch_id'
+            . ' WHERE es.branch_id=:branch AND (e.academic_year_id IS NULL OR e.academic_year_id=:year_id)'
+            . ' AND (es.class_id IS NULL OR es.class_id=:class_id)'
+            . ' ORDER BY es.date, es.start_time, s.name'
+        );
+        $cards = [];
+        foreach ($ids as $id) {
+            $student = \App\Models\Student::admitCardDetails($id);
+            if ($student === null) continue;
+            $scheduleStatement->execute([
+                'branch' => BranchContext::id(),
+                'year_id' => (int) $student['academic_year_id'],
+                'class_id' => (int) $student['class_id'],
+            ]);
+            $schedule = $scheduleStatement->fetchAll();
+            $examNames = array_values(array_unique(array_map(static fn (array $row): string => (string) $row['exam_name'], $schedule)));
+            $cards[] = [
+                'student' => $student,
+                'exam_name' => count($examNames) === 1 ? $examNames[0] : 'Scheduled Examinations',
+                'schedule' => $schedule,
+            ];
+        }
+        if ($cards === []) {
+            Toast::flash('No selected students are available in this campus.', 'error');
+            header('Location: ' . Url::to('/admit-cards'));
+            exit;
+        }
+
+        $schoolSettings = [];
+        $settingsRows = Database::read()->query('SELECT ' . chr(96) . 'key' . chr(96) . ', value FROM school_settings WHERE branch_id=' . BranchContext::id())->fetchAll();
+        foreach ($settingsRows as $setting) {
+            $schoolSettings[(string) $setting['key']] = (string) ($setting['value'] ?? '');
+        }
+        View::render('results/admit-card-bulk-print', [
+            'title' => 'Bulk admit cards',
+            'user' => Auth::user(),
+            'cards' => $cards,
+            'format' => $format,
             'schoolSettings' => $schoolSettings,
         ]);
     }

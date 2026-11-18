@@ -8,11 +8,20 @@
 use App\Core\Url;
 use App\Core\View;
 
+$signatureUrl = static fn (string $key): string => trim((string) ($schoolSettings[$key] ?? '')) !== ''
+    ? Url::to('/uploads/file?path=' . rawurlencode((string) $schoolSettings[$key]))
+    : '';
 $grandTotal = 0;
 foreach ($rows as $row) {
     $grandTotal += (int) $row['total'];
 }
 ?>
+<style>
+    .result-signature{display:flex;min-width:0;flex:1;flex-direction:column;align-items:center;justify-content:flex-end;text-align:center}
+    .result-signature img{display:block;width:auto;max-width:100%;height:18mm;max-height:70px;object-fit:contain;margin:0 auto 1mm}
+    .result-signature span{display:block;width:100%;border-top:1px solid #94a3b8;padding-top:.25rem}
+    @media print{.result-signature img{height:16mm;max-height:16mm}}
+</style>
 <div class="flex flex-wrap items-end justify-between gap-4 print:hidden">
     <div>
         <h1 class="text-3xl font-semibold">Mark sheet</h1>
@@ -26,7 +35,7 @@ foreach ($rows as $row) {
 
 <section class="mt-6 overflow-hidden rounded-2xl border border-slate-800 bg-white text-slate-900 print:rounded-none print:border-0">
     <header class="border-b border-slate-200 px-5 py-4 text-center">
-        <p class="text-xs uppercase tracking-[0.2em] text-slate-500">WSIT School</p>
+        <p class="text-xs uppercase tracking-[0.2em] text-slate-500"><?= View::escape($schoolSettings['school_name'] ?? 'WSIT School') ?></p>
         <h2 class="mt-1 text-xl font-semibold"><?= View::escape($className) ?> — Mark sheet</h2>
         <p class="mt-1 text-sm text-slate-600"><?= View::escape($examName) ?> · <?= View::escape($academicYear) ?></p>
     </header>
@@ -73,8 +82,8 @@ foreach ($rows as $row) {
     </div>
 
     <footer class="flex justify-between gap-8 border-t border-slate-200 px-5 py-6 text-xs text-slate-500">
-        <span class="border-t border-slate-400 pt-1">Class teacher</span>
-        <span class="border-t border-slate-400 pt-1">Head teacher</span>
-        <span class="border-t border-slate-400 pt-1">Principal</span>
+        <?php foreach (['class_teacher_signature' => 'Class teacher', 'head_teacher_signature' => 'Head teacher', 'principal_signature' => 'Principal'] as $signatureKey => $signatureLabel): ?>
+            <div class="result-signature"><?php if (($signature = $signatureUrl($signatureKey)) !== ''): ?><img src="<?= View::escape($signature) ?>" alt="<?= View::escape($signatureLabel) ?> signature"><?php endif; ?><span><?= View::escape($signatureLabel) ?></span></div>
+        <?php endforeach; ?>
     </footer>
 </section>
