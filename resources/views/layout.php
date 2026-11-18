@@ -277,6 +277,13 @@ if ($appUser !== null && in_array($appUser['role'] ?? '', ['admin', 'superadmin'
         .dashboard-shell main table tbody tr+tr{border-color:rgba(20,83,45,.55)}
         .dashboard-shell main table.student-list-table tbody tr>td{border-bottom:1px solid rgba(74,222,128,.2)}
         .dashboard-shell main table.student-list-table tbody tr:last-child>td{border-bottom:0}
+        @media (min-width:1280px) and (max-width:1631px){
+            .dashboard-shell main table.student-list-table.student-list-laptop-fit{min-width:0!important;table-layout:fixed!important}
+            .dashboard-shell main table.student-list-table.student-list-laptop-fit th,.dashboard-shell main table.student-list-table.student-list-laptop-fit td{padding:.5rem .35rem!important;font-size:.68rem!important;line-height:1.25!important}
+            .dashboard-shell main table.student-list-table.student-list-laptop-fit th{white-space:normal}
+            .dashboard-shell main table.student-list-table.student-list-laptop-fit .student-col-id{white-space:nowrap;font-size:.64rem!important;letter-spacing:-.025em}
+            .dashboard-shell main table.student-list-table.student-list-laptop-fit .student-col-name{overflow-wrap:anywhere}
+        }
         .dashboard-shell main table tbody td[colspan]{background-color:rgba(2,44,34,.42)}
         .dashboard-shell main .student-reference-table-wrap table{background:transparent!important}
         .dashboard-shell main .student-reference-table-wrap table tbody{background:transparent!important}

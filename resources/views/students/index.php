@@ -15,6 +15,10 @@ $paginationUrl = static fn (int $targetPage): string => Url::to('/students') . '
 $firstStudent = $totalStudents === 0 ? 0 : (($page - 1) * $perPage + 1);
 $lastStudent = min($page * $perPage, $totalStudents);
 $showArchiveReasonColumn = $selectedStatus === 'inactive';
+$compactStudentTable = !$showAcademicGroupFilter && !$showArchiveReasonColumn;
+$compactStudentColumnWidths = $canDeleteStudents
+    ? [3.6, 4.2, 15, 16, 4.8, 12, 7.5, 5.5, 6.6, 6, 7.5, 5.5, 5.8]
+    : [4.3, 15.5, 16.5, 4.8, 12.5, 7.7, 5.7, 6.8, 6.2, 7.8, 5.7, 6.5];
 $columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showAcademicGroupFilter ? 1 : 0) + ($showArchiveReasonColumn ? 1 : 0);
 ?>
     <header class="flex flex-wrap items-end justify-between gap-4">
@@ -75,13 +79,14 @@ $columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showAcademicGroupFilter ? 1
             <?php endif; ?>
         </div>
         <div class="overflow-x-auto">
-            <table class="admit-list-table student-list-table w-full min-w-[1280px] text-left text-sm">
+            <table class="admit-list-table student-list-table w-full <?= $compactStudentTable ? 'student-list-laptop-fit' : 'min-w-[1280px]' ?> text-left text-sm">
+                <?php if ($compactStudentTable): ?><colgroup><?php foreach ($compactStudentColumnWidths as $columnWidth): ?><col style="width:<?= $columnWidth ?>%"><?php endforeach; ?></colgroup><?php endif; ?>
                 <thead class="bg-green-950/40 text-sm uppercase tracking-wide text-slate-300">
                     <tr>
-                        <?php if ($canDeleteStudents): ?><th class="w-12 px-3 py-3 text-center font-medium"><input type="checkbox" data-select-all-students aria-label="Select all students on this page" class="h-4 w-4 accent-emerald-400"></th><?php endif; ?>
-                        <th class="w-12 px-2 py-3 font-medium">Sl.</th>
-                        <th class="px-3 py-3 font-medium">Student ID</th>
-                        <th class="px-3 py-3 font-medium">Name</th>
+                        <?php if ($canDeleteStudents): ?><th class="px-3 py-3 text-center font-medium"><input type="checkbox" data-select-all-students aria-label="Select all students on this page" class="h-4 w-4 accent-emerald-400"></th><?php endif; ?>
+                        <th class="px-2 py-3 font-medium">Sl.</th>
+                        <th class="student-col-id px-3 py-3 font-medium">Student ID</th>
+                        <th class="student-col-name px-3 py-3 font-medium">Name</th>
                         <th class="px-3 py-3 font-medium">Roll</th>
                         <th class="px-3 py-3 font-medium" title="Student mobile number; falls back to guardian or parent phone when empty">Contact No.</th>
                         <th class="px-3 py-3 font-medium">Class</th>
@@ -102,9 +107,9 @@ $columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showAcademicGroupFilter ? 1
                         <?php $isArchived = $student['status'] === 'inactive' && !empty($student['archive_reason']); ?>
                         <tr class="hover:bg-slate-800/30"<?php if ((int) $student['class_level'] === 9 && !empty($student['academic_group'])): ?> data-academic-group="<?= View::escape($student['academic_group']) ?>"<?php endif; ?>>
                             <?php if ($canDeleteStudents): ?><td class="px-3 py-2 text-center"><input type="checkbox" form="student-bulk-delete" name="student_ids[]" value="<?= (int) $student['id'] ?>" data-student-select class="h-4 w-4 accent-emerald-400" aria-label="Select <?= View::escape($student['name']) ?>"></td><?php endif; ?>
-                            <td class="w-12 px-2 py-2 text-white"><?= ($page - 1) * $perPage + $index + 1 ?></td>
-                            <td class="px-3 py-2 text-white"><?= View::escape($student['student_id']) ?></td>
-                            <td class="px-3 py-2"><p class="font-medium"><?= View::escape($student['name']) ?></p></td>
+                            <td class="px-2 py-2 text-white"><?= ($page - 1) * $perPage + $index + 1 ?></td>
+                            <td class="student-col-id px-3 py-2 text-white"><?= View::escape($student['student_id']) ?></td>
+                            <td class="student-col-name px-3 py-2"><p class="font-medium"><?= View::escape($student['name']) ?></p></td>
                             <td class="px-3 py-2 text-white"><?= (int) $student['roll_no'] ?></td>
                             <td class="px-3 py-2 text-white"><?= View::escape((string) ($student['contact_number'] ?? '') ?: '—') ?></td>
                             <td class="whitespace-nowrap px-3 py-2 text-slate-300"><?= View::escape($student['class_name']) ?></td>
