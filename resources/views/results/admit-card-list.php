@@ -2,6 +2,7 @@
 use App\Core\Url;
 use App\Core\View;
 
+require BASE_PATH . '/resources/views/results/partials/class-name-word.php';
 $pageUrl = static fn (int $targetPage): string => Url::to('/admit-cards') . '?' . http_build_query([
     'year_id' => $yearId,
     'class_id' => $classId,
@@ -81,7 +82,7 @@ $schoolName = trim((string) ($schoolSettings['school_name'] ?? '')) ?: 'WSIT Sch
                     <td class="admit-list-name"><?= View::escape((string) $student['name']) ?></td>
                     <td><?= View::escape((string) ($student['father_name'] ?? '—') ?: '—') ?></td>
                     <td><?= View::escape((string) ($student['mother_name'] ?? '—') ?: '—') ?></td>
-                    <td><?= View::escape((string) $student['class_name']) ?></td>
+                    <td><?= View::escape($formatClassName($student['class_name'])) ?></td>
                     <td><?= View::escape($schoolName) ?></td>
                     <td><a class="admit-list-action" href="<?= Url::to('/admit-cards/print?id=' . (int) $student['id'] . '&format=' . rawurlencode($format)) ?>" target="_blank" rel="noopener">View / Print</a></td>
                 </tr>

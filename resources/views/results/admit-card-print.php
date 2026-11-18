@@ -2,6 +2,7 @@
 use App\Core\Url;
 use App\Core\View;
 
+require BASE_PATH . '/resources/views/results/partials/class-name-word.php';
 $photo = trim((string) ($student['photo'] ?? ''));
 $photoUrl = $photo !== '' ? Url::to('/uploads/file?path=' . rawurlencode($photo)) : '';
 $signatureUrl = static fn (string $key): string => trim((string) ($schoolSettings[$key] ?? '')) !== ''
@@ -39,7 +40,7 @@ $signatureUrl = static fn (string $key): string => trim((string) ($schoolSetting
                         <?php if (trim((string) ($student['mother_name'] ?? '')) !== ''): ?><div class="admit-card-field"><dt>Mother's name</dt><dd><?= View::escape((string) $student['mother_name']) ?></dd></div><?php endif; ?>
                     </dl>
                     <dl class="admit-card-fields-column">
-                        <div class="admit-card-field"><dt>Class</dt><dd><?= View::escape((string) $student['class_name']) ?></dd></div>
+                        <div class="admit-card-field"><dt>Class</dt><dd><?= View::escape($formatClassName($student['class_name'])) ?></dd></div>
                         <div class="admit-card-field"><dt>Section</dt><dd><?= View::escape((string) $student['section_name']) ?></dd></div>
                     </dl>
                 </div>

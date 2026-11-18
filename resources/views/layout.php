@@ -51,7 +51,8 @@ if ($appUser !== null && in_array($appUser['role'] ?? '', ['admin', 'superadmin'
         .admit-card-school-logo{width:72px;height:72px;object-fit:contain}
         .admit-card-exam-title{margin:0;text-align:center;color:#0f172a;font-size:1.35rem;font-weight:800;line-height:1.2}
         .admit-card-band{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:.75rem;margin:.7rem 0 .5rem}
-        .admit-card-band-label{border:2px solid #0f172a;border-radius:999px;padding:.2rem .7rem;font-size:.75rem;font-weight:700;white-space:nowrap}
+        .admit-card-band-label{border:2px solid #0f172a;border-radius:999px;padding:.2rem .7rem;font-size:.75rem;font-weight:700;text-align:center;white-space:nowrap}
+        .admit-card-band .admit-card-band-label{text-align:center!important}
         .admit-card-badge{border-radius:999px;background:#020617;padding:.25rem 1.2rem;color:#fff;font-size:1.15rem;font-weight:800;white-space:nowrap}
         .admit-card-details{display:block;margin:.65rem 0}
         .admit-card-fields{display:grid;grid-template-columns:1fr 1fr;gap:.32rem 1.1rem;font-size:.82rem}
@@ -76,25 +77,25 @@ if ($appUser !== null && in_array($appUser['role'] ?? '', ['admin', 'superadmin'
             html,body{margin:0!important;min-height:0!important;background:#fff!important}
             body:has(#admit-cards-print) *{visibility:hidden!important}
             body:has(#admit-cards-print) #admit-cards-print,body:has(#admit-cards-print) #admit-cards-print *{visibility:visible!important}
-            body:has(#admit-cards-print) #admit-cards-print{position:absolute!important;top:0!important;left:0!important;width:210mm!important;margin:0!important;padding:0!important}
-            body:has(#admit-cards-print) .admit-card-page{display:block;width:210mm;height:297mm;max-width:none;margin:0;padding:8mm;border:0;border-radius:0;background:#fff;box-shadow:none;break-after:page;page-break-after:always}
-            body:has(#admit-cards-print) .admit-card-page:last-child{break-after:auto;page-break-after:auto}
-            body:has(#admit-cards-print) .admit-card-sheet{width:194mm;height:auto;min-height:137mm;overflow:visible;margin:0;border:1.2mm double #0f172a;padding:4mm;background-color:#fff!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
-            body:has(#admit-cards-print) .admit-card-school-head{grid-template-columns:18mm minmax(0,1fr) 16mm;gap:3mm;padding-bottom:2mm}
-            body:has(#admit-cards-print) .admit-card-school-logo{width:17mm;height:17mm}
-            body:has(#admit-cards-print) .admit-card-exam-title{font-size:14pt}
-            body:has(#admit-cards-print) .admit-card-details{display:block}
-            body:has(#admit-cards-print) .admit-card-fields{gap:1mm 3mm;font-size:8pt}
-            body:has(#admit-cards-print) .admit-card-fields-column{gap:1mm}
-            body:has(#admit-cards-print) .admit-card-field{grid-template-columns:30mm minmax(0,1fr);gap:1mm}
-            body:has(#admit-cards-print) .admit-card-photo{width:15mm;height:18mm}
-            body:has(#admit-cards-print) .admit-card-schedule{font-size:7pt}
-            body:has(#admit-cards-print) .admit-card-schedule th{font-size:8.5pt;font-weight:700}
-            body:has(#admit-cards-print) .admit-card-schedule th,body:has(#admit-cards-print) .admit-card-schedule td{padding:.5mm}
-            body:has(#admit-cards-print) .admit-card-guidelines{font-size:7.2pt;line-height:1.3}
-            body:has(#admit-cards-print) .admit-card-signatures{margin-top:3mm}
-            body:has(#admit-cards-print) .admit-card-signature{font-size:6.5pt}
-            body:has(#admit-cards-print) .admit-card-toolbar{display:none!important}
+            body:has(#admit-cards-print:not(.admit-cards-bulk-print)) #admit-cards-print{position:absolute!important;top:0!important;left:0!important;width:210mm!important;margin:0!important;padding:0!important}
+            body:has(#admit-cards-print:not(.admit-cards-bulk-print)) .admit-card-page{display:block;width:210mm;height:297mm;max-width:none;margin:0;padding:8mm;border:0;border-radius:0;background:#fff;box-shadow:none;break-after:page;page-break-after:always}
+            body:has(#admit-cards-print:not(.admit-cards-bulk-print)) .admit-card-page:last-child{break-after:auto;page-break-after:auto}
+            body:has(#admit-cards-print:not(.admit-cards-bulk-print)) .admit-card-sheet{width:194mm;height:auto;min-height:137mm;overflow:visible;margin:0;border:1.2mm double #0f172a;padding:4mm;background-color:#fff!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+            body:has(#admit-cards-print:not(.admit-cards-bulk-print)) .admit-card-school-head{grid-template-columns:18mm minmax(0,1fr) 16mm;gap:3mm;padding-bottom:2mm}
+            body:has(#admit-cards-print:not(.admit-cards-bulk-print)) .admit-card-school-logo{width:17mm;height:17mm}
+            body:has(#admit-cards-print:not(.admit-cards-bulk-print)) .admit-card-exam-title{font-size:14pt}
+            body:has(#admit-cards-print:not(.admit-cards-bulk-print)) .admit-card-details{display:block}
+            body:has(#admit-cards-print:not(.admit-cards-bulk-print)) .admit-card-fields{gap:1mm 3mm;font-size:8pt}
+            body:has(#admit-cards-print:not(.admit-cards-bulk-print)) .admit-card-fields-column{gap:1mm}
+            body:has(#admit-cards-print:not(.admit-cards-bulk-print)) .admit-card-field{grid-template-columns:30mm minmax(0,1fr);gap:1mm}
+            body:has(#admit-cards-print:not(.admit-cards-bulk-print)) .admit-card-photo{width:15mm;height:18mm}
+            body:has(#admit-cards-print:not(.admit-cards-bulk-print)) .admit-card-schedule{font-size:7pt}
+            body:has(#admit-cards-print:not(.admit-cards-bulk-print)) .admit-card-schedule th{font-size:8.5pt;font-weight:700}
+            body:has(#admit-cards-print:not(.admit-cards-bulk-print)) .admit-card-schedule th,body:has(#admit-cards-print:not(.admit-cards-bulk-print)) .admit-card-schedule td{padding:.5mm}
+            body:has(#admit-cards-print:not(.admit-cards-bulk-print)) .admit-card-guidelines{font-size:7.2pt;line-height:1.3}
+            body:has(#admit-cards-print:not(.admit-cards-bulk-print)) .admit-card-signatures{margin-top:3mm}
+            body:has(#admit-cards-print:not(.admit-cards-bulk-print)) .admit-card-signature{font-size:6.5pt}
+            body:has(#admit-cards-print:not(.admit-cards-bulk-print)) .admit-card-toolbar{display:none!important}
             body:has(#student-detail-print) *{visibility:hidden!important}
             body:has(#student-detail-print) #student-detail-print,body:has(#student-detail-print) #student-detail-print *{visibility:visible!important}
             body:has(#student-detail-print) #student-detail-print{position:absolute!important;top:0!important;left:0!important;width:210mm!important;max-width:none!important;margin:0!important;padding:10mm!important;box-sizing:border-box!important;background:#fff!important;color:#111827!important}

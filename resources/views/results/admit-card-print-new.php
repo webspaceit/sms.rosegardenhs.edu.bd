@@ -2,6 +2,7 @@
 use App\Core\Url;
 use App\Core\View;
 
+require BASE_PATH . '/resources/views/results/partials/class-name-word.php';
 $photo = trim((string) ($student['photo'] ?? ''));
 $photoUrl = $photo !== '' ? Url::to('/uploads/file?path=' . rawurlencode($photo)) : '';
 $signatureUrl = static fn (string $key): string => trim((string) ($schoolSettings[$key] ?? '')) !== ''
@@ -71,7 +72,7 @@ $examTitle = trim($examName . ' ' . (string) ($student['year_name'] ?? ''));
             <?php if (trim((string) ($student['father_name'] ?? '')) !== ''): ?><div class="admit-card-compact-row"><span>Father's Name</span><b>:</b><strong><?= View::escape((string) $student['father_name']) ?></strong></div><?php endif; ?>
             <?php if (trim((string) ($student['mother_name'] ?? '')) !== ''): ?><div class="admit-card-compact-row"><span>Mother's Name</span><b>:</b><strong><?= View::escape((string) $student['mother_name']) ?></strong></div><?php endif; ?>
             <div class="admit-card-compact-pair">
-                <div class="admit-card-compact-row"><span>Class</span><b>:</b><strong><?= View::escape((string) $student['class_name']) ?></strong></div>
+                <div class="admit-card-compact-row"><span>Class</span><b>:</b><strong><?= View::escape($formatClassName($student['class_name'])) ?></strong></div>
                 <div class="admit-card-compact-row"><span>Section</span><b>:</b><strong><?= View::escape((string) $student['section_name']) ?></strong></div>
             </div>
             <div class="admit-card-compact-pair">

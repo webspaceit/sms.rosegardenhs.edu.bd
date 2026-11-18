@@ -10,6 +10,7 @@
 use App\Core\Url;
 use App\Core\View;
 
+require BASE_PATH . '/resources/views/results/partials/class-name-word.php';
 $signatureUrl = static fn (string $key): string => trim((string) ($schoolSettings[$key] ?? '')) !== ''
     ? Url::to('/uploads/file?path=' . rawurlencode((string) $schoolSettings[$key]))
     : '';
@@ -98,7 +99,7 @@ $signatureUrl = static fn (string $key): string => trim((string) ($schoolSetting
                             <div class="admit-card-field"><dt>Guardian's name</dt><dd><?= View::escape((string) $row['guardian_name']) ?></dd></div>
                         <?php endif; ?>
                         <div class="admit-card-field"><dt>Student ID</dt><dd><?= View::escape((string) $row['student_code']) ?></dd></div>
-                        <div class="admit-card-field"><dt>Class / section</dt><dd><?= View::escape((string) ($config['class_name'] ?? $row['class_name'])) ?><?= trim((string) ($config['section'] ?? '')) !== '' ? ' · ' . View::escape((string) $config['section']) : '' ?></dd></div>
+                        <div class="admit-card-field"><dt>Class / section</dt><dd><?= View::escape($formatClassName($config['class_name'] ?? $row['class_name'])) ?><?= trim((string) ($config['section'] ?? '')) !== '' ? ' · ' . View::escape((string) $config['section']) : '' ?></dd></div>
                         <div class="admit-card-field"><dt>Roll number</dt><dd><?= (int) $row['roll_no'] ?></dd></div>
                         <div class="admit-card-field"><dt>Exam center</dt><dd><?= $examCenter !== '' ? View::escape($examCenter) : 'To be announced' ?></dd></div>
                         <?php if (trim((string) ($row['guardian_phone'] ?? '')) !== ''): ?>
