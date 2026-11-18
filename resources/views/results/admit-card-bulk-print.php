@@ -81,25 +81,30 @@ $cardPages = array_chunk($cards, $cardsPerPage);
         .admit-bulk-compact .admit-bulk-signatures img{width:auto;height:6mm;max-width:100%;max-height:6mm;object-fit:contain;margin:0 auto .3mm}
         .admit-bulk-compact .admit-bulk-signatures span{display:block;width:100%;border-top:1px solid #334155;padding-top:.35mm;font-size:6.5pt;line-height:1.05}
         .admit-bulk-existing-card{width:194mm;height:139mm;max-width:none;margin:0;padding:0;border:0;border-radius:0;background:#fff;box-shadow:none;break-inside:avoid;page-break-inside:avoid}
-        .admit-bulk-existing-card .admit-card-sheet{width:194mm;height:139mm;min-height:0;overflow:hidden;margin:0;border:1.2mm double #0f172a;padding:4mm;background-color:#fff!important;box-sizing:border-box;print-color-adjust:exact;-webkit-print-color-adjust:exact}
-        .admit-bulk-existing-card .admit-card-watermark{width:300px;height:300px}
-        .admit-bulk-existing-card .admit-card-school-head{grid-template-columns:18mm minmax(0,1fr) 16mm;gap:3mm;padding-bottom:2mm}
-        .admit-bulk-existing-card .admit-card-school-logo{width:17mm;height:17mm}
-        .admit-bulk-existing-card .admit-card-exam-title{font-size:14pt}
+        .admit-bulk-existing-card .admit-card-sheet{width:194mm;height:139mm;min-height:0;overflow:hidden;margin:0;border:1.2mm double #0f172a;padding:2.5mm;background-color:#fff!important;box-sizing:border-box;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+        .admit-bulk-existing-card .admit-card-watermark{width:38mm;height:38mm}
+        .admit-bulk-existing-card .admit-card-school-head{grid-template-columns:14mm minmax(0,1fr) 14mm;gap:2mm;padding-bottom:1mm}
+        .admit-bulk-existing-card .admit-card-school-logo{width:13mm;height:13mm}
+        .admit-bulk-existing-card .admit-card-exam-title{margin-top:.5mm;font-size:12pt}
+        .admit-bulk-existing-card .admit-card-band{gap:1.5mm;margin:1mm 0}
+        .admit-bulk-existing-card .admit-card-band-label{padding:.5mm 1.5mm;font-size:6.5pt}
+        .admit-bulk-existing-card .admit-card-badge{padding:.6mm 3mm;font-size:10pt}
         .admit-bulk-existing-card .admit-card-details{display:block}
         .admit-bulk-existing-card .admit-card-fields{gap:1mm 3mm;font-size:8pt}
         .admit-bulk-existing-card .admit-card-fields-column{gap:1mm}
         .admit-bulk-existing-card .admit-card-field{grid-template-columns:30mm minmax(0,1fr);gap:1mm}
         .admit-bulk-existing-card .admit-card-photo{width:15mm;height:18mm}
-        .admit-bulk-existing-card .admit-card-schedule-title{margin:.25rem 0;text-align:center;font-size:.82rem;font-weight:700}
-        .admit-bulk-existing-card .admit-card-schedule{font-size:7pt}
-        .admit-bulk-existing-card .admit-card-schedule th{font-size:8.5pt;font-weight:700}
-        .admit-bulk-existing-card .admit-card-schedule th,.admit-bulk-existing-card .admit-card-schedule td{padding:.5mm}
-        .admit-bulk-existing-card .admit-card-guidelines{font-size:7.2pt;line-height:1.3}
-        .admit-bulk-existing-card .admit-card-signatures{margin-top:3mm}
-        .admit-bulk-existing-card .admit-card-signature{font-size:6.5pt}
-        .admit-bulk-existing-card .admit-card-signature img{height:12mm;max-height:38px}
-        .admit-bulk-existing-card .admit-card-sheet>footer{margin-top:.5rem;padding-top:.25rem;font-size:9px}
+        .admit-bulk-existing-card .admit-card-schedule-title{margin:.5mm 0;text-align:center;font-size:7.5pt;font-weight:700}
+        .admit-bulk-existing-card .admit-card-schedule{margin:.5mm 0;font-size:6.5pt;line-height:1.05}
+        .admit-bulk-existing-card .admit-card-schedule th{font-size:7pt;font-weight:700}
+        .admit-bulk-existing-card .admit-card-schedule th,.admit-bulk-existing-card .admit-card-schedule td{padding:.25mm}
+        .admit-bulk-existing-card .admit-card-guidelines{margin:.5mm 0;font-size:6.5pt;line-height:1.12}
+        .admit-bulk-existing-card .admit-card-guidelines h2{margin-bottom:.25mm;font-size:7pt}
+        .admit-bulk-existing-card .admit-card-signatures{gap:1.5mm;margin-top:1mm}
+        .admit-bulk-existing-card .admit-card-signature{font-size:6pt;line-height:1.05}
+        .admit-bulk-existing-card .admit-card-signature img{height:6mm;max-height:6mm;margin:0 auto .3mm}
+        .admit-bulk-existing-card .admit-card-signature span{padding-top:.3mm}
+        .admit-bulk-existing-card .admit-card-sheet>footer{margin-top:.5mm;padding-top:.3mm;font-size:6pt;line-height:1}
     }
 </style>
 <div class="admit-bulk-toolbar">
