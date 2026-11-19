@@ -16,7 +16,7 @@ if ($attendanceRate !== null && $attendanceRate < 75) {
     $dashboardAlerts[] = [
         'tone' => 'amber',
         'title' => 'Attendance needs attention',
-        'detail' => 'Today\'s recorded attendance is ' . (int) $attendanceRate . '% across ' . (int) $attendanceMarked . ' marked students.',
+        'detail' => 'Attendance for the selected academic session is ' . (int) $attendanceRate . '% across ' . (int) $attendanceMarked . ' records.',
         'url' => '/batch-attendance',
     ];
 }

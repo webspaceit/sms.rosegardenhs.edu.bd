@@ -23,7 +23,7 @@ foreach ($admissionsTrend as $index => $point) {
         <div>
             <p class="text-xs font-semibold uppercase tracking-[.18em] text-green-200/70">Enrollment overview</p>
             <h2 id="admissions-chart-title" class="mt-1 text-lg font-semibold">Student admissions</h2>
-            <p class="mt-1 text-sm text-white">New records over the last six months</p>
+            <p class="mt-1 text-sm text-white">New records during the selected academic session</p>
         </div>
         <div class="flex items-center gap-2 rounded-full border border-green-100/15 bg-emerald-950/35 px-3 py-1.5 text-xs text-green-100/75">
             <span class="h-2 w-2 rounded-full bg-green-300 shadow-[0_0_10px_rgba(74,222,128,.7)]"></span>
@@ -35,7 +35,7 @@ foreach ($admissionsTrend as $index => $point) {
             <span>Admissions</span>
             <span>Monthly totals</span>
         </div>
-        <div class="w-full overflow-hidden" role="img" aria-label="Monthly student admissions bar chart for the last six months">
+        <div class="w-full overflow-hidden" role="img" aria-label="Monthly student admissions bar chart for the selected academic session">
             <svg viewBox="0 0 760 218" preserveAspectRatio="xMidYMid meet" class="h-56 w-full">
                 <defs>
                     <linearGradient id="admissions-bar" x1="0" x2="0" y1="0" y2="1">

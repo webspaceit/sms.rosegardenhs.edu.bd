@@ -10,7 +10,7 @@ final class AcademicYearContext
     public static function years(): array
     {
         $statement = Database::connection()->prepare(
-            'SELECT id, name, is_current FROM academic_years WHERE branch_id = :branch ORDER BY is_current DESC, name DESC'
+            'SELECT id, name, is_current, start_date, end_date FROM academic_years WHERE branch_id = :branch ORDER BY is_current DESC, start_date DESC'
         );
         $statement->execute(['branch' => BranchContext::id()]);
         return $statement->fetchAll();
@@ -24,7 +24,7 @@ final class AcademicYearContext
         $selectedId = is_array($selections) ? (int) ($selections[$branchId] ?? 0) : 0;
         if ($selectedId > 0) {
             $statement = Database::connection()->prepare(
-                'SELECT id, name, is_current FROM academic_years WHERE id = :id AND branch_id = :branch LIMIT 1'
+                'SELECT id, name, is_current, start_date, end_date FROM academic_years WHERE id = :id AND branch_id = :branch LIMIT 1'
             );
             $statement->execute(['id' => $selectedId, 'branch' => $branchId]);
             $year = $statement->fetch();
@@ -36,7 +36,7 @@ final class AcademicYearContext
         }
 
         $statement = Database::connection()->prepare(
-            'SELECT id, name, is_current FROM academic_years WHERE branch_id = :branch ORDER BY is_current DESC, name DESC LIMIT 1'
+            'SELECT id, name, is_current, start_date, end_date FROM academic_years WHERE branch_id = :branch ORDER BY is_current DESC, start_date DESC LIMIT 1'
         );
         $statement->execute(['branch' => $branchId]);
         $year = $statement->fetch();
