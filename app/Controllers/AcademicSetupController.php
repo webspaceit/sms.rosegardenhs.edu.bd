@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\AcademicYearContext;
 use App\Core\Csrf;
 use App\Core\Request;
 use App\Core\Toast;
@@ -135,6 +136,23 @@ final class AcademicSetupController
             Toast::flash('Academic year not found.', 'error');
         }
         header('Location: ' . Url::to('/academics')); exit;
+    }
+
+    public function selectSession(Request $request): void
+    {
+        $this->requireAdmin();
+        if (!$this->verifyCsrf($request)) { return; }
+        $yearId = (int) $request->input('academic_year_id', 0);
+        if (!AcademicYearContext::select($yearId)) {
+            Toast::flash('Choose a valid academic session for this campus.', 'error');
+        } else {
+            Toast::flash('Academic session changed.');
+        }
+        $returnTo = (string) $request->input('return_to', '/dashboard');
+        if (!str_starts_with($returnTo, '/') || str_starts_with($returnTo, '//') || str_contains($returnTo, "\r") || str_contains($returnTo, "\n")) {
+            $returnTo = '/dashboard';
+        }
+        header('Location: ' . Url::to($returnTo)); exit;
     }
 
     public function storeClass(Request $request): void

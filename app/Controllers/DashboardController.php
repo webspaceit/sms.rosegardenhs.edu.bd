@@ -23,7 +23,8 @@ final class DashboardController
             exit;
         }
 
-        $summary = \App\Core\Cache::remember('dashboard:' . \App\Core\BranchContext::id(), 30, static fn (): array => DashboardData::summary());
+        $selectedYearId = (int) (\App\Core\AcademicYearContext::selected()['id'] ?? 0);
+        $summary = \App\Core\Cache::remember('dashboard:' . \App\Core\BranchContext::id() . ':' . $selectedYearId, 30, static fn (): array => DashboardData::summary());
         View::render('dashboard/index', ['title' => 'Dashboard', 'user' => Auth::user()] + $summary);
     }
 }

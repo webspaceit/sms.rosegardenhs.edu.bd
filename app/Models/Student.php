@@ -465,8 +465,7 @@ final class Student
 
     public static function currentYear(): ?array
     {
-        $year = Database::connection()->query('SELECT id, name FROM academic_years WHERE is_current = 1 AND branch_id=' . BranchContext::id() . ' ORDER BY id DESC LIMIT 1')->fetch();
-        return $year ?: null;
+        return \App\Core\AcademicYearContext::selected();
     }
 
     public static function yearById(int $id): ?array

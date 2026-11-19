@@ -32,7 +32,7 @@ final class DashboardData
     {
         $database = Database::read();
         $branch = BranchContext::id();
-        $year = $database->query('SELECT id, name FROM academic_years WHERE is_current = 1 AND branch_id=' . $branch . ' ORDER BY id DESC LIMIT 1')->fetch();
+        $year = \App\Core\AcademicYearContext::selected();
         $students = (int) $database->query("SELECT COUNT(*) FROM students WHERE status = 'active' AND branch_id=" . $branch)->fetchColumn();
         $classes = (int) $database->query('SELECT COUNT(*) FROM classes WHERE branch_id=' . $branch)->fetchColumn();
         $sections = (int) $database->query('SELECT COUNT(*) FROM sections WHERE branch_id=' . $branch)->fetchColumn();
@@ -98,6 +98,7 @@ final class DashboardData
 
         return [
             'academicYear' => $year['name'] ?? date('Y'),
+            'academicYearIsCurrent' => (bool) ($year['is_current'] ?? false),
             'studentCount' => $students,
             'classCount' => $classes,
             'sectionCount' => $sections,

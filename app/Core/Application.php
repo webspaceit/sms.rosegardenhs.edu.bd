@@ -165,6 +165,7 @@ final class Application
         $router->get('/students/import', [$import, 'show']);
         $router->post('/students/import', [$import, 'store']);
         $router->get('/academics', [$academics, 'index']);
+        $router->post('/academic-years/active', [$academics, 'selectSession']);
         $router->post('/academics/years', [$academics, 'storeYear']);
         $router->post('/academics/years/current', [$academics, 'setCurrentYear']);
         $router->post('/academics/classes', [$academics, 'storeClass']);
