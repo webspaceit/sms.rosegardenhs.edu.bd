@@ -183,12 +183,14 @@ final class StudentController
                 $roll = (int) $request->input('roll_no', 0);
                 $gender = (string) $request->input('gender', '');
                 $shift = trim((string) $request->input('shift', ''));
+                $mobileNumber = trim((string) $request->input('mobile_number', ''));
                 if ($studentName === '' || $this->textLength($studentName) > 150) $errors[] = 'Enter a student name (up to 150 characters).';
                 if ($classId < 1 || !Student::yearById((int) $request->input('academic_year_id', 0))) $errors[] = 'Select a valid class and academic year.';
                 if ($classId > 0 && !in_array($sectionId, array_map(static fn (array $section): int => (int) $section['id'], Student::sections($classId)), true)) $errors[] = 'Select a section for the chosen class.';
                 if ($roll < 1 || $roll > 65535) $errors[] = 'Enter a roll number from 1 to 65535.';
                 if (!in_array($shift, ['', 'Morning', 'Day'], true)) $errors[] = 'Select a valid shift.';
                 if (!in_array($gender, ['Male', 'Female', 'Other'], true)) $errors[] = 'Select the student’s gender.';
+                if ($mobileNumber !== '' && !$this->isBangladeshiMobileNumber($mobileNumber)) $errors[] = 'Enter a valid Bangladeshi mobile number (01XXXXXXXXX or +8801XXXXXXXXX).';
                 if (Student::classLevel($classId) === 9 && !in_array(trim((string) $request->input('academic_group', '')), AcademicGroup::names(), true)) $errors[] = 'Select an academic group for Class 9.';
                 $yearId = (int) $request->input('academic_year_id', 0);
                 if ($classId > 0 && $sectionId > 0 && $yearId > 0 && $roll > 0) {
@@ -722,6 +724,7 @@ final class StudentController
         if (!$this->validDate($admissionDate, false)) $validationIssues[] = 'admission date';
         if (!$this->validDate($measurementDate, false)) $validationIssues[] = 'measurement date';
         if ($email !== '' && (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 190)) $validationIssues[] = 'email address';
+        if ($mobile !== '' && !$this->isBangladeshiMobileNumber($mobile)) $validationIssues[] = 'Bangladeshi mobile number (01XXXXXXXXX or +8801XXXXXXXXX)';
         if ($height !== '' && !is_numeric($height)) $validationIssues[] = 'height (must be numeric)';
         if ($weight !== '' && !is_numeric($weight)) $validationIssues[] = 'weight (must be numeric)';
         if (strlen($birthRegistrationNo) > 50) $validationIssues[] = 'birth registration number (up to 50 characters)';
@@ -861,6 +864,11 @@ final class StudentController
         if ($value === '') return true;
         $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
         return $date !== false && $date->format('Y-m-d') === $value && (!$notFuture || $date <= new \DateTimeImmutable('today'));
+    }
+
+    private function isBangladeshiMobileNumber(string $value): bool
+    {
+        return preg_match('/^(?:\\+?88)?01[3-9][0-9]{8}$/D', $value) === 1;
     }
 
     private function textLength(string $value): int

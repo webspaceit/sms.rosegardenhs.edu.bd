@@ -67,7 +67,7 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
                 <?php if ($editing): ?><label class="block"><span class="mb-2 block text-sm font-medium">Status</span><select name="status" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><?php foreach (['active' => 'Active', 'inactive' => 'Inactive', 'graduated' => 'Graduated'] as $statusValue => $statusLabel): ?><option value="<?= $statusValue ?>" <?= $fieldValue('status', 'active') === $statusValue ? 'selected' : '' ?>><?= $statusLabel ?></option><?php endforeach; ?></select></label><?php endif; ?>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Religion</span><select name="religion" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach (['Islam', 'Hinduism', 'Christianity', 'Buddhism', 'Other'] as $religionOpt): ?><option value="<?= $religionOpt ?>" <?= $fieldValue('religion') === $religionOpt ? 'selected' : '' ?>><?= $religionOpt ?></option><?php endforeach; ?></select></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Caste</span><input maxlength="100" name="caste" placeholder="Caste" value="<?= View::escape((string) $fieldValue('caste')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
-                <label class="block"><span class="mb-2 block text-sm font-medium">Mobile Number</span><input maxlength="20" name="mobile_number" placeholder="Mobile Number" value="<?= View::escape((string) $fieldValue('mobile_number')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
+                <label class="block"><span class="mb-2 block text-sm font-medium">Mobile Number</span><input type="tel" inputmode="tel" maxlength="14" pattern="(?:\+?88)?01[3-9][0-9]{8}" title="Enter a valid Bangladesh mobile number, e.g. 01712345678 or +8801712345678." name="mobile_number" placeholder="01XXXXXXXXX or +8801XXXXXXXXX" value="<?= View::escape((string) $fieldValue('mobile_number')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Email</span><input type="email" maxlength="190" name="email" placeholder="Email" value="<?= View::escape((string) $fieldValue('email')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
 
                 <label class="block"><span class="mb-2 block text-sm font-medium">Admission Date</span><input type="date" name="admission_date" value="<?= View::escape((string) $fieldValue('admission_date', $editing ? '' : date('Y-m-d'))) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
@@ -369,6 +369,10 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
       .filter(section => Number(section.dataset.wizardStep) === step)
       .forEach(section => section.querySelector('.student-wizard-error')?.remove());
     const setSpecificFieldMessage = field => {
+      if (field.name === 'mobile_number' && field.validity.patternMismatch) {
+        field.setCustomValidity('Enter a valid Bangladeshi mobile number (01XXXXXXXXX or +8801XXXXXXXXX).');
+        return;
+      }
       if (!field.required || !field.validity.valueMissing) return;
       const label = field.labels?.[0];
       const labelText = label?.querySelector('span')?.textContent || label?.textContent || field.name;
