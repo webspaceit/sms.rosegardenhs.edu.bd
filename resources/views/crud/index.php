@@ -10,7 +10,10 @@ use App\Core\View;
 
 $columns = $module['columns'] ?? [];
 $searchable = ($module['search'] ?? []) !== [];
-$canSearch = $searchable;
+$filters = $filters ?? [];
+$selectedFilters = $selectedFilters ?? [];
+$canSearch = $searchable || $filters !== [];
+$hasActiveFilters = $selectedFilters !== [];
 ?>
 <div class="flex flex-wrap items-end justify-between gap-4">
     <div>
@@ -22,10 +25,21 @@ $canSearch = $searchable;
 
 <?php if ($canSearch): ?>
 <form method="get" action="<?= Url::to($module['route']) ?>" class="mt-7 flex flex-wrap items-center gap-3 rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-4">
-    <label class="sr-only" for="module-search">Search <?= View::escape($module['singular']) ?> records</label>
-    <input id="module-search" name="q" value="<?= View::escape($search) ?>" placeholder="Search <?= View::escape($module['singular']) ?> records" class="min-w-[220px] flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm outline-none focus:border-teal-400">
-    <button class="rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-medium hover:border-teal-400">Search</button>
-    <?php if ($search !== ''): ?><a href="<?= Url::to($module['route']) ?>" class="rounded-lg px-4 py-2.5 text-center text-sm text-white hover:text-white">Clear</a><?php endif; ?>
+    <?php if ($searchable): ?>
+        <label class="sr-only" for="module-search">Search <?= View::escape($module['singular']) ?> records</label>
+        <input id="module-search" name="q" value="<?= View::escape($search) ?>" placeholder="Search <?= View::escape($module['singular']) ?> records" class="min-w-[220px] flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm outline-none focus:border-teal-400">
+    <?php endif; ?>
+    <?php foreach ($filters as $filter): $filterName = (string) $filter['name']; ?>
+        <label class="sr-only" for="filter-<?= View::escape($filterName) ?>"><?= View::escape($filter['label']) ?></label>
+        <select id="filter-<?= View::escape($filterName) ?>" name="<?= View::escape($filterName) ?>" class="min-w-[150px] rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm outline-none focus:border-teal-400">
+            <option value="">All <?= View::escape($filter['label']) ?>s</option>
+            <?php foreach ($filter['options'] as $optionValue => $optionLabel): ?>
+                <option value="<?= View::escape((string) $optionValue) ?>"<?= (string) ($selectedFilters[$filterName] ?? '') === (string) $optionValue ? ' selected' : '' ?>><?= View::escape((string) $optionLabel) ?></option>
+            <?php endforeach; ?>
+        </select>
+    <?php endforeach; ?>
+    <button class="rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-medium hover:border-teal-400">Filter</button>
+    <?php if ($search !== '' || $hasActiveFilters): ?><a href="<?= Url::to($module['route']) ?>" class="rounded-lg px-4 py-2.5 text-center text-sm text-white hover:text-white">Clear</a><?php endif; ?>
 </form>
 <?php endif; ?>
 
@@ -44,7 +58,7 @@ $canSearch = $searchable;
             <?php if ($records === []): ?>
                 <tr><td colspan="<?= count($columns) + 1 ?>" class="px-5 py-12 text-center">
                     <p class="font-medium text-slate-300">No records found</p>
-                    <p class="mt-1 text-sm text-slate-500"><?= $search !== '' ? 'Try a different search term.' : 'Add the first ' . View::escape($module['singular']) . ' to get started.' ?></p>
+                    <p class="mt-1 text-sm text-slate-500"><?= ($search !== '' || $hasActiveFilters) ? 'Try changing the search or filters.' : 'Add the first ' . View::escape($module['singular']) . ' to get started.' ?></p>
                 </td></tr>
             <?php else: foreach ($records as $recordIndex => $record): ?>
                 <tr class="hover:bg-green-400/[0.06]">
@@ -100,13 +114,14 @@ $canSearch = $searchable;
 </section>
 
 <?php if ($pages > 1): ?>
+<?php $paginationQuery = http_build_query(['q' => $search] + $selectedFilters); ?>
 <nav class="mt-5 flex items-center justify-between text-sm" aria-label="Pagination">
     <?php if ($page > 1): ?>
-        <a href="<?= Url::to($module['route'] . '?q=' . urlencode($search) . '&page=' . ($page - 1)) ?>" class="rounded-lg border border-slate-700 px-4 py-2 hover:border-teal-400">← Previous</a>
+        <a href="<?= Url::to($module['route'] . '?' . $paginationQuery . '&page=' . ($page - 1)) ?>" class="rounded-lg border border-slate-700 px-4 py-2 hover:border-teal-400">← Previous</a>
     <?php else: ?><span></span><?php endif; ?>
     <span class="text-slate-500">Page <?= (int) $page ?> of <?= (int) $pages ?></span>
     <?php if ($page < $pages): ?>
-        <a href="<?= Url::to($module['route'] . '?q=' . urlencode($search) . '&page=' . ($page + 1)) ?>" class="rounded-lg border border-slate-700 px-4 py-2 hover:border-teal-400">Next →</a>
+        <a href="<?= Url::to($module['route'] . '?' . $paginationQuery . '&page=' . ($page + 1)) ?>" class="rounded-lg border border-slate-700 px-4 py-2 hover:border-teal-400">Next →</a>
     <?php else: ?><span></span><?php endif; ?>
 </nav>
 <?php endif; ?>

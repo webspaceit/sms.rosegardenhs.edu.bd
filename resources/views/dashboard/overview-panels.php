@@ -2,7 +2,7 @@
 use App\Core\Url;
 use App\Core\View;
 
-$departmentMaximum = max(1, ...array_map(static fn (array $department): int => (int) $department['total'], $departments));
+$departmentMaximum = max([1, ...array_map(static fn (array $department): int => (int) $department['total'], $departments)]);
 $dashboardAlerts = [];
 if ($overdueFeeCount > 0) {
     $dashboardAlerts[] = [

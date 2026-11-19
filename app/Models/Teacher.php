@@ -93,6 +93,11 @@ final class Teacher
                 ['name' => 'photo', 'label' => 'Photo', 'type' => 'file', 'image' => true, 'deletable' => true, 'deleteOldOnReplace' => true, 'directory' => 'teacher-photos', 'extensions' => ['jpg', 'jpeg', 'png', 'webp'], 'maxBytes' => 5242880, 'hint' => 'JPG, PNG, or WebP · maximum 5 MB. The original image size is kept.'],
             ],
             'search' => ['t.name', 't.employee_id', 'd.name', 'dept.name'],
+            'filters' => [
+                ['name' => 'department_id', 'label' => 'Department', 'column' => 't.department_id', 'options' => static fn (): array => Catalogue::departments()],
+                ['name' => 'designation_id', 'label' => 'Designation', 'column' => 't.designation_id', 'options' => static fn (): array => Catalogue::designations()],
+                ['name' => 'gender', 'label' => 'Gender', 'column' => 't.gender', 'options' => ['Male' => 'Male', 'Female' => 'Female', 'Other' => 'Other']],
+            ],
             'order' => 't.id DESC',
         ];
     }

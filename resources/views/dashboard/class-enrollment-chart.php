@@ -2,7 +2,7 @@
 use App\Core\View;
 
 $classTotals = array_map(static fn (array $class): int => (int) $class['total'], $classEnrollment);
-$classMaximum = max(1, ...$classTotals);
+$classMaximum = max([1, ...$classTotals]);
 $classEnrollmentTotal = array_sum($classTotals);
 ?>
 <section class="mt-8 overflow-hidden rounded-2xl border border-green-900/60 dashboard-gradient" aria-labelledby="class-enrollment-title">

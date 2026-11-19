@@ -18,12 +18,20 @@ final class View
         // use variable names such as $groups and $item, and without this
         // isolation a page that happens to use the same name would silently
         // receive the layout's value instead of its own.
+        $bufferLevel = ob_get_level();
         ob_start();
-        (static function (string $viewFile, array $data): void {
-            extract($data, EXTR_SKIP);
-            require $viewFile;
-        })($viewFile, $data);
-        $content = (string) ob_get_clean();
+        try {
+            (static function (string $viewFile, array $data): void {
+                extract($data, EXTR_SKIP);
+                require $viewFile;
+            })($viewFile, $data);
+            $content = (string) ob_get_clean();
+        } catch (\Throwable $error) {
+            while (ob_get_level() > $bufferLevel) {
+                ob_end_clean();
+            }
+            throw $error;
+        }
 
         // The layout needs the page title and the signed in user.
         extract($data, EXTR_SKIP);

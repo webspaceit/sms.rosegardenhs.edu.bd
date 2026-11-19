@@ -43,6 +43,26 @@ final class Crud
         $from = (string) ($this->module['from'] ?? $this->table());
         $select = (string) ($this->module['select'] ?? '*');
         [$where, $bindings] = $this->searchClause($search);
+        $filterDefinitions = [];
+        $selectedFilters = [];
+        foreach ($this->module['filters'] ?? [] as $filter) {
+            $name = (string) ($filter['name'] ?? '');
+            $column = (string) ($filter['column'] ?? '');
+            if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $name) || !preg_match('/^[a-zA-Z_][a-zA-Z0-9_.]*$/', $column)) {
+                continue;
+            }
+            $optionsSource = $filter['options'] ?? [];
+            $options = is_callable($optionsSource) ? $optionsSource() : $optionsSource;
+            if (!is_array($options)) $options = [];
+            $filterDefinitions[] = array_merge($filter, ['options' => $options]);
+            $candidate = trim((string) $request->input($name, ''));
+            if ($candidate !== '' && array_key_exists($candidate, $options)) {
+                $placeholder = '__filter_' . $name;
+                $where .= ($where === '' ? ' WHERE ' : ' AND ') . $column . ' = :' . $placeholder;
+                $bindings[$placeholder] = $candidate;
+                $selectedFilters[$name] = $candidate;
+            }
+        }
         $branch = $this->branchScope($from);
         if ($branch !== null) {
             $branchClause = $branch['alias'] . '.branch_id = :__branch_id';
@@ -66,6 +86,8 @@ final class Crud
             'module' => $this->module,
             'records' => $records,
             'search' => $search,
+            'filters' => $filterDefinitions,
+            'selectedFilters' => $selectedFilters,
             'page' => $page,
             'perPage' => $perPage,
             'total' => $total,
