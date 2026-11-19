@@ -487,6 +487,7 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
       removal.value = idField.value;
       row.append(removal);
       row.querySelectorAll('.student-document-id, .student-document-title, .student-document-file').forEach(field => { field.disabled = true; });
+      row.classList.add('hidden');
       row.hidden = true;
     } else if (documentRows.querySelectorAll('.student-document-row[data-existing="0"]').length > 1) {
       row.remove();
