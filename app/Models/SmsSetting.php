@@ -24,11 +24,11 @@ final class SmsSetting
                 ['name' => 'is_active', 'label' => 'Status', 'format' => 'bool', 'on' => 'Active', 'off' => 'Inactive'],
             ],
             'fields' => [
-                ['name' => 'provider', 'label' => 'Provider', 'type' => 'text', 'required' => true, 'max' => 100, 'hint' => 'The SMS send adapter currently supports BulkSMSBD.'],
+                ['name' => 'provider', 'label' => 'Provider', 'type' => 'text', 'required' => true, 'max' => 100, 'hint' => 'Supported: MRAM SMS or BulkSMSBD.'],
                 ['name' => 'api_key', 'label' => 'API key', 'type' => 'text', 'max' => 255],
                 ['name' => 'api_secret', 'label' => 'API secret', 'type' => 'text', 'max' => 255],
                 ['name' => 'sender_id', 'label' => 'Sender id', 'type' => 'text', 'max' => 50],
-                ['name' => 'api_base_url', 'label' => 'API endpoint', 'type' => 'text', 'max' => 255, 'hint' => 'BulkSMSBD default: https://bulksmsbd.net/api/smsapi. Leave blank to use this default.'],
+                ['name' => 'api_base_url', 'label' => 'API endpoint', 'type' => 'text', 'max' => 255, 'hint' => 'MRAM SMS default: https://sms.mram.com.bd/smsapi. BulkSMSBD default: https://bulksmsbd.net/api/smsapi. Leave blank to use the provider default.'],
                 ['name' => 'is_active', 'label' => 'Active', 'type' => 'checkbox', 'checkboxLabel' => 'Use this provider for messages', 'default' => 0],
             ],
             'search' => ['provider', 'sender_id'],

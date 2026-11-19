@@ -10,7 +10,7 @@
         <span class="rounded-full border px-3 py-1 text-xs font-semibold <?= $gateway && (int) $gateway['is_active'] === 1 && trim((string) $gateway['api_key']) !== '' ? 'border-emerald-300/25 bg-emerald-400/10 text-emerald-200' : 'border-amber-300/25 bg-amber-400/10 text-amber-100' ?>"><?= $gateway && (int) $gateway['is_active'] === 1 && trim((string) $gateway['api_key']) !== '' ? 'Ready to send' : 'Setup required' ?></span>
     </div>
     <?php if (!$gateway || (int) $gateway['is_active'] !== 1 || trim((string) $gateway['api_key']) === '' || trim((string) ($gateway['sender_id'] ?? '')) === ''): ?>
-        <p class="mt-4 rounded-xl border border-amber-200/15 bg-amber-950/25 p-3 text-sm text-amber-100/85">Add an active <strong>BulkSMSBD</strong> provider, API key, and approved sender ID in Gateway settings. The endpoint can be left blank to use the default BulkSMSBD URL.</p>
+        <p class="mt-4 rounded-xl border border-amber-200/15 bg-amber-950/25 p-3 text-sm text-amber-100/85">Add an active <strong>MRAM SMS</strong> or <strong>BulkSMSBD</strong> provider, API key, and approved sender ID in Gateway settings. The endpoint can be left blank to use the provider default.</p>
     <?php endif; ?>
 </section>
 

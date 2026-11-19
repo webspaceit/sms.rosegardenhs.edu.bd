@@ -149,25 +149,36 @@ final class SmsController
             return ['ok' => false, 'message' => 'Configure and activate a gateway with an API key and sender ID in SMS Integration settings.'];
         }
         $provider = strtolower(trim((string) $gateway['provider']));
-        if (!str_contains($provider, 'bulksmsbd')) {
-            return ['ok' => false, 'message' => 'The send adapter currently supports BulkSMSBD. Select BulkSMSBD in the provider settings.'];
+        $isMram = str_contains($provider, 'mram') || str_contains($provider, 'mram sms');
+        $isBulkSmsBd = str_contains($provider, 'bulksmsbd');
+        if (!$isMram && !$isBulkSmsBd) {
+            return ['ok' => false, 'message' => 'The send adapter supports MRAM SMS and BulkSMSBD. Set the provider name accordingly.'];
         }
-        $endpoint = trim((string) ($gateway['api_base_url'] ?? '')) ?: 'https://bulksmsbd.net/api/smsapi';
+        $endpoint = trim((string) ($gateway['api_base_url'] ?? '')) ?: ($isMram ? 'https://sms.mram.com.bd/smsapi' : 'https://bulksmsbd.net/api/smsapi');
         $url = parse_url($endpoint);
-        if (!is_array($url) || strtolower((string) ($url['scheme'] ?? '')) !== 'https' || !in_array(strtolower((string) ($url['host'] ?? '')), ['bulksmsbd.net', 'www.bulksmsbd.net'], true) || isset($url['user']) || isset($url['pass'])) {
-            return ['ok' => false, 'message' => 'Use the official HTTPS BulkSMSBD endpoint (bulksmsbd.net).'];
+        $allowedHosts = $isMram ? ['sms.mram.com.bd'] : ['bulksmsbd.net', 'www.bulksmsbd.net'];
+        if (!is_array($url) || strtolower((string) ($url['scheme'] ?? '')) !== 'https' || !in_array(strtolower((string) ($url['host'] ?? '')), $allowedHosts, true) || isset($url['user']) || isset($url['pass'])) {
+            return ['ok' => false, 'message' => $isMram ? 'Use the official HTTPS MRAM SMS endpoint (sms.mram.com.bd).' : 'Use the official HTTPS BulkSMSBD endpoint (bulksmsbd.net).'];
         }
         if (!function_exists('curl_init')) return ['ok' => false, 'message' => 'PHP cURL is required on the server to connect to the SMS gateway.'];
         $curl = curl_init($endpoint);
+        $payload = $isMram ? [
+            'api_key' => (string) $gateway['api_key'],
+            'type' => preg_match('/[^\x00-\x7F]/', $message) === 1 ? 'unicode' : 'text',
+            'contacts' => implode(',', $numbers),
+            'senderid' => (string) $gateway['sender_id'],
+            'msg' => $message,
+            'label' => 'transactional',
+        ] : [
+            'api_key' => (string) $gateway['api_key'],
+            'type' => 'text',
+            'number' => implode(',', $numbers),
+            'senderid' => (string) $gateway['sender_id'],
+            'message' => $message,
+        ];
         curl_setopt_array($curl, [
             CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => http_build_query([
-                'api_key' => (string) $gateway['api_key'],
-                'type' => 'text',
-                'number' => implode(',', $numbers),
-                'senderid' => (string) $gateway['sender_id'],
-                'message' => $message,
-            ]),
+            CURLOPT_POSTFIELDS => http_build_query($payload),
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CONNECTTIMEOUT => 10,
             CURLOPT_TIMEOUT => 30,
@@ -182,10 +193,10 @@ final class SmsController
         if ($response === false) return ['ok' => false, 'message' => $curlError !== '' ? $curlError : 'Could not connect to the SMS gateway.'];
         $responseText = trim((string) $response);
         $decoded = json_decode($responseText, true);
-        $accepted = $httpCode >= 200 && $httpCode < 300 && (
-            (is_array($decoded) && (int) ($decoded['response_code'] ?? $decoded['code'] ?? 0) === 202)
-            || preg_match('/(?:^|\\D)202(?:\\D|$)/', $responseText) === 1
-        );
+        $accepted = $httpCode >= 200 && $httpCode < 300 && ($isMram
+            ? $responseText !== '' && preg_match('/^10(?:0[2-9]|1[0-9])$/', $responseText) !== 1
+            : ((is_array($decoded) && (int) ($decoded['response_code'] ?? $decoded['code'] ?? 0) === 202)
+                || preg_match('/(?:^|\\D)202(?:\\D|$)/', $responseText) === 1));
         if (!$accepted) {
             $safeResponse = $responseText !== '' ? str_replace((string) $gateway['api_key'], '[redacted]', mb_substr($responseText, 0, 220)) : 'HTTP ' . $httpCode;
             return ['ok' => false, 'message' => 'Gateway response ' . $safeResponse];
