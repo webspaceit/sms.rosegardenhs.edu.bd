@@ -358,7 +358,7 @@ final class Student
     public static function documents(int $studentId): array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT id, title, file_path, created_at FROM student_documents WHERE student_id = :student_id AND branch_id = :branch ORDER BY id ASC'
+            'SELECT id, title, original_name, file_path, created_at FROM student_documents WHERE student_id = :student_id AND branch_id = :branch ORDER BY id ASC'
         );
         $stmt->execute(['student_id' => $studentId, 'branch' => BranchContext::id()]);
         return $stmt->fetchAll();
@@ -385,22 +385,22 @@ final class Student
     public static function document(int $studentId, int $documentId): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT id, title, file_path FROM student_documents WHERE id = :id AND student_id = :student_id AND branch_id = :branch LIMIT 1'
+            'SELECT id, title, original_name, file_path FROM student_documents WHERE id = :id AND student_id = :student_id AND branch_id = :branch LIMIT 1'
         );
         $stmt->execute(['id' => $documentId, 'student_id' => $studentId, 'branch' => BranchContext::id()]);
         $document = $stmt->fetch();
         return $document ?: null;
     }
 
-    public static function updateDocument(int $studentId, int $documentId, string $title, ?string $filePath = null): void
+    public static function updateDocument(int $studentId, int $documentId, string $title, ?string $filePath = null, ?string $originalName = null): void
     {
         if ($filePath === null) {
             $stmt = Database::connection()->prepare('UPDATE student_documents SET title = :title, updated_at = NOW() WHERE id = :id AND student_id = :student_id AND branch_id = :branch');
             $stmt->execute(['title' => $title, 'id' => $documentId, 'student_id' => $studentId, 'branch' => BranchContext::id()]);
             return;
         }
-        $stmt = Database::connection()->prepare('UPDATE student_documents SET title = :title, file_path = :file_path, updated_at = NOW() WHERE id = :id AND student_id = :student_id AND branch_id = :branch');
-        $stmt->execute(['title' => $title, 'file_path' => $filePath, 'id' => $documentId, 'student_id' => $studentId, 'branch' => BranchContext::id()]);
+        $stmt = Database::connection()->prepare('UPDATE student_documents SET title = :title, file_path = :file_path, original_name = :original_name, updated_at = NOW() WHERE id = :id AND student_id = :student_id AND branch_id = :branch');
+        $stmt->execute(['title' => $title, 'file_path' => $filePath, 'original_name' => $originalName, 'id' => $documentId, 'student_id' => $studentId, 'branch' => BranchContext::id()]);
     }
 
     public static function deleteDocument(int $studentId, int $documentId): void
@@ -535,10 +535,10 @@ final class Student
         $stmt->execute($data + ['id' => $id, 'branch_id' => BranchContext::id()]);
     }
 
-    public static function addDocument(int $studentId, string $title, string $filePath): void
+    public static function addDocument(int $studentId, string $title, string $filePath, string $originalName): void
     {
-        $stmt = Database::connection()->prepare('INSERT INTO student_documents (student_id, title, file_path, created_at, branch_id) VALUES (:student_id, :title, :file_path, NOW(), :branch)');
-        $stmt->execute(['student_id' => $studentId, 'title' => $title, 'file_path' => $filePath, 'branch' => BranchContext::id()]);
+        $stmt = Database::connection()->prepare('INSERT INTO student_documents (student_id, title, original_name, file_path, created_at, branch_id) VALUES (:student_id, :title, :original_name, :file_path, NOW(), :branch)');
+        $stmt->execute(['student_id' => $studentId, 'title' => $title, 'original_name' => $originalName, 'file_path' => $filePath, 'branch' => BranchContext::id()]);
     }
 
     public static function archive(int $id, string $reason): void

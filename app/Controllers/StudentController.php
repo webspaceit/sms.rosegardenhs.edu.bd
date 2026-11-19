@@ -168,7 +168,7 @@ final class StudentController
             $draft['data'][$key] = (string) $value;
         }
         $draft['step'] = min(4, $step + 1);
-        $documentExtensions = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'webp', 'mp4'];
+        $documentExtensions = ['pdf'];
         try {
             $errors = [];
             if ($step === 1) {
@@ -296,7 +296,7 @@ final class StudentController
         $guardian = $data['_registration_guardian'] ?? ['mode' => 'none'];
         unset($data['_registration_guardian']);
 
-        $documentExtensions = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'webp', 'mp4'];
+        $documentExtensions = ['pdf'];
         $uploaded = [];
         try {
             foreach (['photo', 'father_photo', 'mother_photo'] as $photoField) {
@@ -339,7 +339,7 @@ final class StudentController
                     $originalName = (string) ($_FILES['document_file_' . $i]['name'] ?? ($wizardDraft['original_names'][$field] ?? ''));
                     $fileTitle = trim((string) pathinfo($originalName, PATHINFO_FILENAME));
                     $documentTitle = $title !== '' ? $title : ($fileTitle !== '' ? $fileTitle : 'Student document ' . ($i + 1));
-                    Student::addDocument($studentId, $documentTitle, $path);
+                    Student::addDocument($studentId, $documentTitle, $path, basename($originalName));
                     $documentPaths[] = $path;
                 }
             }
@@ -474,16 +474,18 @@ final class StudentController
             for ($i = 0; $i < $documentCount; $i++) {
                 $documentId = (int) $request->input('document_id_' . $i, 0);
                 $title = trim((string) $request->input('document_title_' . $i, ''));
-                $file = Upload::store('document_file_' . $i, 'student-documents', ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'webp', 'mp4'], 10485760);
+                $fileField = 'document_file_' . $i;
+                $file = Upload::store($fileField, 'student-documents', ['pdf'], 10485760);
+                $originalName = $file !== null ? basename((string) ($_FILES[$fileField]['name'] ?? '')) : null;
                 if ($file !== null) $newPaths[] = $file;
                 if ($documentId > 0) {
                     $current = Student::document($id, $documentId);
                     if ($current === null) throw new \RuntimeException('A document on this form no longer belongs to this student. Reload and try again.');
                     if ($file !== null || ($title !== '' && $title !== (string) $current['title'])) {
-                        $documentOperations[] = ['kind' => 'update', 'id' => $documentId, 'title' => $title !== '' ? $title : (string) $current['title'], 'path' => $file, 'old_path' => $current['file_path']];
+                        $documentOperations[] = ['kind' => 'update', 'id' => $documentId, 'title' => $title !== '' ? $title : (string) $current['title'], 'path' => $file, 'original_name' => $originalName, 'old_path' => $current['file_path']];
                     }
                 } elseif ($file !== null && $title !== '') {
-                    $documentOperations[] = ['kind' => 'add', 'title' => $title, 'path' => $file];
+                    $documentOperations[] = ['kind' => 'add', 'title' => $title, 'path' => $file, 'original_name' => $originalName];
                 } elseif ($file !== null) {
                     throw new \RuntimeException('Enter a title for every uploaded document.');
                 }
@@ -507,10 +509,10 @@ final class StudentController
                     Student::deleteDocument($id, (int) $operation['id']);
                     $oldPaths[] = (string) $operation['old_path'];
                 } elseif ($operation['kind'] === 'update') {
-                    Student::updateDocument($id, (int) $operation['id'], (string) $operation['title'], $operation['path']);
+                    Student::updateDocument($id, (int) $operation['id'], (string) $operation['title'], $operation['path'], $operation['original_name']);
                     if ($operation['path'] !== null) $oldPaths[] = (string) $operation['old_path'];
                 } else {
-                    Student::addDocument($id, (string) $operation['title'], (string) $operation['path']);
+                    Student::addDocument($id, (string) $operation['title'], (string) $operation['path'], (string) $operation['original_name']);
                 }
             }
             $db->commit();

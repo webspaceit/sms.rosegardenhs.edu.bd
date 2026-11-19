@@ -34,6 +34,7 @@ $relationOptions = ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'O
 $guardian = $primaryGuardian ?? null;
 $removedDocumentIds = array_map('intval', (array) ($old['document_remove_ids'] ?? []));
 $wizardFiles = (array) ($_SESSION['_student_wizard']['files'] ?? []);
+$wizardDocumentNames = (array) ($_SESSION['_student_wizard']['original_names'] ?? []);
 $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo']);
 ?>
 <div class="w-full min-w-0">
@@ -210,11 +211,11 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
             <div id="student-document-rows" class="mt-5 grid gap-4">
                 <?php $documentIndex = 0; foreach (($documents ?? []) as $document): ?>
                     <?php if (in_array((int) $document['id'], $removedDocumentIds, true)): ?><input type="hidden" name="document_remove_ids[]" value="<?= (int) $document['id'] ?>"><?php continue; endif; ?>
-                <div class="student-document-row grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto]" data-existing="1">
+                    <?php $documentOriginalName = trim((string) ($document['original_name'] ?? '')) ?: basename((string) $document['file_path']); ?>
+                <div class="student-document-row grid gap-3 sm:grid-cols-[1fr_2fr_auto]" data-existing="1">
                     <input type="hidden" class="student-document-id" name="document_id_<?= $documentIndex ?>" value="<?= (int) $document['id'] ?>">
                     <input class="student-document-title w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" name="document_title_<?= $documentIndex ?>" placeholder="Title" value="<?= View::escape((string) ($old['document_title_' . $documentIndex] ?? $document['title'])) ?>">
-                    <input type="file" class="student-document-file w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" name="document_file_<?= $documentIndex ?>">
-                    <a href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $document['file_path'])) ?>" target="_blank" rel="noopener" class="rounded-lg border border-green-100/20 px-3 py-2 text-sm text-teal-200">Open</a>
+                    <div class="flex min-w-0 items-center rounded-lg border border-green-100/15 bg-emerald-950/45 px-2"><input type="file" accept="application/pdf,.pdf" class="student-document-file min-w-0 flex-1 basis-1/2 rounded-lg bg-transparent py-2 text-sm" name="document_file_<?= $documentIndex ?>"><span class="student-document-file-name min-w-0 flex-1 basis-1/2 truncate px-2 text-xs text-slate-300" data-current-name="<?= View::escape($documentOriginalName) ?>" title="<?= View::escape($documentOriginalName) ?>"><?= View::escape($documentOriginalName) ?></span></div>
                     <button type="button" class="student-document-remove-row grid h-11 w-11 place-items-center rounded-lg border border-rose-300/20 text-rose-200 transition hover:border-rose-300/60 hover:bg-rose-400/10" title="Remove document" aria-label="Remove document"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-.9 14H5.9L5 6m4 4v6m6-6v6"/></svg></button>
                 </div>
                 <?php $documentIndex++; endforeach; ?>
@@ -222,7 +223,8 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
                 <?php $newDocumentIndex = $documentIndex; ?>
                 <div class="student-document-row grid gap-3 sm:grid-cols-[1fr_2fr_auto]" data-existing="0">
                     <input class="student-document-title w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" name="document_title_<?= (int) $newDocumentIndex ?>" placeholder="Title" value="<?= View::escape((string) $fieldValue('document_title_' . $newDocumentIndex)) ?>">
-                    <input type="file" class="student-document-file w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" name="document_file_<?= (int) $newDocumentIndex ?>"><?php if (!empty($wizardFiles['document_file_' . $newDocumentIndex])): ?><span class="wizard-file-saved mt-1 block text-xs text-green-300">Document saved for this admission.</span><?php endif; ?>
+                    <?php $wizardDocumentName = (string) ($wizardDocumentNames['document_file_' . $newDocumentIndex] ?? ''); ?>
+                    <div class="flex min-w-0 items-center rounded-lg border border-green-100/15 bg-emerald-950/45 px-2"><input type="file" accept="application/pdf,.pdf" class="student-document-file min-w-0 flex-1 basis-1/2 bg-transparent py-2 text-sm" name="document_file_<?= (int) $newDocumentIndex ?>"><span class="student-document-file-name min-w-0 flex-1 basis-1/2 truncate px-2 text-xs <?= $wizardDocumentName !== '' ? 'text-green-300' : 'text-slate-400' ?>" data-current-name="<?= View::escape($wizardDocumentName) ?>" title="<?= View::escape($wizardDocumentName) ?>"><?= View::escape($wizardDocumentName) ?></span></div>
                     <?php if ($newDocumentIndex > 0): ?><button type="button" class="student-document-remove-row grid h-11 w-11 place-items-center rounded-lg border border-rose-300/20 text-rose-200 transition hover:border-rose-300/60 hover:bg-rose-400/10" title="Remove document" aria-label="Remove document"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-.9 14H5.9L5 6m4 4v6m6-6v6"/></svg></button><?php endif; ?>
                 </div>
             </div>
@@ -381,8 +383,20 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
         const result = await response.json();
         if (!response.ok || !result.ok) throw new Error(result.message || 'Could not save this step.');
         admissionForm.querySelectorAll('input[type="file"]').forEach(input => {
+          const selectedFileName = input.files[0]?.name || '';
           if (input.files.length) input.value = '';
           const saved = result.savedFiles?.includes(input.name);
+          if (input.classList.contains('student-document-file')) {
+            const nameDisplay = input.parentElement.querySelector('.student-document-file-name');
+            if (nameDisplay && saved && selectedFileName) {
+              nameDisplay.dataset.currentName = selectedFileName;
+              nameDisplay.textContent = selectedFileName;
+              nameDisplay.title = selectedFileName;
+              nameDisplay.classList.remove('text-slate-400');
+              nameDisplay.classList.add('text-green-300');
+            }
+            return;
+          }
           let status = input.parentElement.querySelector('.wizard-file-saved');
           if (saved && !status) {
             status = document.createElement('span');
@@ -564,6 +578,16 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
     reindexDocuments();
   });
 
+  documentRows.addEventListener('change', event => {
+    const fileInput = event.target.closest('.student-document-file');
+    if (!fileInput) return;
+    const nameDisplay = fileInput.parentElement.querySelector('.student-document-file-name');
+    if (!nameDisplay) return;
+    const selectedName = fileInput.files[0]?.name || nameDisplay.dataset.currentName || '';
+    nameDisplay.textContent = selectedName;
+    nameDisplay.title = selectedName;
+  });
+
   addDocumentButton?.addEventListener('click', () => {
     const index = documentRows.querySelectorAll('.student-document-row').length;
     if (index >= 20) {
@@ -582,8 +606,14 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
 
     const file = document.createElement('input');
     file.type = 'file';
+    file.accept = 'application/pdf,.pdf';
     file.name = `document_file_${index}`;
-    file.className = 'student-document-file w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm';
+    file.className = 'student-document-file min-w-0 flex-1 basis-1/2 bg-transparent py-2 text-sm';
+    const fileName = document.createElement('span');
+    fileName.className = 'student-document-file-name min-w-0 flex-1 basis-1/2 truncate px-2 text-xs text-slate-400';
+    const fileWrap = document.createElement('div');
+    fileWrap.className = 'flex min-w-0 items-center rounded-lg border border-green-100/15 bg-emerald-950/45 px-2';
+    fileWrap.append(file, fileName);
 
     const remove = document.createElement('button');
     remove.type = 'button';
@@ -591,7 +621,7 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
     remove.title = 'Remove document';
     remove.setAttribute('aria-label', 'Remove document');
     remove.innerHTML = '<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-.9 14H5.9L5 6m4 4v6m6-6v6"/></svg>';
-    row.append(title, file, remove);
+    row.append(title, fileWrap, remove);
     documentRows.append(row);
     reindexDocuments();
   });
