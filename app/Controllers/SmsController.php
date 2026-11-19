@@ -7,6 +7,7 @@ use App\Core\Auth;
 use App\Core\BranchContext;
 use App\Core\Csrf;
 use App\Core\Database;
+use App\Core\Env;
 use App\Core\Guard;
 use App\Core\PhoneNumber;
 use App\Core\Request;
@@ -78,6 +79,16 @@ final class SmsController
             Toast::flash('SMS was not accepted: ' . $result['message'], 'error');
         }
         $this->redirect();
+    }
+
+    public function submitFromCenter(Request $request): void
+    {
+        if ($request->input('test_number') !== null) {
+            $this->test($request);
+            return;
+        }
+
+        $this->send($request);
     }
 
     public function test(Request $request): void
@@ -176,7 +187,14 @@ final class SmsController
             'senderid' => (string) $gateway['sender_id'],
             'message' => $message,
         ];
-        curl_setopt_array($curl, [
+        $caBundle = trim((string) Env::get('SMS_CA_BUNDLE', ''));
+        if ($caBundle === '') {
+            $caBundle = trim((string) (ini_get('curl.cainfo') ?: ini_get('openssl.cafile') ?: getenv('CURL_CA_BUNDLE') ?: getenv('SSL_CERT_FILE') ?: ''));
+        }
+        if ($caBundle !== '' && !is_file($caBundle)) {
+            return ['ok' => false, 'message' => 'The configured SMS_CA_BUNDLE certificate file is unavailable.'];
+        }
+        $curlOptions = [
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => http_build_query($payload),
             CURLOPT_RETURNTRANSFER => true,
@@ -185,7 +203,9 @@ final class SmsController
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_HTTPHEADER => ['Content-Type: application/x-www-form-urlencoded'],
-        ]);
+        ];
+        if ($caBundle !== '') $curlOptions[CURLOPT_CAINFO] = $caBundle;
+        curl_setopt_array($curl, $curlOptions);
         $response = curl_exec($curl);
         $curlError = curl_error($curl);
         $httpCode = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);

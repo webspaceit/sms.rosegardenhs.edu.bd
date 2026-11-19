@@ -289,6 +289,9 @@ final class Application
         $this->crud($router, new Crud(SmsSetting::module()), '/sms-settings');
         $router->get('/sms-center', [$sms, 'index']);
         $router->get('/sms-center/recipients', [$sms, 'previewRecipients']);
+        // Accept forms rendered by older browser tabs that submit to the
+        // current SMS Center URL instead of their explicit action URL.
+        $router->post('/sms-center', [$sms, 'submitFromCenter']);
         $router->post('/sms-center/send', [$sms, 'send']);
         $router->post('/sms-center/test', [$sms, 'test']);
         $this->crud($router, new Crud(PaymentGateway::module()), '/payment-gateways');
