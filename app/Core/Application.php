@@ -24,6 +24,7 @@ use App\Controllers\SchoolSettingController;
 use App\Controllers\SeatingChartController;
 use App\Controllers\SetupController;
 use App\Controllers\StudentController;
+use App\Controllers\SmsController;
 use App\Controllers\StudentImportController;
 use App\Controllers\TimetableController;
 use App\Controllers\UploadController;
@@ -91,6 +92,7 @@ final class Application
         $students = new StudentController();
         $academics = new AcademicSetupController();
         $schoolSettings = new SchoolSettingController();
+        $sms = new SmsController();
         $permissions = new PermissionController();
         $public = new PublicController();
         $import = new StudentImportController();
@@ -285,6 +287,10 @@ final class Application
         $router->get('/permissions', [$permissions, 'index']);
         $router->post('/permissions', [$permissions, 'update']);
         $this->crud($router, new Crud(SmsSetting::module()), '/sms-settings');
+        $router->get('/sms-center', [$sms, 'index']);
+        $router->get('/sms-center/recipients', [$sms, 'previewRecipients']);
+        $router->post('/sms-center/send', [$sms, 'send']);
+        $router->post('/sms-center/test', [$sms, 'test']);
         $this->crud($router, new Crud(PaymentGateway::module()), '/payment-gateways');
 
         // User accounts, and the person record each one is linked to.

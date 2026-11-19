@@ -180,7 +180,8 @@ final class Nav
                 'items' => [
                     self::item('School Settings', '/settings/school', 'gear'),
                     self::item('Permissions & Roles', '/permissions', 'shield'),
-                    self::item('SMS Integration', '/sms-settings', 'message'),
+                    self::item('SMS Integration', '/sms-center', 'message'),
+                    self::item('SMS Gateway Settings', '/sms-settings', 'gear'),
                     self::item('Payment Gateways', '/payment-gateways', 'card'),
                     self::item('User Accounts', '/users', 'userCheck'),
                     self::item('Audit Log', '/audit-logs', 'scroll'),
@@ -286,6 +287,7 @@ final class Nav
         '/settings/school' => 'settings.manage',
         '/permissions' => 'permissions.manage',
         '/sms-settings' => 'settings.manage',
+        '/sms-center' => 'settings.manage',
         '/payment-gateways' => 'settings.manage',
         '/branches' => 'branches.manage',
         '/users' => 'settings.manage',
