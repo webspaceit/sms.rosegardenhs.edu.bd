@@ -27,6 +27,10 @@ final class SmsSetting
                 ['name' => 'provider', 'label' => 'Provider', 'type' => 'text', 'required' => true, 'max' => 100, 'hint' => 'Supported: MRAM SMS or BulkSMSBD.'],
                 ['name' => 'api_key', 'label' => 'API key', 'type' => 'text', 'max' => 255],
                 ['name' => 'api_secret', 'label' => 'API secret', 'type' => 'text', 'max' => 255],
+                ['name' => 'sender_type', 'label' => 'SMS type', 'type' => 'select', 'required' => true, 'default' => 'masking', 'options' => [
+                    'masking' => 'Masking (approved brand name)',
+                    'non_masking' => 'Non-masking (numeric sender number)',
+                ], 'hint' => 'Choose the route enabled by your SMS provider. Use the matching approved Sender ID below; MRAM uses that Sender ID to choose the route.'],
                 ['name' => 'sender_id', 'label' => 'Sender id', 'type' => 'text', 'max' => 50],
                 ['name' => 'api_base_url', 'label' => 'API endpoint', 'type' => 'text', 'max' => 255, 'hint' => 'MRAM SMS default: https://sms.mram.com.bd/smsapi. BulkSMSBD default: https://bulksmsbd.net/api/smsapi. Leave blank to use the provider default.'],
                 ['name' => 'is_active', 'label' => 'Active', 'type' => 'checkbox', 'checkboxLabel' => 'Use this provider for messages', 'default' => 0],

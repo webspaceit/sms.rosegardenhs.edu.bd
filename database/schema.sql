@@ -1039,6 +1039,7 @@ CREATE TABLE IF NOT EXISTS sms_settings (
     provider VARCHAR(100) NOT NULL,
     api_key VARCHAR(255) NULL,
     api_secret VARCHAR(255) NULL,
+    sender_type VARCHAR(20) NOT NULL DEFAULT 'masking',
     sender_id VARCHAR(50) NULL,
     api_base_url VARCHAR(255) NULL,
     is_active TINYINT(1) NOT NULL DEFAULT 0,

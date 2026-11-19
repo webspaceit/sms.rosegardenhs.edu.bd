@@ -23,7 +23,7 @@ final class SmsController
         $database = Database::read();
         $branch = BranchContext::id();
         $classes = $database->query('SELECT id, name FROM classes WHERE branch_id=' . $branch . ' ORDER BY numeric_level')->fetchAll();
-        $gateway = $database->query('SELECT id, provider, api_key, sender_id, api_base_url, is_active FROM sms_settings ORDER BY is_active DESC, id DESC LIMIT 1')->fetch() ?: null;
+        $gateway = $database->query('SELECT id, provider, api_key, sender_type, sender_id, api_base_url, is_active FROM sms_settings ORDER BY is_active DESC, id DESC LIMIT 1')->fetch() ?: null;
         View::render('sms/index', [
             'title' => 'SMS Center', 'user' => Auth::user(), 'gateway' => $gateway,
             'classes' => $classes, 'academicYear' => \App\Core\AcademicYearContext::selected(),

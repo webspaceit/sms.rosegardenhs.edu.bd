@@ -6,7 +6,7 @@
 
 <section class="mt-6 rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
     <div class="flex flex-wrap items-center justify-between gap-3">
-        <div><h2 class="text-lg font-semibold">Gateway status</h2><p class="mt-1 text-sm text-green-100/65"><?= $gateway && (int) $gateway['is_active'] === 1 ? 'Active provider: ' . View::escape($gateway['provider']) . ' · Sender ID: ' . View::escape($gateway['sender_id'] ?: 'not set') : 'No active SMS provider is configured.' ?></p></div>
+        <div><h2 class="text-lg font-semibold">Gateway status</h2><p class="mt-1 text-sm text-green-100/65"><?= $gateway && (int) $gateway['is_active'] === 1 ? 'Active provider: ' . View::escape($gateway['provider']) . ' · ' . ((($gateway['sender_type'] ?? 'masking') === 'non_masking') ? 'Non-masking' : 'Masking') . ' · Sender ID: ' . View::escape($gateway['sender_id'] ?: 'not set') : 'No active SMS provider is configured.' ?></p></div>
         <span class="rounded-full border px-3 py-1 text-xs font-semibold <?= $gateway && (int) $gateway['is_active'] === 1 && trim((string) $gateway['api_key']) !== '' ? 'border-emerald-300/25 bg-emerald-400/10 text-emerald-200' : 'border-amber-300/25 bg-amber-400/10 text-amber-100' ?>"><?= $gateway && (int) $gateway['is_active'] === 1 && trim((string) $gateway['api_key']) !== '' ? 'Ready to send' : 'Setup required' ?></span>
     </div>
     <?php if (!$gateway || (int) $gateway['is_active'] !== 1 || trim((string) $gateway['api_key']) === '' || trim((string) ($gateway['sender_id'] ?? '')) === ''): ?>
