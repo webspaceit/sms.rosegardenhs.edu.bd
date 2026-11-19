@@ -19,6 +19,7 @@ final class Teacher
             'singular' => 'teacher',
             'createLabel' => 'Add New Teacher',
             'formFullWidth' => true,
+            'formColumns' => 3,
             'permission' => 'teachers.view',
             'managePermission' => 'teachers.create',
             'from' => 'teachers t LEFT JOIN designations d ON d.id = t.designation_id AND d.branch_id = t.branch_id'
