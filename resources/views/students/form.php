@@ -77,29 +77,38 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
                 <label class="block"><span class="mb-2 block text-sm font-medium">Height</span><input type="number" step="0.01" name="height" placeholder="Height (cm)" value="<?= View::escape((string) $fieldValue('height')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Weight</span><input type="number" step="0.01" name="weight" placeholder="Weight (kg)" value="<?= View::escape((string) $fieldValue('weight')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Measurement Date</span><input type="date" name="measurement_date" value="<?= View::escape((string) $fieldValue('measurement_date', $editing ? '' : date('Y-m-d'))) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
-                <div class="grid gap-5 sm:grid-cols-2 xl:col-span-4 xl:grid-cols-3">
-                    <div class="block">
-                        <label for="student-photo-input" class="mb-2 block text-sm font-medium">Student Photo<?= $studentPhotoRequired ? ' <span class="text-red-300">*</span>' : '' ?></label>
-                        <input id="student-photo-input" type="file" name="photo" accept="image/jpeg,image/png,image/webp" <?= $studentPhotoRequired ? 'required' : '' ?> class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm">
-                        <span class="mt-1 block text-xs text-slate-400">Max 300 × 300 px; saved as JPG.</span>
-                        <?php if (!$editing && !empty($wizardFiles['photo'])): ?><span class="mt-1 block text-xs text-green-300">Photo saved for this admission.</span><?php endif; ?>
+                <div class="block min-w-0">
+                    <label for="student-photo-input" class="mb-2 block text-sm font-medium">Student Photo<?= $studentPhotoRequired ? ' <span class="text-red-300">*</span>' : '' ?></label>
+                    <?php $photoPreviewPath = (string) ($wizardFiles['photo'] ?? ($student['photo'] ?? '')); ?>
+                    <?php $photoPreviewUrl = ''; ?>
+                    <?php if ($photoPreviewPath !== '' && !empty($wizardFiles['photo'])): ?>
+                        <?php $photoUploadRoot = realpath(BASE_PATH . '/storage/uploads'); $photoPreviewFile = $photoUploadRoot !== false ? realpath($photoUploadRoot . DIRECTORY_SEPARATOR . $photoPreviewPath) : false; ?>
+                        <?php if (str_starts_with($photoPreviewPath, 'student-photos/') && $photoPreviewFile !== false && str_starts_with($photoPreviewFile, $photoUploadRoot . DIRECTORY_SEPARATOR) && is_file($photoPreviewFile) && (new finfo(FILEINFO_MIME_TYPE))->file($photoPreviewFile) === 'image/jpeg'): ?>
+                            <?php $photoPreviewBytes = file_get_contents($photoPreviewFile); $photoPreviewUrl = $photoPreviewBytes !== false ? 'data:image/jpeg;base64,' . base64_encode($photoPreviewBytes) : ''; ?>
+                        <?php endif; ?>
+                    <?php elseif (!empty($student['photo'])): ?>
+                        <?php $photoPreviewUrl = Url::to('/uploads/file?path=' . rawurlencode((string) $student['photo'])); ?>
+                    <?php endif; ?>
+                    <div class="flex min-w-0 items-center gap-2">
+                        <input id="student-photo-input" type="file" name="photo" accept="image/jpeg,image/png,image/webp" <?= $studentPhotoRequired ? 'required' : '' ?> class="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm">
+                        <div id="student-photo-current" class="h-[38px] w-[38px] shrink-0 overflow-hidden rounded-lg border border-green-100/20 bg-slate-900 <?= $photoPreviewUrl === '' ? 'hidden' : '' ?>">
+                            <img id="student-photo-preview" src="<?= View::escape($photoPreviewUrl) ?>" data-original-src="<?= View::escape($photoPreviewUrl) ?>" alt="Student photo thumbnail" class="h-full w-full object-cover">
+                        </div>
                         <?php if (!empty($student['photo'])): ?>
-                            <?php $currentStudentPhotoUrl = Url::to('/uploads/file?path=' . rawurlencode((string) $student['photo'])); ?>
-                            <div id="student-photo-current" class="mt-3 flex items-center gap-3">
-                                <div class="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-green-100/20 bg-slate-900">
-                                    <img id="student-photo-preview" src="<?= View::escape($currentStudentPhotoUrl) ?>" data-original-src="<?= View::escape($currentStudentPhotoUrl) ?>" alt="Current student photo" class="h-full w-full object-cover">
-                                </div>
-                                <button type="button" id="student-photo-delete" class="student-photo-delete-icon grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-rose-300/25 text-rose-200 transition hover:border-rose-300/60 hover:bg-rose-400/10" title="Delete photo from server when saved" aria-label="Delete student photo from server when saved">
-                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 2-.9 12H5.9L5 6m4 4v5m6-5v5"/></svg>
-                                </button>
-                            </div>
-                            <input type="checkbox" id="student-photo-remove" name="remove_photo" value="1" class="hidden">
-                            <p id="student-photo-status" class="mt-1 text-xs text-amber-200" role="status" aria-live="polite"></p>
+                            <button type="button" id="student-photo-delete" class="student-photo-delete-icon grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-rose-300/25 text-rose-200 transition hover:border-rose-300/60 hover:bg-rose-400/10" title="Delete photo from server when saved" aria-label="Delete student photo from server when saved">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 2-.9 12H5.9L5 6m4 4v5m6-5v5"/></svg>
+                            </button>
                         <?php endif; ?>
                     </div>
-                    <label class="block"><span class="mb-2 block text-sm font-medium">Medical History</span><textarea name="medical_history" rows="2" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" placeholder="Medical History"><?= View::escape((string) $fieldValue('medical_history')) ?></textarea></label>
-                    <label id="student-behaviour-field" class="block <?= $selectedClassLevel === 9 ? 'student-behaviour-class-nine' : '' ?>"><span class="mb-2 block text-sm font-medium">Student Behaviour</span><textarea name="student_behaviour" maxlength="5000" rows="2" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" placeholder="Record relevant behaviour notes"><?= View::escape((string) $fieldValue('student_behaviour')) ?></textarea></label>
+                    <span class="mt-1 block text-xs text-slate-400">Max 300 × 300 px; saved as JPG.</span>
+                    <?php if (!$editing && !empty($wizardFiles['photo'])): ?><span class="wizard-file-saved mt-1 block text-xs text-green-300">Photo saved for this admission.</span><?php endif; ?>
+                    <?php if (!empty($student['photo'])): ?>
+                        <input type="checkbox" id="student-photo-remove" name="remove_photo" value="1" class="hidden">
+                        <p id="student-photo-status" class="mt-1 text-xs text-amber-200" role="status" aria-live="polite"></p>
+                    <?php endif; ?>
                 </div>
+                <label class="block xl:col-span-2"><span class="mb-2 block text-sm font-medium">Medical History</span><textarea name="medical_history" rows="2" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" placeholder="Medical History"><?= View::escape((string) $fieldValue('medical_history')) ?></textarea></label>
+                <label id="student-behaviour-field" class="block xl:col-span-2 <?= $selectedClassLevel === 9 ? 'student-behaviour-class-nine' : '' ?>"><span class="mb-2 block text-sm font-medium">Student Behaviour</span><textarea name="student_behaviour" maxlength="5000" rows="2" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" placeholder="Record relevant behaviour notes"><?= View::escape((string) $fieldValue('student_behaviour')) ?></textarea></label>
             </div>
         </section>
 
@@ -215,21 +224,25 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
                 <div class="student-document-row grid gap-3 sm:grid-cols-[1fr_2fr_auto]" data-existing="1">
                     <input type="hidden" class="student-document-id" name="document_id_<?= $documentIndex ?>" value="<?= (int) $document['id'] ?>">
                     <input class="student-document-title w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" name="document_title_<?= $documentIndex ?>" placeholder="Title" value="<?= View::escape((string) ($old['document_title_' . $documentIndex] ?? $document['title'])) ?>">
-                    <div class="flex min-w-0 items-center rounded-lg border border-green-100/15 bg-emerald-950/45 px-2"><input type="file" accept="application/pdf,.pdf" class="student-document-file min-w-0 flex-1 basis-1/2 rounded-lg bg-transparent py-2 text-sm" name="document_file_<?= $documentIndex ?>"><span class="student-document-file-name min-w-0 flex-1 basis-1/2 truncate px-2 text-xs text-slate-300" data-current-name="<?= View::escape($documentOriginalName) ?>" title="<?= View::escape($documentOriginalName) ?>"><?= View::escape($documentOriginalName) ?></span></div>
+                    <div class="flex min-w-0 items-center rounded-lg border border-green-100/15 bg-emerald-950/45 px-3 py-2.5"><span class="student-document-file-name min-w-0 truncate text-sm text-slate-300" data-current-name="<?= View::escape($documentOriginalName) ?>" title="<?= View::escape($documentOriginalName) ?>"><?= View::escape($documentOriginalName) ?></span></div>
                     <button type="button" class="student-document-remove-row grid h-11 w-11 place-items-center rounded-lg border border-rose-300/20 text-rose-200 transition hover:border-rose-300/60 hover:bg-rose-400/10" title="Remove document" aria-label="Remove document"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-.9 14H5.9L5 6m4 4v6m6-6v6"/></svg></button>
                 </div>
                 <?php $documentIndex++; endforeach; ?>
                 <?php foreach ($removedDocumentIds as $removedId): ?><input type="hidden" name="document_remove_ids[]" value="<?= (int) $removedId ?>"><?php endforeach; ?>
                 <?php $newDocumentIndex = $documentIndex; ?>
+                <?php $wizardDocumentName = (string) ($wizardDocumentNames['document_file_' . $newDocumentIndex] ?? ''); ?>
+                <?php $newDocumentTitle = (string) $fieldValue('document_title_' . $newDocumentIndex); ?>
+                <?php $showInitialDocumentRow = !$editing || $newDocumentIndex === 0 || (int) $fieldValue('document_count', 0) > $newDocumentIndex || trim($newDocumentTitle) !== '' || $wizardDocumentName !== ''; ?>
+                <?php if ($showInitialDocumentRow): ?>
                 <div class="student-document-row grid gap-3 sm:grid-cols-[1fr_2fr_auto]" data-existing="0">
                     <input class="student-document-title w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" name="document_title_<?= (int) $newDocumentIndex ?>" placeholder="Title" value="<?= View::escape((string) $fieldValue('document_title_' . $newDocumentIndex)) ?>">
-                    <?php $wizardDocumentName = (string) ($wizardDocumentNames['document_file_' . $newDocumentIndex] ?? ''); ?>
                     <div class="flex min-w-0 items-center rounded-lg border border-green-100/15 bg-emerald-950/45 px-2"><input type="file" accept="application/pdf,.pdf" class="student-document-file min-w-0 flex-1 basis-1/2 bg-transparent py-2 text-sm" name="document_file_<?= (int) $newDocumentIndex ?>"><span class="student-document-file-name min-w-0 flex-1 basis-1/2 truncate px-2 text-xs <?= $wizardDocumentName !== '' ? 'text-green-300' : 'text-slate-400' ?>" data-current-name="<?= View::escape($wizardDocumentName) ?>" title="<?= View::escape($wizardDocumentName) ?>"><?= View::escape($wizardDocumentName) ?></span></div>
                     <?php if ($newDocumentIndex > 0): ?><button type="button" class="student-document-remove-row grid h-11 w-11 place-items-center rounded-lg border border-rose-300/20 text-rose-200 transition hover:border-rose-300/60 hover:bg-rose-400/10" title="Remove document" aria-label="Remove document"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-.9 14H5.9L5 6m4 4v6m6-6v6"/></svg></button><?php endif; ?>
                 </div>
+                <?php endif; ?>
             </div>
             <button type="button" id="add-student-document" class="mt-4 rounded-lg border border-green-100/20 px-4 py-2 text-sm text-teal-200 hover:border-teal-300">+ Add another document</button>
-            <input type="hidden" id="student-document-count" name="document_count" value="<?= (int) $newDocumentIndex + 1 ?>">
+            <input type="hidden" id="student-document-count" name="document_count" value="<?= (int) $newDocumentIndex + ($showInitialDocumentRow ? 1 : 0) ?>">
         </section>
 
         <div class="flex flex-wrap justify-between gap-3 border-t border-green-900/60 pt-5">
@@ -380,7 +393,14 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
       formData.set('_wizard_step', String(step));
       try {
         const response = await fetch('<?= Url::to('/students/wizard-save') ?>', { method: 'POST', body: formData, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-        const result = await response.json();
+        const responseText = await response.text();
+        let result;
+        try {
+          result = JSON.parse(responseText);
+        } catch {
+          const serverMessage = responseText.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+          throw new Error(serverMessage || 'The server returned an invalid response (HTTP ' + response.status + ').');
+        }
         if (!response.ok || !result.ok) throw new Error(result.message || 'Could not save this step.');
         admissionForm.querySelectorAll('input[type="file"]').forEach(input => {
           const selectedFileName = input.files[0]?.name || '';
@@ -395,6 +415,16 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
               nameDisplay.classList.remove('text-slate-400');
               nameDisplay.classList.add('text-green-300');
             }
+            return;
+          }
+          if (input.name === 'photo') {
+            let status = input.parentElement.querySelector('.wizard-file-saved');
+            if (saved && !status) {
+              status = document.createElement('span');
+              status.className = 'wizard-file-saved mt-1 block text-xs text-green-300';
+              input.parentElement.append(status);
+            }
+            if (saved && status) status.textContent = 'Photo saved for this admission.';
             return;
           }
           let status = input.parentElement.querySelector('.wizard-file-saved');
@@ -500,9 +530,9 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
   if (studentPhotoInput) studentPhotoInput.dataset.initialRequired = studentPhotoInput.required ? '1' : '0';
   let temporaryStudentPhotoUrl = '';
   const renderStudentPhotoState = () => {
-    if (!studentPhotoInput || !studentPhotoRemoveField || !studentPhotoPreview) return;
+    if (!studentPhotoInput || !studentPhotoPreview) return;
     const replacementSelected = studentPhotoInput.files.length > 0;
-    const removalPending = studentPhotoRemoveField.checked;
+    const removalPending = Boolean(studentPhotoRemoveField?.checked);
     if (removalPending && !replacementSelected) {
       studentPhotoPreviewFrame?.classList.add('hidden');
       studentPhotoInput.required = true;
@@ -516,14 +546,21 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
     }
 
     studentPhotoInput.required = studentPhotoInput.dataset.initialRequired === '1';
-    studentPhotoPreviewFrame?.classList.remove('hidden');
     if (replacementSelected) {
       if (temporaryStudentPhotoUrl) URL.revokeObjectURL(temporaryStudentPhotoUrl);
       temporaryStudentPhotoUrl = URL.createObjectURL(studentPhotoInput.files[0]);
       studentPhotoPreview.src = temporaryStudentPhotoUrl;
+      studentPhotoPreviewFrame?.classList.remove('hidden');
       if (studentPhotoStatus) studentPhotoStatus.textContent = '';
     } else {
-      studentPhotoPreview.src = studentPhotoPreview.dataset.originalSrc || '';
+      const originalSrc = studentPhotoPreview.dataset.originalSrc || '';
+      if (originalSrc) {
+        studentPhotoPreview.src = originalSrc;
+        studentPhotoPreviewFrame?.classList.remove('hidden');
+      } else {
+        studentPhotoPreview.removeAttribute('src');
+        studentPhotoPreviewFrame?.classList.add('hidden');
+      }
       if (studentPhotoStatus) studentPhotoStatus.textContent = '';
     }
     if (studentPhotoDeleteButton) {
@@ -549,7 +586,8 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
     const rows = [...documentRows.querySelectorAll('.student-document-row')].filter(row => !row.hidden);
     rows.forEach((row, index) => {
       row.querySelector('.student-document-title').name = `document_title_${index}`;
-      row.querySelector('.student-document-file').name = `document_file_${index}`;
+      const file = row.querySelector('.student-document-file');
+      if (file) file.name = 'document_file_' + index;
       const id = row.querySelector('.student-document-id');
       if (id) id.name = `document_id_${index}`;
     });
@@ -561,7 +599,8 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
     if (!button) return;
     const row = button.closest('.student-document-row');
     if (!row) return;
-    if (row.dataset.existing === '1') {
+    const removingSavedDocument = row.dataset.existing === '1';
+    if (removingSavedDocument) {
       const idField = row.querySelector('.student-document-id');
       if (!idField) return;
       const removal = document.createElement('input');
@@ -574,6 +613,9 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
       row.hidden = true;
     } else if (documentRows.querySelectorAll('.student-document-row[data-existing="0"]').length > 1) {
       row.remove();
+    }
+    if (removingSavedDocument && ![...documentRows.querySelectorAll('.student-document-row[data-existing="0"]')].some(documentRow => !documentRow.hidden)) {
+      addDocumentButton.click();
     }
     reindexDocuments();
   });
@@ -589,7 +631,7 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
   });
 
   addDocumentButton?.addEventListener('click', () => {
-    const index = documentRows.querySelectorAll('.student-document-row').length;
+    const index = [...documentRows.querySelectorAll('.student-document-row')].filter(row => !row.hidden).length;
     if (index >= 20) {
       addDocumentButton.disabled = true;
       return;

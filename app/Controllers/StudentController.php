@@ -161,6 +161,7 @@ final class StudentController
             echo json_encode(['ok' => false, 'message' => 'Your session expired. Reload and try again.']);
             return;
         }
+        header('Content-Type: application/json; charset=utf-8');
         $draft = $_SESSION['_student_wizard'] ?? ['data' => [], 'files' => []];
         $step = min(4, max(1, (int) $request->input('_wizard_step', 1)));
         foreach ($_POST as $key => $value) {
@@ -169,6 +170,10 @@ final class StudentController
         }
         $draft['step'] = min(4, $step + 1);
         $documentExtensions = ['pdf'];
+        set_error_handler(static function (int $severity, string $message, string $file, int $line): bool {
+            if (!(error_reporting() & $severity)) return false;
+            throw new \ErrorException($message, 0, $severity, $file, $line);
+        });
         try {
             $errors = [];
             if ($step === 1) {
@@ -242,9 +247,10 @@ final class StudentController
             header('Content-Type: application/json');
             echo json_encode(['ok' => true, 'step' => max(1, min(4, (int) ($request->input('_wizard_step', 1)))), 'savedFiles' => array_keys($draft['files'])]);
         } catch (\Throwable $error) {
-            header('Content-Type: application/json');
             http_response_code(422);
             echo json_encode(['ok' => false, 'message' => $error->getMessage()]);
+        } finally {
+            restore_error_handler();
         }
     }
 
