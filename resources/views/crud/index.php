@@ -61,7 +61,9 @@ $canSearch = $searchable;
                     <?php elseif ($format === 'badge'): ?>
                         <span class="rounded-full bg-slate-800 px-2.5 py-1 text-xs text-slate-300"><?= View::escape((string) ($value ?? '—')) ?></span>
                     <?php elseif ($format === 'image'): ?>
-                        <?php if ($value): ?><a href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $value)) ?>" target="_blank" title="View photo"><img src="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $value)) ?>" alt="<?= View::escape($module['singular'] . ' photo') ?>" loading="lazy" class="h-10 w-10 rounded-lg border border-green-100/20 object-cover"></a><?php else: ?><span class="text-slate-500">—</span><?php endif; ?>
+                        <?php if ($value): ?><a href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $value)) ?>" target="_blank" title="View photo"><img src="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $value)) ?>" alt="<?= View::escape($module['singular'] . ' photo') ?>" loading="lazy" class="h-10 w-10 rounded-lg border border-green-100/20 object-cover"></a>
+                        <?php elseif (!empty($column['avatarFallback'])): $avatarGender = (string) ($record['gender'] ?? ''); $avatarName = (string) ($record['name'] ?? ucfirst($module['singular'])); $avatarClass = 'h-10 w-10 rounded-lg border border-green-100/20'; require BASE_PATH . '/resources/views/results/partials/student-avatar.php'; ?>
+                        <?php else: ?><span class="text-slate-500">—</span><?php endif; ?>
                     <?php else: ?>
                         <span<?= !empty($column['truncate']) ? ' class="block max-w-[220px] truncate ' . ($format === 'muted' ? 'text-white' : 'text-slate-200') . '"' : ' class="' . ($format === 'muted' ? 'text-white' : 'text-slate-200') . '"' ?><?= !empty($column['truncate']) ? ' title="' . View::escape((string) ($value ?? '—')) . '"' : '' ?>><?= View::escape((string) ($value ?? '—')) ?></span>
                     <?php endif; ?>

@@ -37,7 +37,7 @@ final class Teacher
                 ['name' => 'blood_group', 'label' => 'Blood group'],
                 ['name' => 'qualification', 'label' => 'Qualification', 'format' => 'muted', 'truncate' => true],
                 ['name' => 'joining_date', 'label' => 'Joined'],
-                ['name' => 'photo', 'label' => 'Photo', 'format' => 'image'],
+                ['name' => 'photo', 'label' => 'Photo', 'format' => 'image', 'avatarFallback' => true],
             ],
             'fields' => [
                 [
@@ -72,7 +72,7 @@ final class Teacher
                 ['name' => 'experience_years', 'label' => 'Experience (years)', 'type' => 'number', 'default' => 0],
                 ['name' => 'joining_date', 'label' => 'Joining date', 'type' => 'date'],
                 ['name' => 'address', 'label' => 'Address', 'type' => 'textarea', 'rows' => 2, 'wide' => false],
-                ['name' => 'photo', 'label' => 'Photo', 'type' => 'file', 'image' => true, 'directory' => 'teacher-photos', 'extensions' => ['jpg', 'jpeg', 'png', 'webp'], 'maxBytes' => 5242880, 'hint' => 'JPG, PNG, or WebP · maximum 5 MB. The original image size is kept.'],
+                ['name' => 'photo', 'label' => 'Photo', 'type' => 'file', 'image' => true, 'deletable' => true, 'deleteOldOnReplace' => true, 'directory' => 'teacher-photos', 'extensions' => ['jpg', 'jpeg', 'png', 'webp'], 'maxBytes' => 5242880, 'hint' => 'JPG, PNG, or WebP · maximum 5 MB. The original image size is kept.'],
             ],
             'search' => ['t.name', 't.employee_id', 'd.name', 'dept.name'],
             'order' => 't.id DESC',

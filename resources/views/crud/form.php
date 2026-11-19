@@ -78,8 +78,14 @@ $value = static function (string $name, mixed $fallback = '') use ($record): mix
                         <div class="flex items-center gap-3">
                             <input id="field-<?= View::escape($name) ?>" name="<?= View::escape($name) ?>" type="file"<?= $required && !$editing ? ' required' : '' ?> accept="<?= View::escape(implode(',', array_map(static fn ($extension) => '.' . $extension, $field['extensions'] ?? []))) ?>" data-image-preview="preview-<?= View::escape($name) ?>" class="min-w-0 flex-1 rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm">
                             <img id="preview-<?= View::escape($name) ?>" src="<?= $current ? Url::to('/uploads/file?path=' . rawurlencode((string) $current)) : '' ?>" alt="Photo preview" class="h-12 w-12 shrink-0 rounded-lg border border-green-800/70 object-cover<?= $current ? '' : ' hidden' ?>">
+                            <?php if (!empty($field['deletable'])): ?>
+                                <input type="hidden" name="remove_<?= View::escape($name) ?>" value="0" data-image-remove="preview-<?= View::escape($name) ?>">
+                                <button type="button" data-image-delete-button="preview-<?= View::escape($name) ?>" title="<?= $current ? 'Delete photo from server' : 'Remove selected photo' ?>" aria-label="<?= $current ? 'Delete photo from server' : 'Remove selected photo' ?>" class="h-10 w-10 shrink-0 rounded-lg border border-red-900/70 text-red-200 hover:bg-red-950/50<?= $current ? '' : ' hidden' ?>">
+                                    <svg aria-hidden="true" viewBox="0 0 24 24" class="mx-auto h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6m4-6v6M5 7l1 13h12l1-13M9 7V4h6v3" /></svg>
+                                </button>
+                            <?php endif; ?>
                         </div>
-                        <?php if ($current): ?><p class="mt-1.5 text-xs text-slate-400">Current photo. Choose a file to replace it.</p><?php endif; ?>
+                        <?php if ($current): ?><p id="photo-message-<?= View::escape($name) ?>" class="mt-1.5 text-xs text-slate-400">Current photo. Choose a file to replace it or use the delete icon to remove it from the server.</p><?php endif; ?>
                     <?php else: ?>
                         <input id="field-<?= View::escape($name) ?>" name="<?= View::escape($name) ?>" type="file"<?= $required && !$editing ? ' required' : '' ?> accept="<?= View::escape(implode(',', array_map(static fn ($extension) => '.' . $extension, $field['extensions'] ?? []))) ?>" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm">
                         <?php if ($current): ?><p class="mt-1.5 text-xs text-slate-400">Current file: <a class="text-teal-300 underline" target="_blank" href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $current)) ?>">View file</a>. Leave blank to keep it.</p><?php endif; ?>
@@ -102,16 +108,36 @@ $value = static function (string $name, mixed $fallback = '') use ($record): mix
 </div>
 <script>
 document.querySelectorAll('input[data-image-preview]').forEach(input => {
+    const preview = document.getElementById(input.dataset.imagePreview);
+    const deleteButton = document.querySelector(`[data-image-delete-button="${input.dataset.imagePreview}"]`);
+    const removeInput = document.querySelector(`[data-image-remove="${input.dataset.imagePreview}"]`);
+    const message = document.getElementById(`photo-message-${input.name}`);
+    const originalSrc = preview?.getAttribute('src') || '';
+
     input.addEventListener('change', () => {
         const file = input.files?.[0];
-        if (!file || !file.type.startsWith('image/')) return;
-        const preview = document.getElementById(input.dataset.imagePreview);
-        if (!preview) return;
+        if (!file || !file.type.startsWith('image/') || !preview) return;
+        if (removeInput) removeInput.value = '0';
+        if (message) message.textContent = 'New photo selected. The old server photo will be removed when you save.';
         if (preview.dataset.objectUrl) URL.revokeObjectURL(preview.dataset.objectUrl);
         const objectUrl = URL.createObjectURL(file);
         preview.dataset.objectUrl = objectUrl;
         preview.src = objectUrl;
         preview.classList.remove('hidden');
+        deleteButton?.classList.remove('hidden');
+    });
+
+    deleteButton?.addEventListener('click', () => {
+        input.value = '';
+        if (preview?.dataset.objectUrl) URL.revokeObjectURL(preview.dataset.objectUrl);
+        if (preview) {
+            preview.removeAttribute('src');
+            preview.classList.add('hidden');
+        }
+        const hasServerPhoto = Boolean(originalSrc);
+        if (removeInput) removeInput.value = hasServerPhoto ? '1' : '0';
+        deleteButton.classList.add('hidden');
+        if (message) message.textContent = hasServerPhoto ? 'Photo will be deleted from the server when you save.' : 'Selected photo removed.';
     });
 });
 </script>

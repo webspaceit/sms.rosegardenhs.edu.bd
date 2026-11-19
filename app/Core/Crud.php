@@ -142,13 +142,14 @@ final class Crud
         $this->verifyCsrf($request);
 
         $id = (int) $request->input('id', 0);
-        if ($this->find($id) === null) {
+        $existing = $this->find($id);
+        if ($existing === null) {
             Toast::flash(ucfirst($this->module['singular']) . ' not found.', 'error');
             header('Location: ' . Url::to($this->route()));
             exit;
         }
 
-        $data = $this->validated($request, $this->find($id));
+        $data = $this->validated($request, $existing);
         if ($data === null) {
             header('Location: ' . Url::to($this->route() . '/edit?id=' . $id));
             exit;
@@ -162,6 +163,18 @@ final class Crud
             Toast::flash(self::failureMessage($error), 'error');
             header('Location: ' . Url::to($this->route() . '/edit?id=' . $id));
             exit;
+        }
+
+        foreach ($this->module['fields'] as $field) {
+            if (($field['type'] ?? '') !== 'file' || empty($field['deleteOldOnReplace'])) {
+                continue;
+            }
+            $name = (string) $field['name'];
+            $oldPath = $existing[$name] ?? null;
+            $newPath = $data[$name] ?? null;
+            if (is_string($oldPath) && $oldPath !== '' && $oldPath !== $newPath) {
+                Upload::delete($oldPath);
+            }
         }
 
         AuditLog::record('record.updated', $this->table(), $id, ['route' => $this->route()]);
@@ -302,7 +315,8 @@ final class Crud
                     Toast::flash($error->getMessage(), 'error');
                     return null;
                 }
-                $data[$name] = $uploaded ?? ($existing[$name] ?? null);
+                $removeExisting = !empty($field['deletable']) && $request->input('remove_' . $name) === '1';
+                $data[$name] = $uploaded ?? ($removeExisting ? null : ($existing[$name] ?? null));
                 if ($required && !$data[$name]) {
                     Toast::flash($field['label'] . ' is required.', 'error');
                     return null;
