@@ -297,6 +297,7 @@ final class StudentController
             $_POST['_token'] = $request->input('_token');
         }
         $quickAdmission = $request->input('_quick_admission') === '1';
+        if ($quickAdmission) $_POST['guardian_mode'] = 'new';
         $formUrl = $quickAdmission ? '/students/quick-admit' : '/students/new';
         $data = $this->validatedInput($request, true);
         if ($data === null) { header('Location: ' . Url::to($formUrl)); exit; }
@@ -803,10 +804,10 @@ final class StudentController
                 $guardianAddress = trim((string) $request->input('guardian_address', ''));
                 $relations = ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'Other'];
                 if ($guardianName === '' || $this->textLength($guardianName) > 150
-                    || !in_array($guardianRelation, $relations, true) || $guardianPhone === '' || strlen($guardianPhone) > 20
+                    || !in_array($guardianRelation, $relations, true) || !$this->isBangladeshiMobileNumber($guardianPhone)
                     || $this->textLength($guardianOccupation) > 100 || $this->textLength($guardianAddress) > 10000
                     || ($guardianEmail !== '' && (!filter_var($guardianEmail, FILTER_VALIDATE_EMAIL) || strlen($guardianEmail) > 190))) {
-                    $this->rememberForm(); Toast::flash('Enter a guardian name, relation and valid phone; check the optional email.', 'error'); return null;
+                    $this->rememberForm(); Toast::flash('Enter a guardian name and relation, and a valid Bangladeshi mobile number (01XXXXXXXXX or +8801XXXXXXXXX). Check the optional email.', 'error'); return null;
                 }
                 $data['_registration_guardian'] = ['mode' => 'new', 'data' => [
                     'name' => $guardianName,

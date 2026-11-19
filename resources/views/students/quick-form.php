@@ -26,7 +26,7 @@ foreach ($classSections as $section) {
 }
 $suggestedRoll = $selectedSection === null ? 1 : (int) ($selectedSection['next_roll_' . strtolower($selectedShift)] ?? $selectedSection['next_roll'] ?? 1);
 ?>
-<div class="mx-auto max-w-4xl">
+<div class="w-full min-w-0">
     <a href="<?= Url::to('/students') ?>" class="text-sm text-green-300 hover:text-green-200">← Student register</a>
     <div class="mt-2 flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -49,7 +49,7 @@ $suggestedRoll = $selectedSection === null ? 1 : (int) ($selectedSection['next_r
 
         <section>
             <h2 class="text-lg font-semibold">Student and class</h2>
-            <div class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <label class="block">
                     <span class="mb-1.5 block text-sm text-slate-300">Student name <span class="text-rose-300">*</span></span>
                     <input autofocus required maxlength="150" name="name" value="<?= View::escape((string) ($old['name'] ?? '')) ?>" placeholder="Enter student's full name" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
@@ -105,35 +105,33 @@ $suggestedRoll = $selectedSection === null ? 1 : (int) ($selectedSection['next_r
                     <span class="mb-1.5 block text-sm text-slate-300">Birth registration number</span>
                     <input maxlength="50" name="birth_registration_no" value="<?= View::escape((string) ($old['birth_registration_no'] ?? '')) ?>" placeholder="Birth registration number" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
                 </label>
-                <label class="block">
-                    <span class="mb-1.5 block text-sm text-slate-300">Admission date</span>
-                    <input type="date" name="admission_date" value="<?= View::escape((string) ($old['admission_date'] ?? date('Y-m-d'))) ?>" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
-                </label>
-                <label class="block">
-                    <span class="mb-1.5 block text-sm text-slate-300">Previous school</span>
-                    <input maxlength="190" name="previous_school" value="<?= View::escape((string) ($old['previous_school'] ?? '')) ?>" placeholder="Previous school name" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
-                </label>
-                <label class="block">
-                    <span class="mb-1.5 block text-sm text-slate-300">Status</span>
-                    <select name="status" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
-                        <?php foreach (['active' => 'Active', 'inactive' => 'Inactive', 'graduated' => 'Graduated'] as $statusValue => $statusLabel): ?>
-                            <option value="<?= $statusValue ?>" <?= ($old['status'] ?? 'active') === $statusValue ? 'selected' : '' ?>><?= $statusLabel ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </label>
-                <label class="block sm:col-span-2">
-                    <span class="mb-1.5 block text-sm text-slate-300">Current Address</span>
-                    <textarea name="current_address" rows="2" placeholder="Current address" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400"><?= View::escape((string) ($old['current_address'] ?? '')) ?></textarea>
-                </label>
+                <div class="grid gap-4 sm:col-span-2 sm:grid-cols-2 xl:col-span-4 xl:grid-cols-4">
+                    <label class="block">
+                        <span class="mb-1.5 block text-sm text-slate-300">Admission date</span>
+                        <input type="date" name="admission_date" value="<?= View::escape((string) ($old['admission_date'] ?? date('Y-m-d'))) ?>" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
+                    </label>
+                    <label class="block sm:col-span-2 xl:col-span-2">
+                        <span class="mb-1.5 block text-sm text-slate-300">Current Address</span>
+                        <textarea name="current_address" rows="2" placeholder="Current address" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400"><?= View::escape((string) ($old['current_address'] ?? '')) ?></textarea>
+                    </label>
+                    <label class="block">
+                        <span class="mb-1.5 block text-sm text-slate-300">Status</span>
+                        <select name="status" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
+                            <?php foreach (['active' => 'Active', 'inactive' => 'Inactive', 'graduated' => 'Graduated'] as $statusValue => $statusLabel): ?>
+                                <option value="<?= $statusValue ?>" <?= ($old['status'] ?? 'active') === $statusValue ? 'selected' : '' ?>><?= $statusLabel ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                </div>
             </div>
         </section>
 
         <section class="mt-7 border-t border-green-900/60 pt-6">
             <h2 class="text-lg font-semibold">Parent or guardian <span class="text-sm font-normal text-slate-400">(optional)</span></h2>
-            <div class="mt-4 grid gap-4 sm:grid-cols-3">
+            <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <label class="block">
-                    <span class="mb-1.5 block text-sm text-slate-300">Guardian name</span>
-                    <input id="quick-guardian-name" maxlength="150" name="guardian_name" value="<?= View::escape((string) ($old['guardian_name'] ?? '')) ?>" placeholder="Parent or guardian" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
+                    <span class="mb-1.5 block text-sm text-slate-300">Guardian name <span class="text-rose-300">*</span></span>
+                    <input id="quick-guardian-name" required maxlength="150" name="guardian_name" value="<?= View::escape((string) ($old['guardian_name'] ?? '')) ?>" placeholder="Parent or guardian" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
                 </label>
                 <label class="block">
                     <span class="mb-1.5 block text-sm text-slate-300">Relation</span>
@@ -144,11 +142,11 @@ $suggestedRoll = $selectedSection === null ? 1 : (int) ($selectedSection['next_r
                     </select>
                 </label>
                 <label class="block">
-                    <span class="mb-1.5 block text-sm text-slate-300">Guardian phone</span>
-                    <input id="quick-guardian-phone" maxlength="20" name="guardian_phone" value="<?= View::escape((string) ($old['guardian_phone'] ?? '')) ?>" placeholder="Phone number" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
+                    <span class="mb-1.5 block text-sm text-slate-300">Guardian phone <span class="text-rose-300">*</span></span>
+                    <input id="quick-guardian-phone" required type="tel" inputmode="tel" maxlength="14" pattern="(?:\+?88)?01[3-9][0-9]{8}" title="Enter a valid Bangladesh mobile number, e.g. 01712345678 or +8801712345678." name="guardian_phone" value="<?= View::escape((string) ($old['guardian_phone'] ?? '')) ?>" placeholder="01XXXXXXXXX or +8801XXXXXXXXX" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
                 </label>
             </div>
-            <p class="mt-2 text-xs text-slate-500">If you enter a guardian name or phone, enter both to create and link the guardian now.</p>
+            <p class="mt-2 text-xs text-slate-500">A guardian name and a valid Bangladesh mobile number are required to link the guardian to this student.</p>
         </section>
 
         <div class="mt-7 flex flex-wrap justify-end gap-3 border-t border-green-900/60 pt-5">
