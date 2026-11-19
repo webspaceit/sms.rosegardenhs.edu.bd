@@ -290,6 +290,10 @@ final class Crud
             $type = (string) ($field['type'] ?? 'text');
             $required = (bool) ($field['required'] ?? false);
             $raw = $request->input($name, null);
+            $autoGenerate = $field['autoGenerate'] ?? null;
+            if ($existing === null && is_callable($autoGenerate)) {
+                $raw = $autoGenerate();
+            }
 
             if ($type === 'file') {
                 try {
@@ -333,6 +337,12 @@ final class Crud
                 continue;
             }
 
+            if (str_contains(strtolower($name), 'phone') || str_contains(strtolower($name), 'mobile')) {
+                if (!PhoneNumber::isBangladeshiMobile((string) $value)) {
+                    $errors[] = $field['label'] . ' must be a valid Bangladesh mobile number (01XXXXXXXXX or +8801XXXXXXXXX).';
+                }
+            }
+
             switch ($type) {
                 case 'number':
                     if (!is_numeric($value)) {
@@ -367,6 +377,20 @@ final class Crud
                     }
                     $data[$name] = $string;
                     break;
+            }
+
+            if (!empty($field['unique']) && isset($data[$name]) && $data[$name] !== null && (string) $data[$name] !== '') {
+                $sql = 'SELECT id FROM ' . $this->table() . ' WHERE ' . $name . ' = :unique_value';
+                $bindings = ['unique_value' => $data[$name]];
+                if ($existing !== null && isset($existing['id'])) {
+                    $sql .= ' AND id <> :existing_id';
+                    $bindings['existing_id'] = (int) $existing['id'];
+                }
+                $duplicate = Database::read()->prepare($sql . ' LIMIT 1');
+                $duplicate->execute($bindings);
+                if ($duplicate->fetchColumn() !== false) {
+                    $errors[] = (string) ($field['uniqueMessage'] ?? ($field['label'] . ' must be unique.'));
+                }
             }
         }
 

@@ -27,7 +27,7 @@ final class TransportRoute
             'fields' => [
                 ['name' => 'name', 'label' => 'Route name', 'type' => 'text', 'required' => true, 'max' => 150],
                 ['name' => 'driver_name', 'label' => 'Driver name', 'type' => 'text', 'max' => 150],
-                ['name' => 'driver_phone', 'label' => 'Driver phone', 'type' => 'text', 'max' => 20],
+                ['name' => 'driver_phone', 'label' => 'Driver phone', 'type' => 'tel', 'max' => 14],
                 ['name' => 'vehicle_no', 'label' => 'Vehicle number', 'type' => 'text', 'max' => 30],
                 ['name' => 'fare', 'label' => 'Monthly fare', 'type' => 'number', 'default' => 0, 'step' => '0.01'],
                 ['name' => 'description', 'label' => 'Description', 'type' => 'text', 'max' => 255],

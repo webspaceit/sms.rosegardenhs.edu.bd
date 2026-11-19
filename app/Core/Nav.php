@@ -64,7 +64,7 @@ final class Nav
                     self::item('Academic Setup', '/academics', 'building'),
                     self::item('Academic Groups', '/academic-groups', 'book'),
                     self::item('Teachers', '/teachers', 'users', ['/teachers', '/designations'], [
-                        self::item('All Teachers', '/teachers', 'users', ['/teachers']),
+                        self::item('Teachers Details', '/teachers', 'users', ['/teachers']),
                         self::item('Designations', '/designations', 'award'),
                     ]),
                     self::item('Subjects', '/subjects', 'book'),

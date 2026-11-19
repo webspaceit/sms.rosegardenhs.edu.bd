@@ -26,7 +26,7 @@ final class Complaint
             ],
             'fields' => [
                 ['name' => 'complainant_name', 'label' => 'Complainant name', 'type' => 'text', 'required' => true, 'max' => 150],
-                ['name' => 'complainant_phone', 'label' => 'Phone', 'type' => 'text', 'max' => 20],
+                ['name' => 'complainant_phone', 'label' => 'Phone', 'type' => 'tel', 'max' => 14],
                 ['name' => 'description', 'label' => 'Description', 'type' => 'textarea', 'required' => true, 'rows' => 5],
                 ['name' => 'type', 'label' => 'Type', 'type' => 'select', 'default' => 'other', 'options' => [
                     'student' => 'Student',

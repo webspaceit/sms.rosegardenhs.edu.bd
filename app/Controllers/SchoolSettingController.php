@@ -13,6 +13,7 @@ use App\Core\Toast;
 use App\Core\Url;
 use App\Core\Upload;
 use App\Core\View;
+use App\Core\PhoneNumber;
 
 /**
  * School settings.
@@ -47,7 +48,7 @@ final class SchoolSettingController
                 'fields' => [
                     'school_address' => ['label' => 'Address', 'type' => 'text', 'max' => 255],
                     'school_address_bn' => ['label' => 'Address in Bangla', 'type' => 'text', 'max' => 255],
-                    'school_phone' => ['label' => 'Phone', 'type' => 'text', 'max' => 30],
+                    'school_phone' => ['label' => 'Phone', 'type' => 'tel', 'max' => 14],
                     'school_email' => ['label' => 'Email', 'type' => 'text', 'max' => 190],
                 ],
             ],
@@ -119,6 +120,13 @@ final class SchoolSettingController
             http_response_code(419);
             Toast::flash('Your session expired. Please try again.', 'error');
             header('Location: ' . Url::to('/settings/school'), true, 419);
+            exit;
+        }
+
+        $schoolPhone = trim((string) $request->input('school_phone', ''));
+        if ($schoolPhone !== '' && !PhoneNumber::isBangladeshiMobile($schoolPhone)) {
+            Toast::flash('School phone must be a valid Bangladeshi mobile number (01XXXXXXXXX or +8801XXXXXXXXX).', 'error');
+            header('Location: ' . Url::to('/settings/school'));
             exit;
         }
 

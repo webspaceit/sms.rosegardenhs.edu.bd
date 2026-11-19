@@ -202,8 +202,8 @@ foreach ($teachers as $teacher) {
         $departmentId = $findDepartment->fetchColumn();
 
         $statement = $pdo->prepare(
-            'INSERT INTO teachers (employee_id, name, department_id, designation_id, phone, email, gender, joining_date, qualification, experience_years, district, created_at)
-             VALUES (:employee_id, :name, :department_id, :designation_id, :phone, :email, :gender, :joining_date, :qualification, :experience_years, :district, :created_at)'
+            'INSERT INTO teachers (employee_id, name, department_id, designation_id, phone, email, gender, joining_date, qualification, experience_years, created_at)
+             VALUES (:employee_id, :name, :department_id, :designation_id, :phone, :email, :gender, :joining_date, :qualification, :experience_years, :created_at)'
         );
         $statement->execute([
             'employee_id' => 'TCH-' . str_pad((string) $nextEmployee, 3, '0', STR_PAD_LEFT),
@@ -216,7 +216,6 @@ foreach ($teachers as $teacher) {
             'joining_date' => '2019-01-05',
             'qualification' => 'B.Sc / M.Sc in the subject',
             'experience_years' => 5 + ($nextEmployee % 8),
-            'district' => 'Chuadanga',
             'created_at' => now(),
         ]);
         $id = $pdo->lastInsertId();

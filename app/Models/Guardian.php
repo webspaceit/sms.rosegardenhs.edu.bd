@@ -34,7 +34,7 @@ final class Guardian
                     'Sibling' => 'Sibling',
                     'Other' => 'Other',
                 ]],
-                ['name' => 'phone', 'label' => 'Phone', 'type' => 'text', 'required' => true, 'max' => 20],
+                ['name' => 'phone', 'label' => 'Phone', 'type' => 'tel', 'required' => true, 'max' => 14],
                 ['name' => 'email', 'label' => 'Email', 'type' => 'text', 'max' => 190],
                 ['name' => 'occupation', 'label' => 'Occupation', 'type' => 'text', 'max' => 100],
                 ['name' => 'nid', 'label' => 'National ID', 'type' => 'text', 'max' => 50],

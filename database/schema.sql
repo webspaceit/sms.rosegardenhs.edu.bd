@@ -338,7 +338,6 @@ CREATE TABLE IF NOT EXISTS teachers (
     designation_id BIGINT UNSIGNED NULL,
     phone VARCHAR(20) NULL,
     email VARCHAR(190) NULL,
-    district VARCHAR(100) NULL,
     joining_date DATE NULL,
     gender VARCHAR(20) NULL,
     date_of_birth DATE NULL,

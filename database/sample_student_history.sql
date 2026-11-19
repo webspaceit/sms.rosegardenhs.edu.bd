@@ -215,7 +215,7 @@ SET s.date_of_birth = COALESCE(s.date_of_birth, DATE_SUB(CURDATE(), INTERVAL (6 
     s.admission_date = COALESCE(s.admission_date, ay.start_date),
     s.religion = COALESCE(NULLIF(s.religion, ''), 'Demo value (sample only)'),
     s.caste = COALESCE(NULLIF(s.caste, ''), 'Demo value (sample only)'),
-    s.mobile_number = COALESCE(NULLIF(s.mobile_number, ''), CONCAT('010', LPAD(s.id, 8, '0'))),
+    s.mobile_number = COALESCE(NULLIF(s.mobile_number, ''), CONCAT('017', LPAD(s.id, 8, '0'))),
     s.email = COALESCE(NULLIF(s.email, ''), CONCAT('student.', s.id, '@example.invalid')),
     s.blood_group = COALESCE(NULLIF(s.blood_group, ''), 'O+'),
     s.height = COALESCE(s.height, 120 + c.numeric_level),
@@ -227,10 +227,10 @@ SET s.date_of_birth = COALESCE(s.date_of_birth, DATE_SUB(CURDATE(), INTERVAL (6 
     s.permanent_address = COALESCE(NULLIF(s.permanent_address, ''), 'Demo address, Dhaka (sample only)'),
     s.note = COALESCE(NULLIF(s.note, ''), 'Demo sample values were added for missing fields; replace with verified information.'),
     s.father_name = COALESCE(NULLIF(s.father_name, ''), CONCAT('Demo father (sample) for student ', s.id)),
-    s.father_phone = COALESCE(NULLIF(s.father_phone, ''), CONCAT('010', LPAD(s.id, 8, '0'))),
+    s.father_phone = COALESCE(NULLIF(s.father_phone, ''), CONCAT('017', LPAD(s.id, 8, '0'))),
     s.father_occupation = COALESCE(NULLIF(s.father_occupation, ''), 'Demo occupation (sample)'),
     s.mother_name = COALESCE(NULLIF(s.mother_name, ''), CONCAT('Demo mother (sample) for student ', s.id)),
-    s.mother_phone = COALESCE(NULLIF(s.mother_phone, ''), CONCAT('010', LPAD(s.id + 100000, 8, '0'))),
+    s.mother_phone = COALESCE(NULLIF(s.mother_phone, ''), CONCAT('018', LPAD(s.id + 100000, 8, '0'))),
     s.mother_occupation = COALESCE(NULLIF(s.mother_occupation, ''), 'Demo occupation (sample)')
 WHERE s.branch_id IS NOT NULL
   AND (s.student_id LIKE 'STU-%' OR s.student_id LIKE 'DEMO-%' OR s.student_id LIKE 'SAMPLE-%');

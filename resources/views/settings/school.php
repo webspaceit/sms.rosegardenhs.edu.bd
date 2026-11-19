@@ -51,7 +51,8 @@ use App\Core\View;
                         <?php else: ?>
                             <div class="<?= (int) ($field['max'] ?? 0) > 150 ? 'sm:col-span-2' : '' ?>">
                                 <label for="setting-<?= View::escape($key) ?>" class="mb-1.5 block text-sm text-slate-300"><?= View::escape($field['label']) ?></label>
-                                <input id="setting-<?= View::escape($key) ?>" name="<?= View::escape($key) ?>" value="<?= View::escape($values[$key] ?? '') ?>" maxlength="<?= (int) ($field['max'] ?? 0) ?>" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-teal-400">
+                                <?php $isPhone = str_contains(strtolower($key), 'phone') || str_contains(strtolower($key), 'mobile'); ?>
+                                <input id="setting-<?= View::escape($key) ?>" name="<?= View::escape($key) ?>" type="<?= $isPhone ? 'tel' : 'text' ?>" value="<?= View::escape($values[$key] ?? '') ?>" maxlength="<?= $isPhone ? 14 : (int) ($field['max'] ?? 0) ?>"<?= $isPhone ? ' inputmode="tel" pattern="(?:\+?88)?01[3-9][0-9]{8}" title="Enter a valid Bangladesh mobile number, e.g. 01712345678 or +8801712345678." placeholder="01XXXXXXXXX or +8801XXXXXXXXX"' : '' ?> class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-teal-400">
                             </div>
                         <?php endif; ?>
                     <?php endforeach; ?>

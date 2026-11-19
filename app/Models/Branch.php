@@ -28,7 +28,7 @@ final class Branch
             'fields' => [
                 ['name' => 'name', 'label' => 'Name', 'type' => 'text', 'required' => true, 'max' => 150],
                 ['name' => 'address', 'label' => 'Address', 'type' => 'text', 'max' => 255],
-                ['name' => 'phone', 'label' => 'Phone', 'type' => 'text', 'max' => 20],
+                ['name' => 'phone', 'label' => 'Phone', 'type' => 'tel', 'max' => 14],
                 ['name' => 'email', 'label' => 'Email', 'type' => 'text', 'max' => 190],
                 ['name' => 'is_main', 'label' => 'Main campus', 'type' => 'checkbox', 'checkboxLabel' => 'This is the main campus', 'default' => 0],
                 ['name' => 'status', 'label' => 'Status', 'type' => 'select', 'default' => 'active', 'options' => [

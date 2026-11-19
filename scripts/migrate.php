@@ -576,6 +576,13 @@ foreach ($newColumns as $table => $tableColumns) {
     }
 }
 
+// District is no longer collected for teachers. Drop the legacy column on
+// existing databases as well as omitting it from fresh schema installs.
+$teacherColumns = $pdo->query('SHOW COLUMNS FROM teachers')->fetchAll(PDO::FETCH_COLUMN);
+if (in_array('district', $teacherColumns, true)) {
+    $pdo->exec('ALTER TABLE teachers DROP COLUMN district');
+}
+
 $tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
 
 echo 'Schema applied. ', $applied, ' statement(s) executed';

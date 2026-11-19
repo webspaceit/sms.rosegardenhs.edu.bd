@@ -14,6 +14,7 @@ use App\Core\Toast;
 use App\Core\Url;
 use App\Core\View;
 use App\Core\Upload;
+use App\Core\PhoneNumber;
 use App\Models\Catalogue;
 use App\Models\AcademicGroup;
 use App\Models\Student;
@@ -190,7 +191,7 @@ final class StudentController
                 if ($roll < 1 || $roll > 65535) $errors[] = 'Enter a roll number from 1 to 65535.';
                 if (!in_array($shift, ['', 'Morning', 'Day'], true)) $errors[] = 'Select a valid shift.';
                 if (!in_array($gender, ['Male', 'Female', 'Other'], true)) $errors[] = 'Select the student’s gender.';
-                if ($mobileNumber !== '' && !$this->isBangladeshiMobileNumber($mobileNumber)) $errors[] = 'Enter a valid Bangladeshi mobile number (01XXXXXXXXX or +8801XXXXXXXXX).';
+                if ($mobileNumber !== '' && !PhoneNumber::isBangladeshiMobile($mobileNumber)) $errors[] = PhoneNumber::ERROR;
                 if (Student::classLevel($classId) === 9 && !in_array(trim((string) $request->input('academic_group', '')), AcademicGroup::names(), true)) $errors[] = 'Select an academic group for Class 9.';
                 $yearId = (int) $request->input('academic_year_id', 0);
                 if ($classId > 0 && $sectionId > 0 && $yearId > 0 && $roll > 0) {
@@ -201,11 +202,15 @@ final class StudentController
                 $photoUpload = $_FILES['photo'] ?? [];
                 if (empty($draft['files']['photo']) && (int) ($photoUpload['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) $errors[] = 'Upload the student photo to continue.';
             } elseif ($step === 2) {
+                foreach (['father_phone' => 'Father phone', 'mother_phone' => 'Mother phone'] as $phoneField => $phoneLabel) {
+                    $phoneValue = trim((string) $request->input($phoneField, ''));
+                    if ($phoneValue !== '' && !PhoneNumber::isBangladeshiMobile($phoneValue)) $errors[] = $phoneLabel . ' must be a valid Bangladeshi mobile number (01XXXXXXXXX or +8801XXXXXXXXX).';
+                }
                 $guardianName = trim((string) $request->input('guardian_name', ''));
                 $guardianPhone = trim((string) $request->input('guardian_phone', ''));
                 $guardianEmail = trim((string) $request->input('guardian_email', ''));
                 if ($guardianName === '' || $this->textLength($guardianName) > 150) $errors[] = 'Enter a guardian name (up to 150 characters).';
-                if ($guardianPhone === '' || strlen($guardianPhone) > 20) $errors[] = 'Enter a guardian phone number (up to 20 characters).';
+                if (!PhoneNumber::isBangladeshiMobile($guardianPhone)) $errors[] = 'Guardian phone must be a valid Bangladeshi mobile number (01XXXXXXXXX or +8801XXXXXXXXX).';
                 if ($guardianEmail !== '' && (!filter_var($guardianEmail, FILTER_VALIDATE_EMAIL) || strlen($guardianEmail) > 190)) $errors[] = 'Enter a valid guardian email address.';
                 if ($this->textLength(trim((string) $request->input('guardian_occupation', ''))) > 100) $errors[] = 'Guardian occupation must be 100 characters or fewer.';
                 if ($this->textLength(trim((string) $request->input('guardian_address', ''))) > 10000) $errors[] = 'Guardian address is too long.';
@@ -725,7 +730,10 @@ final class StudentController
         if (!$this->validDate($admissionDate, false)) $validationIssues[] = 'admission date';
         if (!$this->validDate($measurementDate, false)) $validationIssues[] = 'measurement date';
         if ($email !== '' && (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 190)) $validationIssues[] = 'email address';
-        if ($mobile !== '' && !$this->isBangladeshiMobileNumber($mobile)) $validationIssues[] = 'Bangladeshi mobile number (01XXXXXXXXX or +8801XXXXXXXXX)';
+        if ($mobile !== '' && !PhoneNumber::isBangladeshiMobile($mobile)) $validationIssues[] = 'Bangladeshi mobile number (01XXXXXXXXX or +8801XXXXXXXXX)';
+        foreach (['Father phone' => $fatherPhone, 'Mother phone' => $motherPhone] as $phoneLabel => $phoneValue) {
+            if ($phoneValue !== '' && !PhoneNumber::isBangladeshiMobile($phoneValue)) $validationIssues[] = $phoneLabel . ' (01XXXXXXXXX or +8801XXXXXXXXX)';
+        }
         if ($height !== '' && !is_numeric($height)) $validationIssues[] = 'height (must be numeric)';
         if ($weight !== '' && !is_numeric($weight)) $validationIssues[] = 'weight (must be numeric)';
         if (strlen($birthRegistrationNo) > 50) $validationIssues[] = 'birth registration number (up to 50 characters)';
@@ -804,7 +812,7 @@ final class StudentController
                 $guardianAddress = trim((string) $request->input('guardian_address', ''));
                 $relations = ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'Other'];
                 if ($guardianName === '' || $this->textLength($guardianName) > 150
-                    || !in_array($guardianRelation, $relations, true) || !$this->isBangladeshiMobileNumber($guardianPhone)
+                    || !in_array($guardianRelation, $relations, true) || !PhoneNumber::isBangladeshiMobile($guardianPhone)
                     || $this->textLength($guardianOccupation) > 100 || $this->textLength($guardianAddress) > 10000
                     || ($guardianEmail !== '' && (!filter_var($guardianEmail, FILTER_VALIDATE_EMAIL) || strlen($guardianEmail) > 190))) {
                     $this->rememberForm(); Toast::flash('Enter a guardian name and relation, and a valid Bangladeshi mobile number (01XXXXXXXXX or +8801XXXXXXXXX). Check the optional email.', 'error'); return null;
@@ -836,7 +844,7 @@ final class StudentController
         $address = $value('guardian_address');
         if ($name === '' || $this->textLength($name) > 150
             || !in_array($relation, ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'Other'], true)
-            || $phone === '' || strlen($phone) > 20 || $this->textLength($occupation) > 100 || $this->textLength($address) > 10000
+            || !PhoneNumber::isBangladeshiMobile($phone) || $this->textLength($occupation) > 100 || $this->textLength($address) > 10000
             || ($email !== '' && (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 190))) {
             throw new \RuntimeException('Check guardian name, relation, phone, email, and field lengths.');
         }
@@ -865,11 +873,6 @@ final class StudentController
         if ($value === '') return true;
         $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
         return $date !== false && $date->format('Y-m-d') === $value && (!$notFuture || $date <= new \DateTimeImmutable('today'));
-    }
-
-    private function isBangladeshiMobileNumber(string $value): bool
-    {
-        return preg_match('/^(?:\\+?88)?01[3-9][0-9]{8}$/D', $value) === 1;
     }
 
     private function textLength(string $value): int

@@ -68,7 +68,7 @@ final class DemoSeeder
 
             foreach ($students as $index => [$name, $level, $roll, $gender]) {
                 $studentCode = sprintf('DEMO-%s-%03d', $yearName, $index + 1);
-                $fakePhone = sprintf('010%08d', $index + 1);
+                $fakePhone = sprintf('017%08d', $index + 1);
                 $studentStmt->execute([
                     'student_id' => $studentCode,
                     'name' => $name,
@@ -97,11 +97,11 @@ final class DemoSeeder
                     'father_phone' => $fakePhone,
                     'father_occupation' => 'Demo occupation',
                     'mother_name' => 'Demo mother ' . ($index + 1),
-                    'mother_phone' => sprintf('010%08d', $index + 1001),
+                    'mother_phone' => sprintf('018%08d', $index + 1001),
                     'mother_occupation' => 'Demo occupation',
                 ]);
                 $studentRecordId = (int) $database->lastInsertId();
-                $guardianPhone = sprintf('011%08d', $index + 1);
+                $guardianPhone = sprintf('019%08d', $index + 1);
                 $guardianStmt = $database->prepare('INSERT INTO guardians (name, phone, email, occupation, relation, address, district, created_at) VALUES (:name, :phone, :email, :occupation, :relation, :address, :district, NOW())');
                 $guardianStmt->execute([
                     'name' => 'Demo guardian ' . ($index + 1),

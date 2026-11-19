@@ -13,6 +13,7 @@ use App\Core\Request;
 use App\Core\Toast;
 use App\Core\Url;
 use App\Core\View;
+use App\Core\PhoneNumber;
 use App\Models\Student;
 use App\Models\AcademicGroup;
 
@@ -243,8 +244,8 @@ final class StudentImportController
                 $guardianPhone = trim((string) ($row['guardian_phone'] ?? ''));
                 preg_match_all('/./us', $guardianName, $guardianCharacters);
                 $guardianLength = isset($guardianCharacters[0]) ? count($guardianCharacters[0]) : strlen($guardianName);
-                if (($guardianName === '') !== ($guardianPhone === '') || strlen($guardianPhone) > 20 || $guardianLength > 150) {
-                    throw new \RuntimeException('Guardian name and phone must both be present and within the allowed length.');
+                if (($guardianName === '') !== ($guardianPhone === '') || ($guardianPhone !== '' && !PhoneNumber::isBangladeshiMobile($guardianPhone)) || $guardianLength > 150) {
+                    throw new \RuntimeException('Guardian name and phone must both be present, with a valid Bangladesh mobile number (01XXXXXXXXX or +8801XXXXXXXXX).');
                 }
                 if ($guardianName !== '') {
                     $guardian = $db->prepare('INSERT INTO guardians (name,phone,relation,created_at,branch_id) VALUES (:name,:phone,\'Guardian\',NOW(),:branch)');

@@ -17,7 +17,7 @@ $canSearch = $searchable;
         <h1 class="text-3xl font-semibold"><?= View::escape($module['title']) ?></h1>
         <p class="mt-1 text-sm text-white"><?= (int) $total ?> record<?= $total === 1 ? '' : 's' ?> in total</p>
     </div>
-    <div class="flex flex-wrap gap-2"><?php if (!empty($module['headerAction'])): ?><a href="<?= Url::to($module['headerAction']['url']) ?>" class="rounded-lg border border-green-100/20 px-4 py-2.5 text-sm"><?= View::escape($module['headerAction']['label']) ?></a><?php endif; ?><a href="<?= Url::to($module['route'] . '/new') ?>" class="form-action-button">New <?= View::escape($module['singular']) ?></a></div>
+    <div class="flex flex-wrap gap-2"><?php if (!empty($module['headerAction'])): ?><a href="<?= Url::to($module['headerAction']['url']) ?>" class="rounded-lg border border-green-100/20 px-4 py-2.5 text-sm"><?= View::escape($module['headerAction']['label']) ?></a><?php endif; ?><a href="<?= Url::to($module['route'] . '/new') ?>" class="form-action-button"><?= View::escape($module['createLabel'] ?? ('New ' . $module['singular'])) ?></a></div>
 </div>
 
 <?php if ($canSearch): ?>
@@ -35,7 +35,7 @@ $canSearch = $searchable;
             <thead class="bg-green-950/40 text-sm uppercase tracking-wide text-green-100/60">
                 <tr>
                     <?php foreach ($columns as $column): ?>
-                        <th class="px-5 py-3 font-medium"><?= View::escape($column['label']) ?></th>
+                        <th class="px-5 py-3 font-medium<?= !empty($column['nowrap']) ? ' w-px whitespace-nowrap' : '' ?>"><?= View::escape($column['label']) ?></th>
                     <?php endforeach; ?>
                     <th class="px-5 py-3 text-center font-medium">Actions</th>
                 </tr>
@@ -46,20 +46,24 @@ $canSearch = $searchable;
                     <p class="font-medium text-slate-300">No records found</p>
                     <p class="mt-1 text-sm text-slate-500"><?= $search !== '' ? 'Try a different search term.' : 'Add the first ' . View::escape($module['singular']) . ' to get started.' ?></p>
                 </td></tr>
-            <?php else: foreach ($records as $record): ?>
+            <?php else: foreach ($records as $recordIndex => $record): ?>
                 <tr class="hover:bg-green-400/[0.06]">
                 <?php foreach ($columns as $column): ?>
                     <?php
                     $value = $record[$column['name']] ?? null;
                     $format = $column['format'] ?? 'text';
                     ?>
-                    <td class="px-5 py-2">
-                    <?php if ($format === 'bool'): ?>
+                    <td class="px-5 py-2<?= !empty($column['nowrap']) ? ' w-px whitespace-nowrap' : '' ?>">
+                    <?php if ($format === 'serial'): ?>
+                        <span class="text-slate-300"><?= (int) (($page - 1) * $perPage + $recordIndex + 1) ?></span>
+                    <?php elseif ($format === 'bool'): ?>
                         <span class="rounded-full px-2.5 py-1 text-xs <?= (int) $value === 1 ? 'bg-teal-400/10 text-teal-200' : 'bg-slate-700 text-slate-300' ?>"><?= (int) $value === 1 ? ($column['on'] ?? 'Yes') : ($column['off'] ?? 'No') ?></span>
                     <?php elseif ($format === 'badge'): ?>
                         <span class="rounded-full bg-slate-800 px-2.5 py-1 text-xs text-slate-300"><?= View::escape((string) ($value ?? '—')) ?></span>
+                    <?php elseif ($format === 'image'): ?>
+                        <?php if ($value): ?><a href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $value)) ?>" target="_blank" title="View photo"><img src="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $value)) ?>" alt="<?= View::escape($module['singular'] . ' photo') ?>" loading="lazy" class="h-10 w-10 rounded-lg border border-green-100/20 object-cover"></a><?php else: ?><span class="text-slate-500">—</span><?php endif; ?>
                     <?php else: ?>
-                        <span class="<?= $format === 'muted' ? 'text-white' : 'text-slate-200' ?>"><?= View::escape((string) ($value ?? '—')) ?></span>
+                        <span<?= !empty($column['truncate']) ? ' class="block max-w-[220px] truncate ' . ($format === 'muted' ? 'text-white' : 'text-slate-200') . '"' : ' class="' . ($format === 'muted' ? 'text-white' : 'text-slate-200') . '"' ?><?= !empty($column['truncate']) ? ' title="' . View::escape((string) ($value ?? '—')) . '"' : '' ?>><?= View::escape((string) ($value ?? '—')) ?></span>
                     <?php endif; ?>
                     </td>
                 <?php endforeach; ?>

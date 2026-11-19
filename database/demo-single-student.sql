@@ -51,13 +51,13 @@ SELECT
     COALESCE((SELECT start_date FROM academic_years WHERE id = @sample_year_id), CURDATE()),
     'Demo Primary School (sample)',
     'Demo value', 'Demo value',
-    '01000000001', CONCAT('student.', @sample_year_name, '.full001@example.invalid'),
+    '01700000001', CONCAT('student.', @sample_year_name, '.full001@example.invalid'),
     'O+', 125.00, 27.00, CURDATE(), 'Demo: no known medical conditions',
     'House 12, Demo Road, Dhaka (sample only)', 'Village Demo, Dhaka (sample only)',
     'DEMO-NID-FULL-001', 'DEMO-LOCAL-FULL-001',
     'Fictional sample record. Replace with verified information before real use.',
-    'Demo Father Full Profile', '01000000002', 'Demo occupation',
-    'Demo Mother Full Profile', '01000000003', 'Demo occupation',
+    'Demo Father Full Profile', '01700000002', 'Demo occupation',
+    'Demo Mother Full Profile', '01800000003', 'Demo occupation',
     'active', @sample_branch_id
 WHERE @sample_branch_id IS NOT NULL
   AND @sample_year_id IS NOT NULL
@@ -70,7 +70,7 @@ WHERE @sample_branch_id IS NOT NULL
 
 -- Add a linked primary father/guardian so guardian profile fields are populated too.
 INSERT INTO guardians (name, phone, email, occupation, relation, address, district, created_at, branch_id)
-SELECT 'Demo Father Full Profile', '01000000002', @sample_guardian_email,
+SELECT 'Demo Father Full Profile', '01700000002', @sample_guardian_email,
        'Demo occupation', 'Father', 'House 12, Demo Road, Dhaka (sample only)',
        'Dhaka', NOW(), @sample_branch_id
 WHERE @sample_branch_id IS NOT NULL
