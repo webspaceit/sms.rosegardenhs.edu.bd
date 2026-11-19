@@ -77,7 +77,25 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
                 <label class="block"><span class="mb-2 block text-sm font-medium">Weight</span><input type="number" step="0.01" name="weight" placeholder="Weight (kg)" value="<?= View::escape((string) $fieldValue('weight')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Measurement Date</span><input type="date" name="measurement_date" value="<?= View::escape((string) $fieldValue('measurement_date', $editing ? '' : date('Y-m-d'))) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
                 <div class="grid gap-5 sm:grid-cols-2 xl:col-span-4 xl:grid-cols-3">
-                    <label class="block"><span class="mb-2 block text-sm font-medium">Student Photo<?= $studentPhotoRequired ? ' <span class="text-red-300">*</span>' : '' ?></span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" <?= $studentPhotoRequired ? 'required' : '' ?> class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><span class="mt-1 block text-xs text-slate-400">Max 300 × 300 px; saved as JPG.</span><?php if (!$editing && !empty($wizardFiles['photo'])): ?><span class="mt-1 block text-xs text-green-300">Photo saved for this admission.</span><?php endif; ?><?php if (!empty($student['photo'])): ?><a class="mt-1 block text-xs text-green-300" target="_blank" href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $student['photo'])) ?>">View current photo</a><label class="mt-2 flex items-center gap-2 text-xs text-rose-200"><input type="checkbox" name="remove_photo" value="1"> Delete photo from server</label><?php endif; ?></label>
+                    <div class="block">
+                        <label for="student-photo-input" class="mb-2 block text-sm font-medium">Student Photo<?= $studentPhotoRequired ? ' <span class="text-red-300">*</span>' : '' ?></label>
+                        <input id="student-photo-input" type="file" name="photo" accept="image/jpeg,image/png,image/webp" <?= $studentPhotoRequired ? 'required' : '' ?> class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm">
+                        <span class="mt-1 block text-xs text-slate-400">Max 300 × 300 px; saved as JPG.</span>
+                        <?php if (!$editing && !empty($wizardFiles['photo'])): ?><span class="mt-1 block text-xs text-green-300">Photo saved for this admission.</span><?php endif; ?>
+                        <?php if (!empty($student['photo'])): ?>
+                            <?php $currentStudentPhotoUrl = Url::to('/uploads/file?path=' . rawurlencode((string) $student['photo'])); ?>
+                            <div id="student-photo-current" class="mt-3 flex items-center gap-3">
+                                <div class="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-green-100/20 bg-slate-900">
+                                    <img id="student-photo-preview" src="<?= View::escape($currentStudentPhotoUrl) ?>" data-original-src="<?= View::escape($currentStudentPhotoUrl) ?>" alt="Current student photo" class="h-full w-full object-cover">
+                                </div>
+                                <button type="button" id="student-photo-delete" class="student-photo-delete-icon grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-rose-300/25 text-rose-200 transition hover:border-rose-300/60 hover:bg-rose-400/10" title="Delete photo from server when saved" aria-label="Delete student photo from server when saved">
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 2-.9 12H5.9L5 6m4 4v5m6-5v5"/></svg>
+                                </button>
+                            </div>
+                            <input type="checkbox" id="student-photo-remove" name="remove_photo" value="1" class="hidden">
+                            <p id="student-photo-status" class="mt-1 text-xs text-amber-200" role="status" aria-live="polite"></p>
+                        <?php endif; ?>
+                    </div>
                     <label class="block"><span class="mb-2 block text-sm font-medium">Medical History</span><textarea name="medical_history" rows="2" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" placeholder="Medical History"><?= View::escape((string) $fieldValue('medical_history')) ?></textarea></label>
                     <label id="student-behaviour-field" class="block <?= $selectedClassLevel === 9 ? 'student-behaviour-class-nine' : '' ?>"><span class="mb-2 block text-sm font-medium">Student Behaviour</span><textarea name="student_behaviour" maxlength="5000" rows="2" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm" placeholder="Record relevant behaviour notes"><?= View::escape((string) $fieldValue('student_behaviour')) ?></textarea></label>
                 </div>
@@ -457,6 +475,57 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
   const editNewGuardian = document.getElementById('edit-new-guardian');
   createGuardianToggle?.addEventListener('change', () => {
     editNewGuardian?.classList.toggle('hidden', !createGuardianToggle.checked);
+  });
+
+  const studentPhotoInput = document.getElementById('student-photo-input');
+  const studentPhotoDeleteButton = document.getElementById('student-photo-delete');
+  const studentPhotoRemoveField = document.getElementById('student-photo-remove');
+  const studentPhotoPreview = document.getElementById('student-photo-preview');
+  const studentPhotoPreviewFrame = studentPhotoPreview?.parentElement;
+  const studentPhotoStatus = document.getElementById('student-photo-status');
+  if (studentPhotoInput) studentPhotoInput.dataset.initialRequired = studentPhotoInput.required ? '1' : '0';
+  let temporaryStudentPhotoUrl = '';
+  const renderStudentPhotoState = () => {
+    if (!studentPhotoInput || !studentPhotoRemoveField || !studentPhotoPreview) return;
+    const replacementSelected = studentPhotoInput.files.length > 0;
+    const removalPending = studentPhotoRemoveField.checked;
+    if (removalPending && !replacementSelected) {
+      studentPhotoPreviewFrame?.classList.add('hidden');
+      studentPhotoInput.required = true;
+      if (studentPhotoStatus) studentPhotoStatus.textContent = 'Photo marked for deletion when saved. Upload a replacement photo before saving.';
+      if (studentPhotoDeleteButton) {
+        studentPhotoDeleteButton.title = 'Undo photo deletion';
+        studentPhotoDeleteButton.setAttribute('aria-label', 'Undo photo deletion');
+        studentPhotoDeleteButton.innerHTML = '<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.64-6.36L3 8m0-5v5h5"/><path d="M12 7v5l3 2"/></svg>';
+      }
+      return;
+    }
+
+    studentPhotoInput.required = studentPhotoInput.dataset.initialRequired === '1';
+    studentPhotoPreviewFrame?.classList.remove('hidden');
+    if (replacementSelected) {
+      if (temporaryStudentPhotoUrl) URL.revokeObjectURL(temporaryStudentPhotoUrl);
+      temporaryStudentPhotoUrl = URL.createObjectURL(studentPhotoInput.files[0]);
+      studentPhotoPreview.src = temporaryStudentPhotoUrl;
+      if (studentPhotoStatus) studentPhotoStatus.textContent = '';
+    } else {
+      studentPhotoPreview.src = studentPhotoPreview.dataset.originalSrc || '';
+      if (studentPhotoStatus) studentPhotoStatus.textContent = '';
+    }
+    if (studentPhotoDeleteButton) {
+      studentPhotoDeleteButton.title = 'Delete photo from server when saved';
+      studentPhotoDeleteButton.setAttribute('aria-label', 'Delete student photo from server when saved');
+      studentPhotoDeleteButton.innerHTML = '<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 2-.9 12H5.9L5 6m4 4v5m6-5v5"/></svg>';
+    }
+  };
+  studentPhotoDeleteButton?.addEventListener('click', () => {
+    if (!studentPhotoRemoveField) return;
+    studentPhotoRemoveField.checked = !studentPhotoRemoveField.checked;
+    renderStudentPhotoState();
+  });
+  studentPhotoInput?.addEventListener('change', () => {
+    if (studentPhotoInput.files.length && studentPhotoRemoveField) studentPhotoRemoveField.checked = false;
+    renderStudentPhotoState();
   });
 
   const documentRows = document.getElementById('student-document-rows');
