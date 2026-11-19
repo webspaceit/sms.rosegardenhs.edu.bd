@@ -52,8 +52,15 @@ $canSearch = $searchable;
                     <?php
                     $value = $record[$column['name']] ?? null;
                     $format = $column['format'] ?? 'text';
+                    if ($value !== null && $value !== '' && isset($column['dateFormat'])) {
+                        try {
+                            $value = (new DateTimeImmutable((string) $value))->format((string) $column['dateFormat']);
+                        } catch (Throwable) {
+                            // Keep the stored value visible if it is not a valid date.
+                        }
+                    }
                     ?>
-                    <td class="px-5 py-2<?= !empty($column['nowrap']) ? ' w-px whitespace-nowrap' : '' ?>">
+                    <td class="px-5 py-2<?= !empty($column['nowrap']) ? ' w-px whitespace-nowrap' : '' ?><?= !empty($column['wrap']) ? ' w-[100px] max-w-[100px] whitespace-normal' : '' ?>">
                     <?php if ($format === 'serial'): ?>
                         <span class="text-slate-300"><?= (int) (($page - 1) * $perPage + $recordIndex + 1) ?></span>
                     <?php elseif ($format === 'bool'): ?>
@@ -65,7 +72,7 @@ $canSearch = $searchable;
                         <?php elseif (!empty($column['avatarFallback'])): $avatarGender = (string) ($record['gender'] ?? ''); $avatarName = (string) ($record['name'] ?? ucfirst($module['singular'])); $avatarClass = 'h-10 w-10 rounded-lg border border-green-100/20'; require BASE_PATH . '/resources/views/results/partials/student-avatar.php'; ?>
                         <?php else: ?><span class="text-slate-500">—</span><?php endif; ?>
                     <?php else: ?>
-                        <span<?= !empty($column['truncate']) ? ' class="block max-w-[220px] truncate ' . ($format === 'muted' ? 'text-white' : 'text-slate-200') . '"' : ' class="' . ($format === 'muted' ? 'text-white' : 'text-slate-200') . '"' ?><?= !empty($column['truncate']) ? ' title="' . View::escape((string) ($value ?? '—')) . '"' : '' ?>><?= View::escape((string) ($value ?? '—')) ?></span>
+                        <span<?= !empty($column['truncate']) ? ' class="block max-w-[220px] truncate ' . ($format === 'muted' ? 'text-white' : 'text-slate-200') . '"' : ' class="' . (!empty($column['wrap']) ? 'block whitespace-normal leading-snug ' : '') . ($format === 'muted' ? 'text-white' : 'text-slate-200') . '"' ?><?= !empty($column['truncate']) ? ' title="' . View::escape((string) ($value ?? '—')) . '"' : '' ?>><?= View::escape((string) ($value ?? '—')) ?></span>
                     <?php endif; ?>
                     </td>
                 <?php endforeach; ?>

@@ -333,7 +333,10 @@ final class Crud
                 $values = is_array($raw) ? array_values($raw) : [];
                 $options = $this->optionsFor($field);
                 foreach ($values as $value) {
-                    if (!array_key_exists((string) $value, $options)) {
+                    $isUnchangedExistingOption = !empty($field['preserveExisting'])
+                        && $existing !== null
+                        && (string) ($existing[$name] ?? '') === (string) $value;
+                    if (!array_key_exists((string) $value, $options) && !$isUnchangedExistingOption) {
                         $errors[] = 'One of the selected ' . $field['label'] . ' values is not valid.';
                     }
                 }
@@ -375,6 +378,22 @@ final class Crud
 
                 case 'select':
                     $options = $this->optionsFor($field);
+                    $otherInput = (string) ($field['otherInput'] ?? '');
+                    if ($otherInput !== '' && (string) $value === (string) ($field['otherValue'] ?? 'Other')) {
+                        $otherValue = $request->input($otherInput, null);
+                        $otherValue = is_string($otherValue) ? trim($otherValue) : '';
+                        if ($otherValue === '') {
+                            $errors[] = (string) ($field['otherLabel'] ?? 'Other ' . $field['label']) . ' is required when Other is selected.';
+                        } elseif (isset($field['otherMax'])) {
+                            preg_match_all('/./us', $otherValue, $otherCharacters);
+                            $otherLength = isset($otherCharacters[0]) ? count($otherCharacters[0]) : strlen($otherValue);
+                            if ($otherLength > (int) $field['otherMax']) {
+                                $errors[] = (string) ($field['otherLabel'] ?? $field['label']) . ' must be ' . (int) $field['otherMax'] . ' characters or fewer.';
+                            }
+                        }
+                        $data[$name] = $otherValue;
+                        break;
+                    }
                     if (!array_key_exists((string) $value, $options)) {
                         $errors[] = $field['label'] . ' is not a valid choice.';
                     }

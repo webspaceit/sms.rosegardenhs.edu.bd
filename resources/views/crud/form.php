@@ -8,6 +8,7 @@
 use App\Core\Crud;
 use App\Core\Url;
 use App\Core\View;
+use App\Models\Catalogue;
 
 $editing = $record !== null;
 $formColumns = max(1, min(3, (int) ($module['formColumns'] ?? 2)));
@@ -50,13 +51,28 @@ $value = static function (string $name, mixed $fallback = '') use ($record): mix
                     <textarea id="field-<?= View::escape($name) ?>" name="<?= View::escape($name) ?>"<?= $required ? ' required' : '' ?><?= isset($field['rows']) ? ' rows="' . (int) $field['rows'] . '"' : '' ?> class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-teal-400"><?= View::escape((string) $current) ?></textarea>
 
                 <?php elseif ($type === 'select'): ?>
-                    <?php $options = Crud::fieldOptions($field); ?>
-                    <select id="field-<?= View::escape($name) ?>" name="<?= View::escape($name) ?>"<?= $required ? ' required' : '' ?> class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-teal-400">
+                    <?php
+                    $options = Crud::fieldOptions($field);
+                    if (!empty($field['preserveExisting']) && $editing && $current !== '' && !array_key_exists((string) $current, $options)) {
+                        $legacyDesignation = Catalogue::designationById((int) $current);
+                        if ($legacyDesignation !== null) $options[(int) $current] = $legacyDesignation;
+                    }
+                    ?>
+                    <?php
+                    $otherInput = (string) ($field['otherInput'] ?? '');
+                    $otherValue = (string) ($field['otherValue'] ?? 'Other');
+                    $qualificationIsOther = $otherInput !== '' && $current !== '' && !array_key_exists((string) $current, $options);
+                    $selectCurrent = $qualificationIsOther ? $otherValue : (string) $current;
+                    ?>
+                    <select id="field-<?= View::escape($name) ?>" name="<?= View::escape($name) ?>"<?= $required ? ' required' : '' ?><?= $otherInput !== '' ? ' data-other-select="other-' . View::escape($name) . '"' : '' ?> class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-teal-400">
                         <?php if (!$required): ?><option value="">Select…</option><?php endif; ?>
                         <?php foreach ($options as $optionValue => $optionLabel): ?>
-                            <option value="<?= View::escape((string) $optionValue) ?>"<?= (string) $current === (string) $optionValue ? ' selected' : '' ?>><?= View::escape((string) $optionLabel) ?></option>
+                            <option value="<?= View::escape((string) $optionValue) ?>"<?= $selectCurrent === (string) $optionValue ? ' selected' : '' ?>><?= View::escape((string) $optionLabel) ?></option>
                         <?php endforeach; ?>
                     </select>
+                    <?php if ($otherInput !== ''): ?>
+                        <input id="other-<?= View::escape($name) ?>" name="<?= View::escape($otherInput) ?>" type="text" value="<?= View::escape($qualificationIsOther ? (string) $current : '') ?>" placeholder="<?= View::escape((string) ($field['otherLabel'] ?? 'Enter other ' . strtolower($label))) ?>" maxlength="<?= (int) ($field['otherMax'] ?? 150) ?>"<?= $qualificationIsOther ? '' : ' hidden' ?> class="mt-2 w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-teal-400">
+                    <?php endif; ?>
 
                 <?php elseif ($type === 'multiselect'): ?>
                     <?php $options = Crud::fieldOptions($field); $selected = array_map('strval', explode(',', (string) $current)); ?>
@@ -141,5 +157,18 @@ document.querySelectorAll('input[data-image-preview]').forEach(input => {
         deleteButton.classList.add('hidden');
         if (message) message.textContent = hasServerPhoto ? 'Photo will be deleted from the server when you save.' : 'Selected photo removed.';
     });
+});
+
+document.querySelectorAll('select[data-other-select]').forEach(select => {
+    const otherField = document.getElementById(select.dataset.otherSelect);
+    if (!otherField) return;
+    const toggleOtherField = () => {
+        const show = select.value === 'Other';
+        otherField.hidden = !show;
+        otherField.required = show;
+        if (!show) otherField.value = '';
+    };
+    select.addEventListener('change', toggleOtherField);
+    toggleOtherField();
 });
 </script>

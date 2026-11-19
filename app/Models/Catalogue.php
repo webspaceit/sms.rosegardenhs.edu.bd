@@ -14,6 +14,22 @@ use App\Core\BranchContext;
  */
 final class Catalogue
 {
+    private const TEACHER_DESIGNATIONS = [
+        'Principal',
+        'Headmaster / Headmistress',
+        'Vice-Principal',
+        'Assistant Headmaster',
+        'Academic Coordinator',
+        'Administrative Officer',
+        'Academic / Teaching Staff',
+        'Senior Teacher',
+        'Assistant Teacher',
+        'Junior Teacher',
+        'Part-time / Guest Teacher',
+        'Physical Education Teacher',
+        'Co-curricular Instructor',
+    ];
+
     /** @return array<int, string> id => label */
     public static function classes(): array
     {
@@ -35,7 +51,42 @@ final class Catalogue
     /** @return array<int, string> id => label */
     public static function designations(): array
     {
-        return self::options('SELECT id, name FROM designations WHERE is_active = 1 ORDER BY name', 'name');
+        $branchId = BranchContext::id();
+        $insert = Database::connection()->prepare(
+            'INSERT INTO designations (name, branch_id, is_active, created_at) VALUES (:name, :branch, 1, NOW()) '
+            . 'ON DUPLICATE KEY UPDATE is_active = 1'
+        );
+        foreach (self::TEACHER_DESIGNATIONS as $name) {
+            $insert->execute(['name' => $name, 'branch' => $branchId]);
+        }
+
+        $placeholders = implode(',', array_fill(0, count(self::TEACHER_DESIGNATIONS), '?'));
+        $statement = Database::connection()->prepare(
+            'SELECT id, name FROM designations WHERE branch_id = ? AND is_active = 1 AND name IN (' . $placeholders . ')'
+        );
+        $statement->execute([$branchId, ...self::TEACHER_DESIGNATIONS]);
+        $idsByName = [];
+        foreach ($statement->fetchAll() as $row) {
+            $idsByName[(string) $row['name']] = (int) $row['id'];
+        }
+
+        $options = [];
+        foreach (self::TEACHER_DESIGNATIONS as $name) {
+            if (isset($idsByName[$name])) {
+                $options[$idsByName[$name]] = $name;
+            }
+        }
+        return $options;
+    }
+
+    public static function designationById(int $id): ?string
+    {
+        $statement = Database::connection()->prepare(
+            'SELECT name FROM designations WHERE id = :id AND branch_id = :branch LIMIT 1'
+        );
+        $statement->execute(['id' => $id, 'branch' => BranchContext::id()]);
+        $name = $statement->fetchColumn();
+        return is_string($name) ? $name : null;
     }
 
     /** @return array<int, string> id => label */
