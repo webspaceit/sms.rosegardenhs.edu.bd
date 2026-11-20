@@ -215,6 +215,8 @@ final class Application
         $this->crud($router, new Crud(FeeHead::module()), '/fee-heads');
         $this->crud($router, new Crud(FeeStructure::module()), '/fee-structures');
         $this->crud($router, new Crud(FeeCollection::module()), '/fees');
+        $router->get('/fees/new', [$studentPayments, 'collect']);
+        $router->post('/fees/new', [$studentPayments, 'save']);
         $router->get('/fees/collect', [$studentPayments, 'collect']);
         $router->post('/fees/collect', [$studentPayments, 'save']);
         $router->get('/fees/receipts', [$studentPayments, 'history']);
