@@ -31,9 +31,20 @@ final class StudentPaymentController
         Guard::requirePermission('fees.manage');
         $db = Database::read();
         $branch = BranchContext::id();
-        $students = $db->prepare('SELECT s.id,s.student_id,s.name,s.roll_no,s.class_id,s.section_id,s.academic_year_id,c.name AS class_name,sec.name AS section_name,ay.name AS academic_year FROM students s LEFT JOIN classes c ON c.id=s.class_id LEFT JOIN sections sec ON sec.id=s.section_id LEFT JOIN academic_years ay ON ay.id=s.academic_year_id WHERE s.branch_id=:branch ORDER BY c.numeric_level,sec.name,s.roll_no,s.name');
+        $students = $db->prepare('SELECT s.id,s.student_id,s.name,s.roll_no,s.class_id,s.section_id,s.academic_year_id,s.shift,c.name AS class_name,sec.name AS section_name,ay.name AS academic_year FROM students s LEFT JOIN classes c ON c.id=s.class_id LEFT JOIN sections sec ON sec.id=s.section_id LEFT JOIN academic_years ay ON ay.id=s.academic_year_id WHERE s.branch_id=:branch ORDER BY c.numeric_level,sec.name,s.shift,s.roll_no,s.name');
         $students->execute(['branch' => $branch]);
         $studentRows = $students->fetchAll();
+        foreach ($studentRows as &$studentRow) {
+            $storedName = (string) $studentRow['name'];
+            if (preg_match('/^Demo Class \\d+ (.+?) Section \\S+ (\\d+)$/u', $storedName, $match)) {
+                $studentRow['dropdown_name'] = 'Demo ' . $match[1] . ' ' . $match[2];
+            } elseif (preg_match('/^Demo Class \\d+ Section \\S+ Student (\\S+)$/u', $storedName, $match) || preg_match('/^Demo Class \\d+ Student (\\S+)$/u', $storedName, $match)) {
+                $studentRow['dropdown_name'] = 'Demo Student ' . $match[1];
+            } else {
+                $studentRow['dropdown_name'] = $storedName;
+            }
+        }
+        unset($studentRow);
         $studentId = max(0, (int) $request->input('student_id', 0));
         $selectedPeriod = trim((string) $request->input('month', date('Y-m')));
         $periodDate = \DateTimeImmutable::createFromFormat('!Y-m', $selectedPeriod);
@@ -50,22 +61,27 @@ final class StudentPaymentController
         }
         $classes = [];
         $sections = [];
+        $shifts = [];
         foreach ($studentRows as $row) {
             $classes[(int) $row['class_id']] = (string) ($row['class_name'] ?? 'Unassigned');
-            if (!empty($row['section_id'])) $sections[(int) $row['section_id']] = ['name' => (string) ($row['section_name'] ?? ''), 'class_id' => (int) $row['class_id']];
+            if (!empty($row['section_id'])) $sections[(int) $row['section_id']] = ['name' => (string) ($row['section_name'] ?? ''), 'class_id' => (int) $row['class_id'], 'class_name' => (string) ($row['class_name'] ?? 'Unassigned')];
+            if (trim((string) ($row['shift'] ?? '')) !== '') $shifts[(string) $row['shift']] = (string) $row['shift'];
         }
         if ($student !== null) {
             $selectedClassId = (int) $student['class_id'];
             $selectedSectionId = (int) $student['section_id'];
+            $selectedShift = (string) ($student['shift'] ?? '');
         } else {
             $selectedClassId = max(0, (int) $request->input('class_id', 0));
             $selectedSectionId = max(0, (int) $request->input('section_id', 0));
+            $selectedShift = trim((string) $request->input('shift', ''));
         }
         View::render('fees/collect-payment', [
             'title' => 'Collect student payment', 'user' => Auth::user(),
             'students' => $studentRows, 'student' => $student, 'invoices' => $invoices,
             'classes' => $classes, 'sections' => $sections,
             'selectedClassId' => $selectedClassId, 'selectedSectionId' => $selectedSectionId,
+            'shifts' => $shifts, 'selectedShift' => $selectedShift,
             'selectedPeriod' => $selectedPeriod, 'missingFeeHeads' => $missingFeeHeads,
         ]);
     }

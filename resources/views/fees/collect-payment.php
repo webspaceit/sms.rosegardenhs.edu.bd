@@ -10,10 +10,11 @@
 
 <form method="get" action="<?= Url::to('/fees/new') ?>" class="mt-6 rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
     <div class="mb-5 flex items-center gap-3"><span class="grid h-8 w-8 place-items-center rounded-full bg-teal-400/15 font-semibold text-teal-200">1</span><div><h2 class="font-semibold">Find student</h2><p class="text-xs text-green-50/55">Filter the list by class and section.</p></div></div>
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <div><label for="filter-class" class="mb-1.5 block text-sm">Class</label><select id="filter-class" name="class_id" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm"><option value="">All classes</option><?php foreach ($classes as $id => $name): ?><option value="<?= (int) $id ?>"<?= $selectedClassId === (int) $id ? ' selected' : '' ?>><?= View::escape($name) ?></option><?php endforeach; ?></select></div>
-        <div><label for="filter-section" class="mb-1.5 block text-sm">Section</label><select id="filter-section" name="section_id" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm"><option value="">All sections</option><?php foreach ($sections as $id => $section): ?><option value="<?= (int) $id ?>" data-class="<?= (int) $section['class_id'] ?>"<?= $selectedSectionId === (int) $id ? ' selected' : '' ?>><?= View::escape($section['name']) ?></option><?php endforeach; ?></select></div>
-        <div><label for="payment-student" class="mb-1.5 block text-sm">Student <span class="text-red-300">*</span></label><select id="payment-student" name="student_id" required class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm"><option value="">Select a student…</option><?php foreach ($students as $option): ?><option value="<?= (int) $option['id'] ?>" data-class="<?= (int) $option['class_id'] ?>" data-section="<?= (int) $option['section_id'] ?>"<?= $student && (int) $student['id'] === (int) $option['id'] ? ' selected' : '' ?>><?= View::escape($option['name']) ?> · <?= View::escape($option['student_id']) ?><?= $option['class_name'] ? ' · ' . View::escape($option['class_name']) : '' ?><?= $option['section_name'] ? ' / ' . View::escape($option['section_name']) : '' ?></option><?php endforeach; ?></select></div>
+        <div><label for="filter-section" class="mb-1.5 block text-sm">Section</label><select id="filter-section" name="section_id" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm"><option value="">All sections</option><?php foreach ($sections as $id => $section): ?><option value="<?= (int) $id ?>" data-class="<?= (int) $section['class_id'] ?>" data-name="<?= View::escape($section['name']) ?>" data-label="<?= View::escape($section['class_name'] . ' / ' . $section['name']) ?>"<?= $selectedSectionId === (int) $id ? ' selected' : '' ?>><?= View::escape($selectedClassId > 0 ? $section['name'] : $section['class_name'] . ' / ' . $section['name']) ?></option><?php endforeach; ?></select></div>
+        <div><label for="filter-shift" class="mb-1.5 block text-sm">Shift</label><select id="filter-shift" name="shift" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm"><option value="">All shifts</option><?php foreach ($shifts as $shift): ?><option value="<?= View::escape($shift) ?>"<?= $selectedShift === $shift ? ' selected' : '' ?>><?= View::escape($shift) ?></option><?php endforeach; ?></select></div>
+        <div><label for="payment-student" class="mb-1.5 block text-sm">Student <span class="text-red-300">*</span></label><select id="payment-student" name="student_id" required class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm"><option value="">Select a student…</option><?php foreach ($students as $option): ?><option value="<?= (int) $option['id'] ?>" data-class="<?= (int) $option['class_id'] ?>" data-section="<?= (int) $option['section_id'] ?>" data-shift="<?= View::escape((string) ($option['shift'] ?? '')) ?>"<?= $student && (int) $student['id'] === (int) $option['id'] ? ' selected' : '' ?>><?= View::escape($option['dropdown_name']) ?> · <?= View::escape($option['student_id']) ?></option><?php endforeach; ?></select></div>
         <div><label for="payment-period" class="mb-1.5 block text-sm">Billing month</label><input id="payment-period" type="month" name="month" value="<?= View::escape($selectedPeriod) ?>" required class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm"></div>
     </div>
     <div class="mt-4 flex justify-end"><button class="form-action-button">Load student</button></div>
@@ -41,13 +42,23 @@
         </div>
     </section>
     <section class="rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
-        <div class="mb-5 flex flex-wrap items-center justify-between gap-3"><div class="flex items-center gap-3"><span class="grid h-8 w-8 place-items-center rounded-full bg-teal-400/15 font-semibold text-teal-200">3</span><div><h2 class="font-semibold">Outstanding fee lines</h2><p class="text-xs text-green-50/55">Enter how much of this payment should go to each invoice.</p></div></div><?php if ($invoices !== []): ?><label class="text-sm">Period <select id="period-filter" class="ml-2 rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2"><option value="">All periods</option><?php foreach (array_unique(array_filter(array_column($invoices, 'month'))) as $period): ?><option value="<?= View::escape((string) $period) ?>"><?= View::escape((string) $period) ?></option><?php endforeach; ?></select></label><?php endif; ?></div>
+        <div class="mb-5 flex flex-wrap items-center justify-between gap-3"><div class="flex items-center gap-3"><span class="grid h-8 w-8 place-items-center rounded-full bg-teal-400/15 font-semibold text-teal-200">3</span><div><h2 class="font-semibold">Outstanding fee lines</h2><p class="text-xs text-green-50/55">Receive now is calculated as outstanding minus the approved discount. Edit an amount to collect partially.</p></div></div><?php if ($invoices !== []): ?><label class="text-sm">Period <select id="period-filter" class="ml-2 rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2"><option value="">All periods</option><?php foreach (array_unique(array_filter(array_column($invoices, 'month'))) as $period): ?><option value="<?= View::escape((string) $period) ?>"><?= View::escape((string) $period) ?></option><?php endforeach; ?></select></label><?php endif; ?></div>
         <?php if ($invoices === []): ?>
             <div class="rounded-xl border border-dashed border-green-100/20 p-8 text-center"><p class="font-medium">No outstanding invoices for this student.</p><p class="mt-1 text-sm text-green-50/55">If class fee heads are missing, add them above. Otherwise this student has no amount due.</p><a href="<?= Url::to('/fees/generate') ?>" class="mt-4 inline-flex rounded-lg border border-green-100/20 px-4 py-2 text-sm">Open bulk invoice generation</a></div>
         <?php else: ?>
         <div class="overflow-x-auto rounded-xl border border-green-900/60"><table class="w-full min-w-[1080px] text-left text-sm"><thead class="bg-green-950/40 text-green-100/65"><tr><th class="px-4 py-3">Fee / Invoice</th><th class="px-4 py-3">Period</th><th class="px-4 py-3 text-right">Billed</th><th class="px-4 py-3 text-right">Already paid</th><th class="px-4 py-3 text-right">Prior discount</th><th class="px-4 py-3 text-right">Outstanding</th><th class="w-44 px-4 py-3 text-right">Approved discount</th><th class="w-44 px-4 py-3 text-right">Receive now</th><th class="px-3 py-3"><span class="sr-only">Remove</span></th></tr></thead><tbody class="divide-y divide-green-900/50">
         <?php foreach ($invoices as $invoice): $outstanding = max(0, (float) $invoice['amount'] - (float) $invoice['allocated'] - (float) $invoice['discounted']); ?>
-            <tr data-invoice-row data-period="<?= View::escape((string) ($invoice['month'] ?? '')) ?>"><td class="px-4 py-3"><div class="font-medium"><?= View::escape($invoice['fee_head']) ?></div><div class="mt-1 font-mono text-xs text-green-50/45"><?= View::escape($invoice['invoice_no']) ?></div></td><td class="px-4 py-3"><?= View::escape($invoice['month'] ?: '—') ?></td><td class="px-4 py-3 text-right">৳<?= number_format((float) $invoice['amount'], 2) ?></td><td class="px-4 py-3 text-right">৳<?= number_format((float) $invoice['allocated'], 2) ?></td><td class="px-4 py-3 text-right">৳<?= number_format((float) $invoice['discounted'], 2) ?></td><td class="px-4 py-3 text-right font-semibold">৳<?= number_format($outstanding, 2) ?></td><td class="px-4 py-3"><?php if (\App\Core\Guard::can('accounts.manage')): ?><input type="number" min="0" max="<?= number_format($outstanding, 2, '.', '') ?>" step="0.01" name="discounts[<?= (int) $invoice['id'] ?>]" value="0.00" data-max="<?= number_format($outstanding, 2, '.', '') ?>" class="payment-discount w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2 text-right text-sm" aria-label="Approved discount for <?= View::escape($invoice['invoice_no']) ?>"><?php else: ?><span class="text-xs text-green-50/45">Accounts permission required</span><?php endif; ?></td><td class="px-4 py-3"><input type="number" min="0" max="<?= number_format($outstanding, 2, '.', '') ?>" step="0.01" name="allocations[<?= (int) $invoice['id'] ?>]" value="0.00" data-max="<?= number_format($outstanding, 2, '.', '') ?>" class="payment-allocation w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2 text-right text-sm" aria-label="Amount to receive for <?= View::escape($invoice['invoice_no']) ?>"></td><td class="px-3 py-3"><button type="button" class="fee-line-toggle rounded-lg border border-green-100/15 px-2.5 py-1.5 text-xs text-green-100/65 hover:bg-green-100/5" data-remove-invoice aria-label="Remove <?= View::escape($invoice['fee_head']) ?> from this payment">Remove</button></td></tr>
+            <tr data-invoice-row data-period="<?= View::escape((string) ($invoice['month'] ?? '')) ?>">
+                <td class="px-4 py-3"><div class="font-medium"><?= View::escape($invoice['fee_head']) ?></div><div class="mt-1 font-mono text-xs text-green-50/45"><?= View::escape($invoice['invoice_no']) ?></div></td>
+                <td class="px-4 py-3"><?= View::escape($invoice['month'] ?: '—') ?></td>
+                <td class="px-4 py-3 text-right">৳<?= number_format((float) $invoice['amount'], 2) ?></td>
+                <td class="px-4 py-3 text-right">৳<?= number_format((float) $invoice['allocated'], 2) ?></td>
+                <td class="px-4 py-3 text-right">৳<?= number_format((float) $invoice['discounted'], 2) ?></td>
+                <td class="px-4 py-3 text-right font-semibold">৳<?= number_format($outstanding, 2) ?></td>
+                <td class="px-4 py-3"><?php if (\App\Core\Guard::can('accounts.manage')): ?><input type="number" min="0" max="<?= number_format($outstanding, 2, '.', '') ?>" step="0.01" name="discounts[<?= (int) $invoice['id'] ?>]" value="0.00" data-max="<?= number_format($outstanding, 2, '.', '') ?>" class="payment-discount w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2 text-right text-sm" aria-label="Approved discount for <?= View::escape($invoice['invoice_no']) ?>"><?php else: ?><span class="text-xs text-green-50/45">Accounts permission required</span><?php endif; ?></td>
+                <td class="px-4 py-3"><input type="number" min="0" max="<?= number_format($outstanding, 2, '.', '') ?>" step="0.01" name="allocations[<?= (int) $invoice['id'] ?>]" value="<?= number_format($outstanding, 2, '.', '') ?>" data-max="<?= number_format($outstanding, 2, '.', '') ?>" class="payment-allocation w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2 text-right text-sm" aria-label="Amount to receive for <?= View::escape($invoice['invoice_no']) ?>"></td>
+                <td class="px-3 py-3"><button type="button" class="fee-line-toggle rounded-lg border border-green-100/15 px-2.5 py-1.5 text-xs text-green-100/65 hover:bg-green-100/5" data-remove-invoice aria-label="Remove <?= View::escape($invoice['fee_head']) ?> from this payment">Remove</button></td>
+            </tr>
         <?php endforeach; ?>
         </tbody></table></div>
         <div id="removed-invoice-lines" class="mt-3 hidden rounded-xl border border-dashed border-green-100/15 p-3"><p class="mb-2 text-xs text-green-50/55">Removed from this payment only. Their invoice balances remain due.</p><div id="removed-invoice-list" class="flex flex-wrap gap-2"></div></div>
@@ -64,18 +75,31 @@
 (() => {
     const classSelect = document.getElementById('filter-class');
     const sectionSelect = document.getElementById('filter-section');
+    const shiftSelect = document.getElementById('filter-shift');
     const studentSelect = document.getElementById('payment-student');
+    const syncSections = () => {
+        const classId = classSelect?.value || '';
+        [...(sectionSelect?.options || [])].forEach(option => {
+            if (!option.value) return;
+            option.hidden = Boolean(classId && option.dataset.class !== classId);
+            option.textContent = classId ? option.dataset.name : option.dataset.label;
+            if (option.hidden && option.selected) sectionSelect.value = '';
+        });
+    };
     const syncStudents = () => {
         const classId = classSelect?.value || '';
         const sectionId = sectionSelect?.value || '';
+        const shift = shiftSelect?.value || '';
         [...(studentSelect?.options || [])].forEach(option => {
             if (!option.value) return;
-            option.hidden = (classId && option.dataset.class !== classId) || (sectionId && option.dataset.section !== sectionId);
+            option.hidden = (classId && option.dataset.class !== classId) || (sectionId && option.dataset.section !== sectionId) || (shift && option.dataset.shift !== shift);
             if (option.hidden && option.selected) studentSelect.value = '';
         });
     };
-    classSelect?.addEventListener('change', () => { sectionSelect.value = ''; syncStudents(); });
+    classSelect?.addEventListener('change', () => { sectionSelect.value = ''; syncSections(); syncStudents(); });
     sectionSelect?.addEventListener('change', syncStudents);
+    shiftSelect?.addEventListener('change', syncStudents);
+    syncSections();
     syncStudents();
     const inputs = [...document.querySelectorAll('.payment-allocation')];
     const discountInputs = [...document.querySelectorAll('.payment-discount')];
@@ -90,7 +114,9 @@
     const format = cents => `৳${(cents / 100).toLocaleString('en-BD', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
     const updateRowVisibility = row => {
         const periodMatches = !periodFilter?.value || row.dataset.period === periodFilter.value;
-        row.hidden = row.dataset.removed === 'true' || !periodMatches;
+        const excluded = row.dataset.removed === 'true' || !periodMatches;
+        row.hidden = excluded;
+        row.querySelectorAll('input').forEach(input => { input.disabled = excluded; });
     };
     document.querySelectorAll('[data-remove-invoice]').forEach(button => {
         button.addEventListener('click', () => {
@@ -118,21 +144,23 @@
     });
     const refresh = () => {
         let cents = 0, discountCents = 0;
-        inputs.forEach(input => {
-            if (input.disabled) return;
-            let value = Math.max(0, Math.round((Number(input.value) || 0) * 100));
-            const maximum = Math.round(Number(input.dataset.max) * 100);
-            if (value > maximum) { value = maximum; input.value = (value / 100).toFixed(2); }
-            cents += value;
-        });
         discountInputs.forEach(input => {
             if (input.disabled) return;
             let value = Math.max(0, Math.round((Number(input.value) || 0) * 100));
             const maximum = Math.round(Number(input.dataset.max) * 100);
-            const paymentInput = document.querySelector(`input[name="${input.name.replace('discounts[', 'allocations[')}"]`);
-            const payment = Math.round((Number(paymentInput?.value) || 0) * 100);
-            if (value + payment > maximum) { value = Math.max(0, maximum - payment); input.value = (value / 100).toFixed(2); }
+            if (value > maximum) { value = maximum; input.value = (value / 100).toFixed(2); }
             discountCents += value;
+        });
+        inputs.forEach(input => {
+            if (input.disabled) return;
+            let value = Math.max(0, Math.round((Number(input.value) || 0) * 100));
+            const invoiceMaximum = Math.round(Number(input.dataset.max) * 100);
+            const discountName = input.name.replace('allocations[', 'discounts[');
+            const discountInput = document.querySelector(`input[name="${discountName}"]`);
+            const discount = Math.round((Number(discountInput?.value) || 0) * 100);
+            const maximum = Math.max(0, invoiceMaximum - discount);
+            if (value > maximum) { value = maximum; input.value = (value / 100).toFixed(2); }
+            cents += value;
         });
         if (total) total.textContent = format(cents);
         if (discountTotal) discountTotal.textContent = format(discountCents);
@@ -141,6 +169,7 @@
     };
     inputs.forEach(input => input.addEventListener('input', refresh));
     discountInputs.forEach(input => input.addEventListener('input', refresh));
+    document.querySelectorAll('[data-invoice-row]').forEach(updateRowVisibility);
     refresh();
     periodFilter?.addEventListener('change', () => {
         document.querySelectorAll('[data-invoice-row]').forEach(updateRowVisibility);
