@@ -35,11 +35,18 @@ final class StudentPaymentController
         $students->execute(['branch' => $branch]);
         $studentRows = $students->fetchAll();
         $studentId = max(0, (int) $request->input('student_id', 0));
+        $selectedPeriod = trim((string) $request->input('month', date('Y-m')));
+        $periodDate = \DateTimeImmutable::createFromFormat('!Y-m', $selectedPeriod);
+        if (!$periodDate || $periodDate->format('Y-m') !== $selectedPeriod) $selectedPeriod = date('Y-m');
         $student = null;
         $invoices = [];
+        $missingFeeHeads = [];
         if ($studentId > 0) {
             foreach ($studentRows as $row) if ((int) $row['id'] === $studentId) { $student = $row; break; }
-            if ($student !== null) $invoices = $this->outstandingInvoices($studentId, $branch);
+            if ($student !== null) {
+                $invoices = $this->outstandingInvoices($studentId, $branch);
+                $missingFeeHeads = $this->missingFeeHeads($student, $branch, $selectedPeriod);
+            }
         }
         $classes = [];
         $sections = [];
@@ -59,6 +66,7 @@ final class StudentPaymentController
             'students' => $studentRows, 'student' => $student, 'invoices' => $invoices,
             'classes' => $classes, 'sections' => $sections,
             'selectedClassId' => $selectedClassId, 'selectedSectionId' => $selectedSectionId,
+            'selectedPeriod' => $selectedPeriod, 'missingFeeHeads' => $missingFeeHeads,
         ]);
     }
 
@@ -69,6 +77,9 @@ final class StudentPaymentController
             Toast::flash('Your session expired. Please try again.', 'error');
             header('Location: ' . Url::to('/fees/new'), true, 419);
             exit;
+        }
+        if ((string) $request->input('action', '') === 'generate_fee_heads') {
+            $this->generateStudentFeeHeads($request);
         }
         $branch = BranchContext::id();
         $studentId = max(0, (int) $request->input('student_id', 0));
@@ -208,5 +219,75 @@ final class StudentPaymentController
         $stmt = Database::read()->prepare('SELECT fc.id,fc.invoice_no,fc.month,fc.amount,fc.due_date,h.name AS fee_head,COALESCE((SELECT SUM(a.amount) FROM student_payment_allocations a JOIN student_payments p ON p.id=a.payment_id WHERE a.fee_collection_id=fc.id AND p.branch_id=fc.branch_id),0) AS allocated,COALESCE((SELECT SUM(d.amount) FROM fee_invoice_discounts d WHERE d.fee_collection_id=fc.id AND d.approved_by IS NOT NULL),0) AS discounted FROM fee_collections fc JOIN fee_heads h ON h.id=fc.fee_head_id WHERE fc.student_id=:student AND fc.branch_id=:branch AND fc.status <> \'paid\' ORDER BY fc.due_date,fc.id');
         $stmt->execute(['student' => $studentId, 'branch' => $branch]);
         return array_values(array_filter($stmt->fetchAll(), static fn (array $invoice): bool => (float) $invoice['amount'] - (float) $invoice['allocated'] - (float) $invoice['discounted'] > 0.001));
+    }
+
+    private function missingFeeHeads(array $student, int $branch, string $month): array
+    {
+        if (empty($student['class_id']) || empty($student['academic_year_id'])) return [];
+        $monthDate = \DateTimeImmutable::createFromFormat('!Y-m', $month);
+        if (!$monthDate) return [];
+        $db = Database::read();
+        $structures = $db->prepare('SELECT fs.fee_head_id,fs.amount,h.name,h.frequency FROM fee_structures fs JOIN fee_heads h ON h.id=fs.fee_head_id WHERE fs.class_id=:class AND fs.branch_id=:class_branch AND h.branch_id=:head_branch AND h.is_optional=0 ORDER BY h.sort_order,h.name');
+        $structures->execute(['class' => $student['class_id'], 'class_branch' => $branch, 'head_branch' => $branch]);
+        $exists = $db->prepare('SELECT id FROM fee_collections WHERE invoice_no=:invoice AND branch_id=:branch LIMIT 1');
+        $missing = [];
+        foreach ($structures->fetchAll() as $head) {
+            $frequency = (string) $head['frequency'];
+            $periodCode = match ($frequency) {
+                'yearly' => 'Y' . $monthDate->format('Y'),
+                'one-time' => 'O' . (int) $student['academic_year_id'],
+                default => 'M' . $monthDate->format('Ym'),
+            };
+            $invoiceNo = substr(sprintf('AUTO-%d-%d-%d-%s', (int) $student['academic_year_id'], (int) $student['id'], (int) $head['fee_head_id'], $periodCode), 0, 50);
+            $exists->execute(['invoice' => $invoiceNo, 'branch' => $branch]);
+            if ($exists->fetchColumn() === false) $missing[] = $head;
+        }
+        return $missing;
+    }
+
+    private function generateStudentFeeHeads(Request $request): never
+    {
+        $studentId = max(0, (int) $request->input('student_id', 0));
+        $month = trim((string) $request->input('month', date('Y-m')));
+        $monthDate = \DateTimeImmutable::createFromFormat('!Y-m', $month);
+        if ($studentId < 1 || !$monthDate || $monthDate->format('Y-m') !== $month) {
+            Toast::flash('Choose a student and a valid billing month.', 'error');
+            header('Location: ' . Url::to('/fees/new'), true, 422);
+            exit;
+        }
+        $branch = BranchContext::id();
+        $db = Database::connection();
+        try {
+            $db->beginTransaction();
+            $studentQuery = $db->prepare('SELECT id,class_id,academic_year_id FROM students WHERE id=:student AND branch_id=:branch FOR UPDATE');
+            $studentQuery->execute(['student' => $studentId, 'branch' => $branch]);
+            $student = $studentQuery->fetch();
+            if (!$student || empty($student['class_id']) || empty($student['academic_year_id'])) throw new \RuntimeException('This student needs a class and academic year before fee heads can be generated.');
+            $structures = $db->prepare('SELECT fs.fee_head_id,fs.amount,h.frequency FROM fee_structures fs JOIN fee_heads h ON h.id=fs.fee_head_id WHERE fs.class_id=:class AND fs.branch_id=:class_branch AND h.branch_id=:head_branch AND h.is_optional=0 ORDER BY h.sort_order,h.name');
+            $structures->execute(['class' => $student['class_id'], 'class_branch' => $branch, 'head_branch' => $branch]);
+            $feeHeads = $structures->fetchAll();
+            if ($feeHeads === []) throw new \RuntimeException('No required fee heads are configured for this class. Add them under Fee Structures first.');
+            $insert = $db->prepare("INSERT IGNORE INTO fee_collections (student_id,fee_head_id,academic_year_id,invoice_no,month,amount,status,due_date,remarks,branch_id) VALUES (:student,:head,:year,:invoice,:month,:amount,'due',NULL,'Generated from student payment screen',:branch)");
+            $created = 0;
+            foreach ($feeHeads as $head) {
+                $frequency = (string) $head['frequency'];
+                $period = match ($frequency) {
+                    'yearly' => 'Y' . $monthDate->format('Y'),
+                    'one-time' => 'O' . (int) $student['academic_year_id'],
+                    default => 'M' . $monthDate->format('Ym'),
+                };
+                $invoiceNo = substr(sprintf('AUTO-%d-%d-%d-%s', (int) $student['academic_year_id'], $studentId, (int) $head['fee_head_id'], $period), 0, 50);
+                $invoiceMonth = $frequency === 'monthly' ? $monthDate->format('Y-m') : ucfirst($frequency) . ' ' . $monthDate->format('Y');
+                $insert->execute(['student' => $studentId, 'head' => $head['fee_head_id'], 'year' => $student['academic_year_id'], 'invoice' => $invoiceNo, 'month' => $invoiceMonth, 'amount' => $head['amount'], 'branch' => $branch]);
+                $created += $insert->rowCount();
+            }
+            $db->commit();
+            Toast::flash($created > 0 ? $created . ' individual fee head invoice(s) added.' : 'All required fee head invoices already exist.');
+        } catch (Throwable $error) {
+            if ($db->inTransaction()) $db->rollBack();
+            Toast::flash($error instanceof \RuntimeException ? $error->getMessage() : 'Fee head invoices could not be created.', 'error');
+        }
+        header('Location: ' . Url::to('/fees/new?' . http_build_query(['student_id' => $studentId, 'month' => $month])), true, 303);
+        exit;
     }
 }
