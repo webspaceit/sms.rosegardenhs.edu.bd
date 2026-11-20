@@ -43,6 +43,13 @@ final class FeeCollection
                 ['name' => 'remarks', 'label' => 'Remarks', 'type' => 'text', 'max' => 255],
             ],
             'search' => ['fc.invoice_no', 's.name', 's.student_id', 'h.name'],
+            'filters' => [
+                ['name' => 'class_id', 'label' => 'Class', 'column' => 's.class_id', 'options' => static fn (): array => Catalogue::classes()],
+                ['name' => 'section_id', 'label' => 'Section', 'column' => 's.section_id', 'options' => static fn (): array => Catalogue::sections()],
+                ['name' => 'academic_year_id', 'label' => 'Academic Year', 'column' => 'fc.academic_year_id', 'options' => static fn (): array => Catalogue::academicYears()],
+                ['name' => 'status', 'label' => 'Status', 'allLabel' => 'All Status', 'column' => 'fc.status', 'options' => ['due' => 'Due', 'partial' => 'Partial', 'paid' => 'Paid']],
+                ['name' => 'fee_head_id', 'label' => 'Fee Head', 'column' => 'fc.fee_head_id', 'options' => static fn (): array => Catalogue::feeHeads()],
+            ],
             'order' => 'fc.id DESC',
             'select' => 'fc.*, s.name AS student_name, h.name AS head_name',
             'from' => 'fee_collections fc JOIN students s ON s.id = fc.student_id JOIN fee_heads h ON h.id = fc.fee_head_id',

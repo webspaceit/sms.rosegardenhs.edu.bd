@@ -32,7 +32,7 @@ $hasActiveFilters = $selectedFilters !== [];
     <?php foreach ($filters as $filter): $filterName = (string) $filter['name']; ?>
         <label class="sr-only" for="filter-<?= View::escape($filterName) ?>"><?= View::escape($filter['label']) ?></label>
         <select id="filter-<?= View::escape($filterName) ?>" name="<?= View::escape($filterName) ?>" class="min-w-[150px] rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm outline-none focus:border-teal-400">
-            <option value="">All <?= View::escape($filter['label']) ?>s</option>
+            <option value=""><?= View::escape($filter['allLabel'] ?? ('All ' . $filter['label'] . 's')) ?></option>
             <?php foreach ($filter['options'] as $optionValue => $optionLabel): ?>
                 <option value="<?= View::escape((string) $optionValue) ?>"<?= (string) ($selectedFilters[$filterName] ?? '') === (string) $optionValue ? ' selected' : '' ?>><?= View::escape((string) $optionLabel) ?></option>
             <?php endforeach; ?>
