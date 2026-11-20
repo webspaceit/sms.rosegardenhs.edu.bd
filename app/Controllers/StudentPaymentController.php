@@ -249,10 +249,17 @@ final class StudentPaymentController
     {
         $studentId = max(0, (int) $request->input('student_id', 0));
         $month = trim((string) $request->input('month', date('Y-m')));
+        $selectedHeadIds = $request->input('fee_head_ids', []);
         $monthDate = \DateTimeImmutable::createFromFormat('!Y-m', $month);
-        if ($studentId < 1 || !$monthDate || $monthDate->format('Y-m') !== $month) {
+        if ($studentId < 1 || !$monthDate || $monthDate->format('Y-m') !== $month || !is_array($selectedHeadIds)) {
             Toast::flash('Choose a student and a valid billing month.', 'error');
             header('Location: ' . Url::to('/fees/new'), true, 422);
+            exit;
+        }
+        $selectedHeadIds = array_values(array_unique(array_filter(array_map('intval', $selectedHeadIds), static fn (int $id): bool => $id > 0)));
+        if ($selectedHeadIds === []) {
+            Toast::flash('Select at least one fee head to add.', 'error');
+            header('Location: ' . Url::to('/fees/new?' . http_build_query(['student_id' => $studentId, 'month' => $month])), true, 303);
             exit;
         }
         $branch = BranchContext::id();
@@ -270,6 +277,7 @@ final class StudentPaymentController
             $insert = $db->prepare("INSERT IGNORE INTO fee_collections (student_id,fee_head_id,academic_year_id,invoice_no,month,amount,status,due_date,remarks,branch_id) VALUES (:student,:head,:year,:invoice,:month,:amount,'due',NULL,'Generated from student payment screen',:branch)");
             $created = 0;
             foreach ($feeHeads as $head) {
+                if (!in_array((int) $head['fee_head_id'], $selectedHeadIds, true)) continue;
                 $frequency = (string) $head['frequency'];
                 $period = match ($frequency) {
                     'yearly' => 'Y' . $monthDate->format('Y'),
