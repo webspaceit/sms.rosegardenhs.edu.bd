@@ -24,6 +24,7 @@ use App\Controllers\SchoolSettingController;
 use App\Controllers\SeatingChartController;
 use App\Controllers\SetupController;
 use App\Controllers\StudentController;
+use App\Controllers\StudentPaymentController;
 use App\Controllers\SmsController;
 use App\Controllers\StudentImportController;
 use App\Controllers\TimetableController;
@@ -111,6 +112,7 @@ final class Application
         $users = new UserController();
         $uploads = new UploadController();
         $feeGeneration = new FeeGenerationController();
+        $studentPayments = new StudentPaymentController();
         $auditLogs = new AuditLogController();
         $branchContext = new BranchContextController();
 
@@ -213,6 +215,10 @@ final class Application
         $this->crud($router, new Crud(FeeHead::module()), '/fee-heads');
         $this->crud($router, new Crud(FeeStructure::module()), '/fee-structures');
         $this->crud($router, new Crud(FeeCollection::module()), '/fees');
+        $router->get('/fees/collect', [$studentPayments, 'collect']);
+        $router->post('/fees/collect', [$studentPayments, 'save']);
+        $router->get('/fees/receipts', [$studentPayments, 'history']);
+        $router->get('/fees/receipt', [$studentPayments, 'receipt']);
         $router->get('/fees/generate', [$feeGeneration, 'form']);
         $router->post('/fees/generate', [$feeGeneration, 'generate']);
 

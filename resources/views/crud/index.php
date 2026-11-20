@@ -20,7 +20,7 @@ $hasActiveFilters = $selectedFilters !== [];
         <h1 class="text-3xl font-semibold"><?= View::escape($module['title']) ?></h1>
         <p class="mt-1 text-sm text-white"><?= (int) $total ?> record<?= $total === 1 ? '' : 's' ?> in total</p>
     </div>
-    <div class="flex flex-wrap gap-2"><?php if (!empty($module['headerAction'])): ?><a href="<?= Url::to($module['headerAction']['url']) ?>" class="rounded-lg border border-green-100/20 px-4 py-2.5 text-sm"><?= View::escape($module['headerAction']['label']) ?></a><?php endif; ?><a href="<?= Url::to($module['route'] . '/new') ?>" class="form-action-button"><?= View::escape($module['createLabel'] ?? ('New ' . $module['singular'])) ?></a></div>
+    <div class="flex flex-wrap gap-2"><?php if (!empty($module['secondaryHeaderAction'])): ?><a href="<?= Url::to($module['secondaryHeaderAction']['url']) ?>" class="form-action-button"><?= View::escape($module['secondaryHeaderAction']['label']) ?></a><?php endif; ?><?php if (!empty($module['headerAction'])): ?><a href="<?= Url::to($module['headerAction']['url']) ?>" class="rounded-lg border border-green-100/20 px-4 py-2.5 text-sm"><?= View::escape($module['headerAction']['label']) ?></a><?php endif; ?><a href="<?= Url::to($module['route'] . '/new') ?>" class="form-action-button"><?= View::escape($module['createLabel'] ?? ('New ' . $module['singular'])) ?></a></div>
 </div>
 
 <?php if ($canSearch): ?>

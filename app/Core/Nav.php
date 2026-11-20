@@ -118,6 +118,8 @@ final class Nav
                 'collapsible' => true,
                 'items' => [
                     self::item('Fee Collections', '/fees', 'banknote'),
+                    self::item('Collect Payment', '/fees/collect', 'receipt'),
+                    self::item('Payment Receipts', '/fees/receipts', 'file'),
                     self::item('Fee Heads', '/fee-heads', 'receipt'),
                     self::item('Fee Structures', '/fee-structures', 'receipt'),
                     self::item('Salary Structures', '/salary-structures', 'home'),
@@ -268,6 +270,9 @@ final class Nav
         '/fee-heads' => 'fees.manage',
         '/fee-structures' => 'fees.manage',
         '/fees' => 'fees.manage',
+        '/fees/collect' => 'fees.manage',
+        '/fees/receipts' => 'fees.manage',
+        '/fees/receipt' => 'fees.manage',
         '/salary-structures' => 'payroll.manage',
         '/salary-payments' => 'payroll.manage',
         '/accounts' => 'accounts.manage',

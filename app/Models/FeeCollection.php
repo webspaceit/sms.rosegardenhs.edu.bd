@@ -47,6 +47,7 @@ final class FeeCollection
             'select' => 'fc.*, s.name AS student_name, h.name AS head_name',
             'from' => 'fee_collections fc JOIN students s ON s.id = fc.student_id JOIN fee_heads h ON h.id = fc.fee_head_id',
             'headerAction' => ['url' => '/fees/generate', 'label' => 'Generate invoices'],
+            'secondaryHeaderAction' => ['url' => '/fees/collect', 'label' => 'Collect payment'],
         ];
     }
 }

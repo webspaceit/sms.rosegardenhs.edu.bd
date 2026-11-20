@@ -75,7 +75,7 @@ $branchTables = [
     'users', 'audit_logs', 'academic_years', 'classes', 'sections', 'students', 'student_enrollment_history', 'academic_groups',
     'notices', 'holidays', 'events', 'complaints', 'school_settings', 'subjects', 'class_subject',
     'teachers', 'designations', 'teacher_subject', 'guardians', 'student_guardian', 'student_houses',
-    'shifts', 'departments', 'fee_heads', 'fee_structures', 'fee_collections', 'fee_discounts', 'fee_carry_forwards',
+    'shifts', 'departments', 'fee_heads', 'fee_structures', 'fee_collections', 'student_payments', 'student_payment_allocations', 'fee_discounts', 'fee_carry_forwards',
     'transactions', 'bank_reconciliations', 'salary_structures', 'salary_payments', 'attendances',
     'teacher_attendances', 'staff_attendances', 'leave_requests', 'inventory_categories',
     'inventory_items', 'books', 'book_issues', 'transport_routes', 'transport_stops', 'student_transport',

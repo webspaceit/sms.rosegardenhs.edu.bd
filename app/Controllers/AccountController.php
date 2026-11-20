@@ -22,8 +22,8 @@ final class AccountController
         $db = Database::connection();
 
         $branch = BranchContext::id();
-        $feesCollected = (float) $db->query("SELECT COALESCE(SUM(amount), 0) FROM fee_collections WHERE branch_id=$branch AND status = 'paid'")->fetchColumn();
-        $feesDue = (float) $db->query("SELECT COALESCE(SUM(amount), 0) FROM fee_collections WHERE branch_id=$branch AND status IN ('due', 'partial')")->fetchColumn();
+        $feesCollected = (float) $db->query("SELECT COALESCE((SELECT SUM(amount) FROM student_payments WHERE branch_id=$branch),0) + COALESCE((SELECT SUM(fc.amount) FROM fee_collections fc WHERE fc.branch_id=$branch AND fc.status='paid' AND NOT EXISTS (SELECT 1 FROM student_payment_allocations a JOIN student_payments p ON p.id=a.payment_id WHERE a.fee_collection_id=fc.id AND p.branch_id=$branch)),0)")->fetchColumn();
+        $feesDue = (float) $db->query("SELECT COALESCE(SUM(fc.amount - COALESCE(pa.allocated, 0)), 0) FROM fee_collections fc LEFT JOIN (SELECT a.fee_collection_id, SUM(a.amount) AS allocated FROM student_payment_allocations a JOIN student_payments p ON p.id=a.payment_id WHERE p.branch_id=$branch GROUP BY a.fee_collection_id) pa ON pa.fee_collection_id=fc.id WHERE fc.branch_id=$branch AND fc.status <> 'paid'")->fetchColumn();
         $feeInvoices = (int) $db->query("SELECT COUNT(*) FROM fee_collections WHERE branch_id=$branch")->fetchColumn();
 
         $income = (float) $db->query("SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE branch_id=$branch AND type = 'income'")->fetchColumn();
@@ -33,8 +33,9 @@ final class AccountController
 
         $byHead = $db->query(
             'SELECT h.name, COUNT(fc.id) AS invoices, COALESCE(SUM(fc.amount), 0) AS total,'
-            . ' COALESCE(SUM(CASE WHEN fc.status = "paid" THEN fc.amount ELSE 0 END), 0) AS paid'
+            . ' COALESCE(SUM(CASE WHEN fc.status = "paid" THEN fc.amount ELSE COALESCE(pa.allocated,0) END), 0) AS paid'
             . ' FROM fee_heads h LEFT JOIN fee_collections fc ON fc.fee_head_id = h.id AND fc.branch_id=h.branch_id'
+            . ' LEFT JOIN (SELECT a.fee_collection_id, SUM(a.amount) AS allocated FROM student_payment_allocations a JOIN student_payments p ON p.id=a.payment_id WHERE p.branch_id=' . $branch . ' GROUP BY a.fee_collection_id) pa ON pa.fee_collection_id=fc.id'
             . ' WHERE h.branch_id=' . $branch
             . ' GROUP BY h.id, h.name ORDER BY h.sort_order, h.name'
         )->fetchAll();
