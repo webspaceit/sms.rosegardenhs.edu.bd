@@ -58,7 +58,7 @@ use App\Core\View;
                             </summary>
                             <div class="student-actions-controls hidden flex items-center gap-2">
                                 <a href="<?= Url::to('/users/edit?id=' . (int) $account['id']) ?>" class="rounded-md border border-green-100/20 px-3 py-1.5 text-xs hover:border-green-300">Edit</a>
-                                <form method="post" action="<?= Url::to('/users/delete') ?>" onsubmit="return confirm('Remove this account?')">
+                                <form method="post" action="<?= Url::to('/users/delete') ?>" data-confirm="Remove this account?" data-no-ajax>
                                     <?= Csrf::field() ?>
                                     <input type="hidden" name="id" value="<?= (int) $account['id'] ?>">
                                     <button class="rounded-md border border-green-100/20 px-3 py-1.5 text-xs text-rose-200 hover:border-rose-400">Remove</button>

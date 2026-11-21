@@ -20,7 +20,7 @@ $hasActiveFilters = $selectedFilters !== [];
         <h1 class="text-3xl font-semibold"><?= View::escape($module['title']) ?></h1>
         <p class="mt-1 text-sm text-white"><?= (int) $total ?> record<?= $total === 1 ? '' : 's' ?> in total</p>
     </div>
-    <div class="flex flex-wrap gap-2"><?php if (!empty($module['secondaryHeaderAction'])): ?><a href="<?= Url::to($module['secondaryHeaderAction']['url']) ?>" class="form-action-button"><?= View::escape($module['secondaryHeaderAction']['label']) ?></a><?php endif; ?><?php if (!empty($module['headerAction'])): ?><a href="<?= Url::to($module['headerAction']['url']) ?>" class="rounded-lg border border-green-100/20 px-4 py-2.5 text-sm"><?= View::escape($module['headerAction']['label']) ?></a><?php endif; ?><a href="<?= Url::to($module['route'] . '/new') ?>" class="form-action-button"><?= View::escape($module['createLabel'] ?? ('New ' . $module['singular'])) ?></a></div>
+    <div class="flex flex-wrap gap-2"><?php if (!empty($module['secondaryHeaderAction'])): ?><a href="<?= Url::to($module['secondaryHeaderAction']['url']) ?>" class="form-action-button"><?= View::escape($module['secondaryHeaderAction']['label']) ?></a><?php endif; ?><?php if (!empty($module['headerAction'])): ?><a href="<?= Url::to($module['headerAction']['url']) ?>" class="rounded-lg border border-green-100/20 px-4 py-2.5 text-sm"><?= View::escape($module['headerAction']['label']) ?></a><?php endif; ?><?php if (empty($module['hideCreate'])): ?><a href="<?= Url::to($module['route'] . '/new') ?>" class="form-action-button"><?= View::escape($module['createLabel'] ?? ('New ' . $module['singular'])) ?></a><?php endif; ?></div>
 </div>
 
 <?php if ($canSearch): ?>
@@ -98,7 +98,7 @@ $hasActiveFilters = $selectedFilters !== [];
                             <div class="student-actions-controls hidden flex items-center gap-2">
                                 <?php if (!empty($module['fileField']) && !empty($record[$module['fileField']])): ?><a target="_blank" href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $record[$module['fileField']])) ?>" class="rounded-md border border-green-100/20 px-3 py-1.5 text-xs hover:border-green-300">Open file</a><?php endif; ?>
                                 <a href="<?= Url::to($module['route'] . '/edit?id=' . (int) $record['id']) ?>" class="rounded-md border border-green-100/20 px-3 py-1.5 text-xs hover:border-green-300">Edit</a>
-                                <form method="post" action="<?= Url::to($module['route'] . '/delete') ?>" onsubmit="return confirm('Delete this <?= View::escape($module['singular']) ?>?')">
+                                <form method="post" action="<?= Url::to($module['route'] . '/delete') ?>" data-confirm="Delete this <?= View::escape($module['singular']) ?>?" data-no-ajax>
                                     <?= \App\Core\Csrf::field() ?>
                                     <input type="hidden" name="id" value="<?= (int) $record['id'] ?>">
                                     <button class="rounded-md border border-green-100/20 px-3 py-1.5 text-xs text-rose-200 hover:border-rose-400">Delete</button>

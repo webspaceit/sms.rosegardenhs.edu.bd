@@ -358,8 +358,8 @@ if ($appUser !== null && in_array($appUser['role'] ?? '', ['admin', 'superadmin'
     <?= $content ?>
     <?php endif; ?>
 
-    <?php if ($toast): ?><div id="app-toast" data-autodismiss-ms="4200" role="<?= $toast['type'] === 'error' ? 'alert' : 'status' ?>" aria-live="<?= $toast['type'] === 'error' ? 'assertive' : 'polite' ?>" class="toast-enter fixed bottom-5 right-5 z-50 flex max-w-sm items-center gap-3 rounded-xl border px-4 py-3 shadow-2xl <?= $toast['type'] === 'error' ? 'border-red-400/30 bg-red-950 text-red-100' : 'border-green-400/30 bg-slate-900 text-slate-100' ?>">
-        <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full <?= $toast['type'] === 'error' ? 'bg-red-400/15 text-red-300' : 'bg-green-400/15 text-green-300' ?>"><?= $toast['type'] === 'error' ? '!' : '✓' ?></span>
+    <?php if ($toast): ?><div id="app-toast" data-autodismiss-ms="3000" role="<?= $toast['type'] === 'error' ? 'alert' : 'status' ?>" aria-live="<?= $toast['type'] === 'error' ? 'assertive' : 'polite' ?>" class="toast-enter fixed bottom-5 right-5 z-50 flex max-w-sm items-center gap-3 rounded-xl border px-4 py-3 shadow-2xl <?= $toast['type'] === 'error' ? 'border-red-400/30 bg-red-950 text-red-100' : ($toast['type'] === 'warning' ? 'border-amber-300/35 bg-amber-950 text-amber-100' : 'border-green-400/30 bg-slate-900 text-slate-100') ?>">
+        <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full <?= $toast['type'] === 'error' ? 'bg-red-400/15 text-red-300' : ($toast['type'] === 'warning' ? 'bg-amber-300/15 text-amber-200' : 'bg-green-400/15 text-green-300') ?>"><?= $toast['type'] === 'error' ? '!' : ($toast['type'] === 'warning' ? 'i' : '✓') ?></span>
         <span class="text-sm"><?= View::escape($toast['message']) ?></span>
         <button type="button" onclick="this.parentElement.remove()" class="ml-2 text-white hover:text-white" aria-label="Dismiss">×</button>
     </div><?php endif; ?>

@@ -17,6 +17,7 @@ final class FeeDiscount
             'singular' => 'fee discount',
             'permission' => 'accounts.manage',
             'managePermission' => 'accounts.manage',
+            'insertDefaults' => static fn (): array => ['approved_by' => \App\Core\Auth::user()['id'] ?? null],
             'columns' => [
                 ['name' => 'student_name', 'label' => 'Student'],
                 ['name' => 'head_name', 'label' => 'Fee head', 'format' => 'muted'],
@@ -26,10 +27,10 @@ final class FeeDiscount
             ],
             'fields' => [
                 ['name' => 'student_id', 'label' => 'Student', 'type' => 'select', 'required' => true, 'options' => [Catalogue::class, 'students']],
-                ['name' => 'fee_head_id', 'label' => 'Fee head', 'type' => 'select', 'options' => [Catalogue::class, 'feeHeads']],
+                ['name' => 'fee_head_id', 'label' => 'Fee head', 'type' => 'select', 'required' => true, 'options' => [Catalogue::class, 'feeHeads'], 'hint' => 'The discount is applied to this fee head for the invoice period matching the date below.'],
                 ['name' => 'amount', 'label' => 'Amount', 'type' => 'number', 'required' => true, 'default' => 0, 'step' => '0.01'],
                 ['name' => 'reason', 'label' => 'Reason', 'type' => 'text', 'max' => 255],
-                ['name' => 'date', 'label' => 'Date', 'type' => 'date', 'required' => true],
+                ['name' => 'date', 'label' => 'Discount date', 'type' => 'date', 'required' => true, 'hint' => 'Use a date in the invoice month for monthly fees, or in the invoice year for yearly fees.'],
             ],
             'search' => ['s.name', 'd.reason'],
             'order' => 'd.date DESC, d.id DESC',

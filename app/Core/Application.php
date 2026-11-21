@@ -214,7 +214,7 @@ final class Application
         // Finance
         $this->crud($router, new Crud(FeeHead::module()), '/fee-heads');
         $this->crud($router, new Crud(FeeStructure::module()), '/fee-structures');
-        $this->crud($router, new Crud(FeeCollection::module()), '/fees');
+        $this->crud($router, new Crud(FeeCollection::module()), '/fees', false);
         $router->get('/fees/new', [$studentPayments, 'collect']);
         $router->post('/fees/new', [$studentPayments, 'save']);
         $router->get('/fees/collect', [$studentPayments, 'collect']);
@@ -325,15 +325,17 @@ final class Application
     /**
      * Register the six routes a standard list and form module needs.
      */
-    private function crud(Router $router, Crud $controller, string $route): void
+    private function crud(Router $router, Crud $controller, string $route, bool $allowCreate = true): void
     {
         $router->get($route, [$controller, 'index']);
-        $router->get($route . '/new', [$controller, 'create']);
-        $router->post($route, [$controller, 'store']);
-        // Accept submissions to the form URL as well. Some browsers or
-        // previously rendered form markup can retain the current URL as the
-        // submit target; without these aliases that POST falls through to 404.
-        $router->post($route . '/new', [$controller, 'store']);
+        if ($allowCreate) {
+            $router->get($route . '/new', [$controller, 'create']);
+            $router->post($route, [$controller, 'store']);
+            // Accept submissions to the form URL as well. Some browsers or
+            // previously rendered form markup can retain the current URL as the
+            // submit target; without these aliases that POST falls through to 404.
+            $router->post($route . '/new', [$controller, 'store']);
+        }
         $router->get($route . '/edit', [$controller, 'edit']);
         $router->post($route . '/update', [$controller, 'update']);
         $router->post($route . '/edit', [$controller, 'update']);

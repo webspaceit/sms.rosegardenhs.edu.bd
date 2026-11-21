@@ -18,36 +18,8 @@
     if (event.target instanceof HTMLSelectElement) event.target.setCustomValidity('');
   });
 
-  function enableToastFocus(toast, duration) {
-    toast.classList.add('toast-focusable');
-    let timeout = 0;
-    let paused = false;
-    const dismiss = () => {
-      if (!paused && toast.isConnected) toast.remove();
-    };
-    const startTimer = () => {
-      window.clearTimeout(timeout);
-      if (!paused) timeout = window.setTimeout(dismiss, duration);
-    };
-    const pause = () => {
-      paused = true;
-      window.clearTimeout(timeout);
-    };
-    const resume = () => {
-      paused = false;
-      startTimer();
-    };
-    toast.addEventListener('pointerenter', pause);
-    toast.addEventListener('pointerleave', resume);
-    toast.addEventListener('focusin', pause);
-    toast.addEventListener('focusout', (event) => {
-      if (!toast.contains(event.relatedTarget)) resume();
-    });
-    startTimer();
-  }
-
   document.querySelectorAll('#app-toast[data-autodismiss-ms]').forEach((toast) => {
-    enableToastFocus(toast, Number(toast.dataset.autodismissMs) || 4200);
+    window.setTimeout(() => toast.remove(), Number(toast.dataset.autodismissMs) || 3000);
   });
 
   const progressStyle = document.createElement('style');
@@ -75,7 +47,7 @@
     dismiss.addEventListener('click', () => toast.remove());
     toast.append(icon, text, dismiss);
     document.body.append(toast);
-    enableToastFocus(toast, 5000);
+    window.setTimeout(() => toast.remove(), 3000);
   }
 
   function confirmInToast(message, onConfirm, options = {}) {

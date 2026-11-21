@@ -29,6 +29,15 @@ final class FeeStructure
                 ['name' => 'amount', 'label' => 'Amount', 'type' => 'number', 'required' => true, 'default' => 0, 'step' => '0.01'],
             ],
             'search' => ['c.name', 'h.name'],
+            'filters' => [
+                ['name' => 'class_id', 'label' => 'Class', 'column' => 'fs.class_id', 'options' => static fn (): array => Catalogue::classes()],
+                ['name' => 'fee_head_id', 'label' => 'Fee Head', 'column' => 'fs.fee_head_id', 'options' => static fn (): array => Catalogue::feeHeads()],
+                ['name' => 'frequency', 'label' => 'Frequency', 'column' => 'h.frequency', 'options' => [
+                    'monthly' => 'Monthly',
+                    'yearly' => 'Yearly',
+                    'one-time' => 'One-time',
+                ]],
+            ],
             'order' => 'c.numeric_level ASC, h.sort_order ASC, h.name ASC',
             'select' => 'fs.*, c.name AS class_name, h.name AS head_name, h.frequency AS frequency',
             'from' => 'fee_structures fs JOIN classes c ON c.id = fs.class_id JOIN fee_heads h ON h.id = fs.fee_head_id',

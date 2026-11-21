@@ -31,7 +31,7 @@ final class StudentPaymentController
         Guard::requirePermission('fees.manage');
         $db = Database::read();
         $branch = BranchContext::id();
-        $students = $db->prepare('SELECT s.id,s.student_id,s.name,s.roll_no,s.class_id,s.section_id,s.academic_year_id,s.shift,c.name AS class_name,sec.name AS section_name,ay.name AS academic_year FROM students s LEFT JOIN classes c ON c.id=s.class_id LEFT JOIN sections sec ON sec.id=s.section_id LEFT JOIN academic_years ay ON ay.id=s.academic_year_id WHERE s.branch_id=:branch ORDER BY c.numeric_level,sec.name,s.shift,s.roll_no,s.name');
+        $students = $db->prepare('SELECT s.id,s.student_id,s.name,s.roll_no,s.class_id,s.section_id,s.academic_year_id,s.academic_group,s.shift,c.name AS class_name,c.numeric_level AS class_level,sec.name AS section_name,ay.name AS academic_year FROM students s LEFT JOIN classes c ON c.id=s.class_id LEFT JOIN sections sec ON sec.id=s.section_id LEFT JOIN academic_years ay ON ay.id=s.academic_year_id WHERE s.branch_id=:branch ORDER BY c.numeric_level,sec.name,s.academic_group,s.shift,s.roll_no,s.name');
         $students->execute(['branch' => $branch]);
         $studentRows = $students->fetchAll();
         foreach ($studentRows as &$studentRow) {
@@ -40,6 +40,8 @@ final class StudentPaymentController
                 $studentRow['dropdown_name'] = 'Demo ' . $match[1] . ' ' . $match[2];
             } elseif (preg_match('/^Demo Class \\d+ Section \\S+ Student (\\S+)$/u', $storedName, $match) || preg_match('/^Demo Class \\d+ Student (\\S+)$/u', $storedName, $match)) {
                 $studentRow['dropdown_name'] = 'Demo Student ' . $match[1];
+            } elseif (preg_match('/^Sample (\\d{4}) Class \\d+ Section \\S+$/u', $storedName, $match)) {
+                $studentRow['dropdown_name'] = 'Sample ' . $match[1] . ' Student';
             } else {
                 $studentRow['dropdown_name'] = $storedName;
             }
@@ -51,38 +53,60 @@ final class StudentPaymentController
         if (!$periodDate || $periodDate->format('Y-m') !== $selectedPeriod) $selectedPeriod = date('Y-m');
         $student = null;
         $invoices = [];
+        $invoiceHistory = [];
+        $admissionInvoiceMissing = false;
         $missingFeeHeads = [];
+        $unmatchedDiscounts = [];
         if ($studentId > 0) {
             foreach ($studentRows as $row) if ((int) $row['id'] === $studentId) { $student = $row; break; }
             if ($student !== null) {
                 $invoices = $this->outstandingInvoices($studentId, $branch);
+                $invoiceHistory = $this->studentInvoiceHistory($studentId, $branch);
+                $admissionInvoiceMissing = !$this->hasAdmissionInvoice($studentId, $branch);
                 $missingFeeHeads = $this->missingFeeHeads($student, $branch, $selectedPeriod);
+                $unmatchedDiscounts = $this->unmatchedDiscounts($studentId, $branch, $selectedPeriod);
+                if ($unmatchedDiscounts !== []) {
+                    $labels = array_map(static fn (array $discount): string => $discount['fee_head'] . ' (৳' . number_format((float) $discount['amount'], 2) . ')', array_slice($unmatchedDiscounts, 0, 3));
+                    $remaining = count($unmatchedDiscounts) - count($labels);
+                    if ($remaining > 0) $labels[] = 'and ' . $remaining . ' more';
+                    Toast::flash('Discount not applied: ' . implode(', ', $labels) . '. No matching invoice exists. Create the invoice first, or remove the discount.', 'warning');
+                }
             }
         }
         $classes = [];
+        $classLevels = [];
         $sections = [];
         $shifts = [];
+        $groups = [];
         foreach ($studentRows as $row) {
             $classes[(int) $row['class_id']] = (string) ($row['class_name'] ?? 'Unassigned');
+            $classLevels[(int) $row['class_id']] = (int) ($row['class_level'] ?? 0);
             if (!empty($row['section_id'])) $sections[(int) $row['section_id']] = ['name' => (string) ($row['section_name'] ?? ''), 'class_id' => (int) $row['class_id'], 'class_name' => (string) ($row['class_name'] ?? 'Unassigned')];
             if (trim((string) ($row['shift'] ?? '')) !== '') $shifts[(string) $row['shift']] = (string) $row['shift'];
+            if ((int) ($row['class_level'] ?? 0) === 9 && trim((string) ($row['academic_group'] ?? '')) !== '') $groups[(string) $row['academic_group']] = (string) $row['academic_group'];
         }
         if ($student !== null) {
             $selectedClassId = (int) $student['class_id'];
+            $selectedClassLevel = (int) ($student['class_level'] ?? 0);
             $selectedSectionId = (int) $student['section_id'];
             $selectedShift = (string) ($student['shift'] ?? '');
+            $selectedGroup = (string) ($student['academic_group'] ?? '');
         } else {
             $selectedClassId = max(0, (int) $request->input('class_id', 0));
+            $selectedClassLevel = (int) ($classLevels[$selectedClassId] ?? 0);
             $selectedSectionId = max(0, (int) $request->input('section_id', 0));
             $selectedShift = trim((string) $request->input('shift', ''));
+            $selectedGroup = trim((string) $request->input('academic_group', ''));
         }
         View::render('fees/collect-payment', [
             'title' => 'Collect student payment', 'user' => Auth::user(),
-            'students' => $studentRows, 'student' => $student, 'invoices' => $invoices,
+            'students' => $studentRows, 'student' => $student, 'invoices' => $invoices, 'invoiceHistory' => $invoiceHistory,
+            'admissionInvoiceMissing' => $admissionInvoiceMissing,
             'classes' => $classes, 'sections' => $sections,
             'selectedClassId' => $selectedClassId, 'selectedSectionId' => $selectedSectionId,
             'shifts' => $shifts, 'selectedShift' => $selectedShift,
-            'selectedPeriod' => $selectedPeriod, 'missingFeeHeads' => $missingFeeHeads,
+            'groups' => $groups, 'selectedGroup' => $selectedGroup, 'selectedClassLevel' => $selectedClassLevel,
+            'selectedPeriod' => $selectedPeriod, 'missingFeeHeads' => $missingFeeHeads, 'unmatchedDiscounts' => $unmatchedDiscounts,
         ]);
     }
 
@@ -147,7 +171,8 @@ final class StudentPaymentController
             $studentCheck->execute(['student' => $studentId, 'branch' => $branch]);
             if (!$studentCheck->fetchColumn()) throw new \RuntimeException('Student not found in the current campus.');
 
-            $locked = $db->prepare('SELECT fc.id,fc.amount,fc.status,fc.student_id,fc.fee_head_id,COALESCE((SELECT SUM(d.amount) FROM fee_invoice_discounts d WHERE d.fee_collection_id=fc.id AND d.approved_by IS NOT NULL),0) AS discounted FROM fee_collections fc WHERE fc.id=:id AND fc.student_id=:student AND fc.branch_id=:branch FOR UPDATE');
+            $legacyDiscount = $this->legacyDiscountExpression('fc', 'h');
+            $locked = $db->prepare('SELECT fc.id,fc.amount,fc.status,fc.student_id,fc.fee_head_id,(COALESCE((SELECT SUM(d.amount) FROM fee_invoice_discounts d WHERE d.fee_collection_id=fc.id AND d.approved_by IS NOT NULL),0) + ' . $legacyDiscount . ') AS discounted FROM fee_collections fc JOIN fee_heads h ON h.id=fc.fee_head_id WHERE fc.id=:id AND fc.student_id=:student AND fc.branch_id=:branch FOR UPDATE');
             $allocatedBefore = $db->prepare('SELECT COALESCE(SUM(a.amount),0) FROM student_payment_allocations a JOIN student_payments p ON p.id=a.payment_id WHERE a.fee_collection_id=:invoice AND p.branch_id=:branch');
             $lockedInvoices = [];
             foreach (array_unique(array_merge(array_keys($allocations), array_keys($discounts))) as $invoiceId) {
@@ -177,7 +202,7 @@ final class StudentPaymentController
             foreach ($discounts as $invoiceId => $cents) {
                 $insertDiscount->execute(['student' => $studentId, 'invoice' => $invoiceId, 'payment' => $paymentId, 'amount' => number_format($cents / 100, 2, '.', ''), 'reason' => $notes !== '' ? $notes : 'Approved during payment collection', 'approver' => Auth::user()['id'] ?? null, 'date' => $paidOn, 'branch' => $branch]);
             }
-            $forInvoice = $db->prepare('SELECT fc.amount,fc.status,COALESCE((SELECT SUM(a.amount) FROM student_payment_allocations a JOIN student_payments p ON p.id=a.payment_id WHERE a.fee_collection_id=fc.id AND p.branch_id=:branch),0) AS allocated,COALESCE((SELECT SUM(d.amount) FROM fee_invoice_discounts d WHERE d.fee_collection_id=fc.id AND d.approved_by IS NOT NULL),0) AS discounted FROM fee_collections fc WHERE fc.id=:id');
+            $forInvoice = $db->prepare('SELECT fc.amount,fc.status,COALESCE((SELECT SUM(a.amount) FROM student_payment_allocations a JOIN student_payments p ON p.id=a.payment_id WHERE a.fee_collection_id=fc.id AND p.branch_id=:branch),0) AS allocated,(COALESCE((SELECT SUM(d.amount) FROM fee_invoice_discounts d WHERE d.fee_collection_id=fc.id AND d.approved_by IS NOT NULL),0) + ' . $this->legacyDiscountExpression('fc', 'h') . ') AS discounted FROM fee_collections fc JOIN fee_heads h ON h.id=fc.fee_head_id WHERE fc.id=:id');
             $updateInvoice = $db->prepare('UPDATE fee_collections SET status=:status,paid_on=CASE WHEN :is_paid=1 THEN :paid_on ELSE paid_on END,payment_method=:method WHERE id=:id AND branch_id=:branch');
             foreach (array_unique(array_merge(array_keys($allocations), array_keys($discounts))) as $invoiceId) {
                 if (isset($allocations[$invoiceId])) $insertAllocation->execute(['payment' => $paymentId, 'invoice' => $invoiceId, 'amount' => number_format($allocations[$invoiceId] / 100, 2, '.', ''), 'branch' => $branch]);
@@ -212,7 +237,7 @@ final class StudentPaymentController
         $discountTotalQuery = $db->prepare('SELECT COALESCE(SUM(amount),0) FROM fee_invoice_discounts WHERE payment_id=:payment AND approved_by IS NOT NULL');
         $discountTotalQuery->execute(['payment' => $payment['id']]);
         $discountTotal = (float) $discountTotalQuery->fetchColumn();
-        $dueQuery = $db->prepare("SELECT COALESCE(SUM(GREATEST(fc.amount-COALESCE((SELECT SUM(a.amount) FROM student_payment_allocations a JOIN student_payments p ON p.id=a.payment_id WHERE a.fee_collection_id=fc.id AND p.branch_id=fc.branch_id),0)-COALESCE((SELECT SUM(d.amount) FROM fee_invoice_discounts d WHERE d.fee_collection_id=fc.id AND d.approved_by IS NOT NULL),0),0)),0) FROM fee_collections fc WHERE fc.student_id=:student AND fc.branch_id=:branch");
+        $dueQuery = $db->prepare('SELECT COALESCE(SUM(GREATEST(fc.amount-COALESCE((SELECT SUM(a.amount) FROM student_payment_allocations a JOIN student_payments p ON p.id=a.payment_id WHERE a.fee_collection_id=fc.id AND p.branch_id=fc.branch_id),0)-COALESCE((SELECT SUM(d.amount) FROM fee_invoice_discounts d WHERE d.fee_collection_id=fc.id AND d.approved_by IS NOT NULL),0)-' . $this->legacyDiscountExpression('fc', 'h') . ',0)),0) FROM fee_collections fc JOIN fee_heads h ON h.id=fc.fee_head_id WHERE fc.student_id=:student AND fc.branch_id=:branch');
         $dueQuery->execute(['student' => $payment['student_id'], 'branch' => $branch]);
         $dueAfter = (float) $dueQuery->fetchColumn();
         $settings = $db->prepare('SELECT `key`,value FROM school_settings WHERE branch_id=:branch');
@@ -232,9 +257,45 @@ final class StudentPaymentController
 
     private function outstandingInvoices(int $studentId, int $branch): array
     {
-        $stmt = Database::read()->prepare('SELECT fc.id,fc.invoice_no,fc.month,fc.amount,fc.due_date,h.name AS fee_head,COALESCE((SELECT SUM(a.amount) FROM student_payment_allocations a JOIN student_payments p ON p.id=a.payment_id WHERE a.fee_collection_id=fc.id AND p.branch_id=fc.branch_id),0) AS allocated,COALESCE((SELECT SUM(d.amount) FROM fee_invoice_discounts d WHERE d.fee_collection_id=fc.id AND d.approved_by IS NOT NULL),0) AS discounted FROM fee_collections fc JOIN fee_heads h ON h.id=fc.fee_head_id WHERE fc.student_id=:student AND fc.branch_id=:branch AND fc.status <> \'paid\' ORDER BY fc.due_date,fc.id');
+        $stmt = Database::read()->prepare('SELECT fc.id,fc.invoice_no,fc.month,fc.amount,fc.due_date,h.name AS fee_head,COALESCE((SELECT SUM(a.amount) FROM student_payment_allocations a JOIN student_payments p ON p.id=a.payment_id WHERE a.fee_collection_id=fc.id AND p.branch_id=fc.branch_id),0) AS allocated,(COALESCE((SELECT SUM(d.amount) FROM fee_invoice_discounts d WHERE d.fee_collection_id=fc.id AND d.approved_by IS NOT NULL),0) + ' . $this->legacyDiscountExpression('fc', 'h') . ') AS discounted FROM fee_collections fc JOIN fee_heads h ON h.id=fc.fee_head_id WHERE fc.student_id=:student AND fc.branch_id=:branch AND fc.status <> \'paid\' ORDER BY fc.due_date,fc.id');
         $stmt->execute(['student' => $studentId, 'branch' => $branch]);
         return array_values(array_filter($stmt->fetchAll(), static fn (array $invoice): bool => (float) $invoice['amount'] - (float) $invoice['allocated'] - (float) $invoice['discounted'] > 0.001));
+    }
+
+    private function legacyDiscountExpression(string $invoiceAlias, string $headAlias): string
+    {
+        return "COALESCE((SELECT SUM(fd.amount) FROM fee_discounts fd WHERE fd.student_id={$invoiceAlias}.student_id AND fd.fee_head_id={$invoiceAlias}.fee_head_id AND fd.branch_id={$invoiceAlias}.branch_id AND fd.approved_by IS NOT NULL AND (({$headAlias}.frequency='monthly' AND DATE_FORMAT(fd.date,'%Y-%m')={$invoiceAlias}.month) OR ({$headAlias}.frequency IN ('yearly','one-time') AND YEAR(fd.date)=CAST(SUBSTRING_INDEX({$invoiceAlias}.month,' ',-1) AS UNSIGNED)))),0)";
+    }
+
+    private function unmatchedDiscounts(int $studentId, int $branch, string $month): array
+    {
+        $stmt = Database::read()->prepare("SELECT d.id,d.fee_head_id,d.amount,d.reason,d.date,h.name AS fee_head,h.frequency FROM fee_discounts d JOIN fee_heads h ON h.id=d.fee_head_id WHERE d.student_id=:student AND d.branch_id=:branch AND d.approved_by IS NOT NULL AND ((h.frequency='monthly' AND DATE_FORMAT(d.date,'%Y-%m')=:discount_month) OR (h.frequency IN ('yearly','one-time') AND YEAR(d.date)=:discount_year)) AND NOT EXISTS (SELECT 1 FROM fee_collections fc WHERE fc.student_id=d.student_id AND fc.fee_head_id=d.fee_head_id AND fc.branch_id=d.branch_id AND ((h.frequency='monthly' AND fc.month=:invoice_month) OR (h.frequency='yearly' AND fc.month=:yearly_period) OR (h.frequency='one-time' AND fc.month=:once_period))) ORDER BY d.date,d.id");
+        $year = substr($month, 0, 4);
+        $stmt->execute(['student' => $studentId, 'branch' => $branch, 'discount_month' => $month, 'discount_year' => (int) $year, 'invoice_month' => $month, 'yearly_period' => 'Yearly ' . $year, 'once_period' => 'One-time ' . $year]);
+        return $stmt->fetchAll();
+    }
+
+    private function studentInvoiceHistory(int $studentId, int $branch): array
+    {
+        $stmt = Database::read()->prepare('SELECT fc.id,fc.invoice_no,fc.month,fc.amount,fc.status,fc.paid_on,h.name AS fee_head,COALESCE((SELECT SUM(a.amount) FROM student_payment_allocations a JOIN student_payments p ON p.id=a.payment_id WHERE a.fee_collection_id=fc.id AND p.branch_id=fc.branch_id),0) AS allocated,(COALESCE((SELECT SUM(d.amount) FROM fee_invoice_discounts d WHERE d.fee_collection_id=fc.id AND d.approved_by IS NOT NULL),0) + ' . $this->legacyDiscountExpression('fc', 'h') . ') AS discounted FROM fee_collections fc JOIN fee_heads h ON h.id=fc.fee_head_id WHERE fc.student_id=:student AND fc.branch_id=:branch ORDER BY fc.id DESC');
+        $stmt->execute(['student' => $studentId, 'branch' => $branch]);
+        $rows = $stmt->fetchAll();
+        foreach ($rows as &$row) {
+            $balance = max(0, (float) $row['amount'] - (float) $row['allocated'] - (float) $row['discounted']);
+            $row['balance'] = $balance;
+            $row['display_status'] = $balance <= 0.001
+                ? ((float) $row['allocated'] > 0 ? 'Settled' : 'Covered by discount')
+                : ((float) $row['allocated'] > 0 || (float) $row['discounted'] > 0 ? 'Partial' : 'Due');
+        }
+        unset($row);
+        return $rows;
+    }
+
+    private function hasAdmissionInvoice(int $studentId, int $branch): bool
+    {
+        $stmt = Database::read()->prepare("SELECT EXISTS(SELECT 1 FROM fee_collections fc JOIN fee_heads h ON h.id=fc.fee_head_id WHERE fc.student_id=:student AND fc.branch_id=:branch AND LOWER(h.name)='admission fee')");
+        $stmt->execute(['student' => $studentId, 'branch' => $branch]);
+        return (bool) $stmt->fetchColumn();
     }
 
     private function missingFeeHeads(array $student, int $branch, string $month): array

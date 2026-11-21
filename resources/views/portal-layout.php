@@ -74,12 +74,12 @@ $portalRole = (string) ($portalUser['role'] ?? '');
     </main>
 
     <?php if ($toast): ?>
-        <div id="app-toast" role="<?= $toast['type'] === 'error' ? 'alert' : 'status' ?>" aria-live="<?= $toast['type'] === 'error' ? 'assertive' : 'polite' ?>" class="toast-enter fixed bottom-5 right-5 z-50 flex max-w-sm items-center gap-3 rounded-xl border px-4 py-3 shadow-2xl <?= $toast['type'] === 'error' ? 'border-rose-400/30 bg-rose-950 text-rose-100' : 'border-green-400/30 bg-emerald-950 text-emerald-50' ?>">
-            <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full <?= $toast['type'] === 'error' ? 'bg-rose-400/15 text-rose-300' : 'bg-green-400/15 text-green-300' ?>"><?= $toast['type'] === 'error' ? '!' : '✓' ?></span>
+        <div id="app-toast" role="<?= $toast['type'] === 'error' ? 'alert' : 'status' ?>" aria-live="<?= $toast['type'] === 'error' ? 'assertive' : 'polite' ?>" class="toast-enter fixed bottom-5 right-5 z-50 flex max-w-sm items-center gap-3 rounded-xl border px-4 py-3 shadow-2xl <?= $toast['type'] === 'error' ? 'border-rose-400/30 bg-rose-950 text-rose-100' : ($toast['type'] === 'warning' ? 'border-amber-300/35 bg-amber-950 text-amber-100' : 'border-green-400/30 bg-emerald-950 text-emerald-50') ?>">
+            <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full <?= $toast['type'] === 'error' ? 'bg-rose-400/15 text-rose-300' : ($toast['type'] === 'warning' ? 'bg-amber-300/15 text-amber-200' : 'bg-green-400/15 text-green-300') ?>"><?= $toast['type'] === 'error' ? '!' : ($toast['type'] === 'warning' ? 'i' : '✓') ?></span>
             <span class="text-sm"><?= View::escape($toast['message']) ?></span>
             <button type="button" onclick="this.parentElement.remove()" class="ml-2 text-emerald-100/50 hover:text-white" aria-label="Dismiss">×</button>
         </div>
-        <script>setTimeout(()=>document.getElementById('app-toast')?.remove(),4200)</script>
+        <script>setTimeout(()=>document.getElementById('app-toast')?.remove(),3000)</script>
     <?php endif; ?>
 </body>
 </html>

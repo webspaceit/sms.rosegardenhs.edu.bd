@@ -1,4 +1,4 @@
-<?php use App\Core\Csrf; use App\Core\Url; use App\Core\View; ?>
+<?php use App\Core\Csrf; use App\Core\Url; use App\Core\View; $groupFilterClass9 = $selectedClassLevel === 9 || preg_match('/^Class\\s*9$/i', (string) ($classes[$selectedClassId] ?? '')) === 1; ?>
 <style>
     .dashboard-shell main form button.fee-line-toggle::before,
     .dashboard-shell main form button.fee-line-toggle::after{content:none!important;display:none!important}
@@ -9,12 +9,13 @@
 </div>
 
 <form method="get" action="<?= Url::to('/fees/new') ?>" class="mt-6 rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
-    <div class="mb-5 flex items-center gap-3"><span class="grid h-8 w-8 place-items-center rounded-full bg-teal-400/15 font-semibold text-teal-200">1</span><div><h2 class="font-semibold">Find student</h2><p class="text-xs text-green-50/55">Filter the list by class and section.</p></div></div>
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <div><label for="filter-class" class="mb-1.5 block text-sm">Class</label><select id="filter-class" name="class_id" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm"><option value="">All classes</option><?php foreach ($classes as $id => $name): ?><option value="<?= (int) $id ?>"<?= $selectedClassId === (int) $id ? ' selected' : '' ?>><?= View::escape($name) ?></option><?php endforeach; ?></select></div>
+    <div class="mb-5 flex items-center gap-3"><span class="grid h-8 w-8 place-items-center rounded-full bg-teal-400/15 font-semibold text-teal-200">1</span><div><h2 class="font-semibold">Find student</h2><p class="text-xs text-green-50/55">Filter by class, section, shift, and academic group for Class 9.</p></div></div>
+    <div id="student-filter-grid" class="grid gap-4 md:grid-cols-2 <?= $groupFilterClass9 ? 'xl:grid-cols-6' : 'xl:grid-cols-5' ?>">
+        <div><label for="filter-class" class="mb-1.5 block text-sm">Class</label><select id="filter-class" name="class_id" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm"><option value="">All classes</option><?php foreach ($classes as $id => $name): ?><option value="<?= (int) $id ?>" data-level="<?= (int) ($classLevels[$id] ?? 0) ?>"<?= $selectedClassId === (int) $id ? ' selected' : '' ?>><?= View::escape($name) ?></option><?php endforeach; ?></select></div>
         <div><label for="filter-section" class="mb-1.5 block text-sm">Section</label><select id="filter-section" name="section_id" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm"><option value="">All sections</option><?php foreach ($sections as $id => $section): ?><option value="<?= (int) $id ?>" data-class="<?= (int) $section['class_id'] ?>" data-name="<?= View::escape($section['name']) ?>" data-label="<?= View::escape($section['class_name'] . ' / ' . $section['name']) ?>"<?= $selectedSectionId === (int) $id ? ' selected' : '' ?>><?= View::escape($selectedClassId > 0 ? $section['name'] : $section['class_name'] . ' / ' . $section['name']) ?></option><?php endforeach; ?></select></div>
+        <div id="academic-group-filter"<?= $groupFilterClass9 ? '' : ' hidden' ?>><label for="filter-academic-group" class="mb-1.5 block text-sm">Group</label><select id="filter-academic-group" name="academic_group" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm"><option value="">All groups</option><?php foreach ($groups as $group): ?><option value="<?= View::escape($group) ?>"<?= $selectedGroup === $group ? ' selected' : '' ?>><?= View::escape($group) ?></option><?php endforeach; ?></select></div>
         <div><label for="filter-shift" class="mb-1.5 block text-sm">Shift</label><select id="filter-shift" name="shift" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm"><option value="">All shifts</option><?php foreach ($shifts as $shift): ?><option value="<?= View::escape($shift) ?>"<?= $selectedShift === $shift ? ' selected' : '' ?>><?= View::escape($shift) ?></option><?php endforeach; ?></select></div>
-        <div><label for="payment-student" class="mb-1.5 block text-sm">Student <span class="text-red-300">*</span></label><select id="payment-student" name="student_id" required class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm"><option value="">Select a student…</option><?php foreach ($students as $option): ?><option value="<?= (int) $option['id'] ?>" data-class="<?= (int) $option['class_id'] ?>" data-section="<?= (int) $option['section_id'] ?>" data-shift="<?= View::escape((string) ($option['shift'] ?? '')) ?>"<?= $student && (int) $student['id'] === (int) $option['id'] ? ' selected' : '' ?>><?= View::escape($option['dropdown_name']) ?> · <?= View::escape($option['student_id']) ?></option><?php endforeach; ?></select></div>
+        <div><label for="payment-student" class="mb-1.5 block text-sm">Student <span class="text-red-300">*</span></label><select id="payment-student" name="student_id" required class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm"><option value="">Select a student…</option><?php foreach ($students as $option): ?><option value="<?= (int) $option['id'] ?>" data-class="<?= (int) $option['class_id'] ?>" data-section="<?= (int) $option['section_id'] ?>" data-group="<?= View::escape((string) ($option['academic_group'] ?? '')) ?>" data-shift="<?= View::escape((string) ($option['shift'] ?? '')) ?>"<?= $student && (int) $student['id'] === (int) $option['id'] ? ' selected' : '' ?>><?= View::escape($option['dropdown_name']) ?> · <?= View::escape($option['student_id']) ?></option><?php endforeach; ?></select></div>
         <div><label for="payment-period" class="mb-1.5 block text-sm">Billing month</label><input id="payment-period" type="month" name="month" value="<?= View::escape($selectedPeriod) ?>" required class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm"></div>
     </div>
     <div class="mt-4 flex justify-end"><button class="form-action-button">Load student</button></div>
@@ -69,12 +70,26 @@
         <?php endif; ?>
     </section>
 </form>
+<section class="mt-5 rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">
+    <div class="mb-4"><h2 class="font-semibold">Invoice and payment history</h2><p class="mt-1 text-xs text-green-50/55">Paid invoices are hidden from the outstanding list above. Check this history to confirm recorded payments.</p></div>
+    <?php if ($admissionInvoiceMissing): ?><p class="mb-4 rounded-xl border border-amber-200/20 bg-amber-950/25 p-3 text-sm text-amber-100/85"><strong>Admission Fee:</strong> No invoice is on record for this student, so this page cannot confirm whether it was paid. Add the fee head to the class fee structure and generate an invoice if it is owed.</p><?php endif; ?>
+    <?php if ($invoiceHistory === [] && !$admissionInvoiceMissing): ?>
+        <p class="rounded-xl border border-dashed border-green-100/20 p-5 text-center text-sm text-green-50/60">No fee invoices are recorded for this student.</p>
+    <?php else: ?>
+        <div class="overflow-x-auto rounded-xl border border-green-900/60"><table class="w-full min-w-[900px] text-left text-sm"><thead class="bg-green-950/40 text-green-100/65"><tr><th class="px-4 py-3">Fee / Invoice</th><th class="px-4 py-3">Period</th><th class="px-4 py-3 text-right">Billed</th><th class="px-4 py-3 text-right">Paid</th><th class="px-4 py-3 text-right">Discount</th><th class="px-4 py-3 text-right">Balance</th><th class="px-4 py-3">Status</th></tr></thead><tbody class="divide-y divide-green-900/50">
+        <?php foreach ($invoiceHistory as $invoice): ?><tr><td class="px-4 py-3"><div class="font-medium"><?= View::escape($invoice['fee_head']) ?></div><div class="mt-1 font-mono text-xs text-green-50/45"><?= View::escape($invoice['invoice_no']) ?></div></td><td class="px-4 py-3"><?= View::escape($invoice['month'] ?: '—') ?></td><td class="px-4 py-3 text-right">৳<?= number_format((float) $invoice['amount'], 2) ?></td><td class="px-4 py-3 text-right">৳<?= number_format((float) $invoice['allocated'], 2) ?></td><td class="px-4 py-3 text-right">৳<?= number_format((float) $invoice['discounted'], 2) ?></td><td class="px-4 py-3 text-right">৳<?= number_format((float) $invoice['balance'], 2) ?></td><td class="px-4 py-3"><span class="rounded-full border border-green-100/15 px-2.5 py-1 text-xs"><?= View::escape($invoice['display_status']) ?></span></td></tr><?php endforeach; ?>
+        <?php if ($admissionInvoiceMissing): ?><tr class="bg-amber-950/15"><td class="px-4 py-3"><div class="font-medium">Admission Fee</div><div class="mt-1 text-xs text-amber-100/55">No invoice recorded</div></td><td class="px-4 py-3">—</td><td class="px-4 py-3 text-right">—</td><td class="px-4 py-3 text-right">—</td><td class="px-4 py-3 text-right">—</td><td class="px-4 py-3 text-right">—</td><td class="px-4 py-3"><span class="rounded-full border border-amber-200/20 px-2.5 py-1 text-xs text-amber-100">Unknown</span></td></tr><?php endif; ?>
+        </tbody></table></div>
+    <?php endif; ?>
+</section>
 <?php endif; ?>
 
 <script>
 (() => {
     const classSelect = document.getElementById('filter-class');
     const sectionSelect = document.getElementById('filter-section');
+    const groupSelect = document.getElementById('filter-academic-group');
+    const groupFilter = document.getElementById('academic-group-filter');
     const shiftSelect = document.getElementById('filter-shift');
     const studentSelect = document.getElementById('payment-student');
     const syncSections = () => {
@@ -89,17 +104,28 @@
     const syncStudents = () => {
         const classId = classSelect?.value || '';
         const sectionId = sectionSelect?.value || '';
+        const group = groupSelect?.value || '';
         const shift = shiftSelect?.value || '';
         [...(studentSelect?.options || [])].forEach(option => {
             if (!option.value) return;
-            option.hidden = (classId && option.dataset.class !== classId) || (sectionId && option.dataset.section !== sectionId) || (shift && option.dataset.shift !== shift);
+            option.hidden = (classId && option.dataset.class !== classId) || (sectionId && option.dataset.section !== sectionId) || (group && option.dataset.group !== group) || (shift && option.dataset.shift !== shift);
             if (option.hidden && option.selected) studentSelect.value = '';
         });
     };
-    classSelect?.addEventListener('change', () => { sectionSelect.value = ''; syncSections(); syncStudents(); });
+    const syncGroupFilter = () => {
+        const selectedClass = classSelect?.selectedOptions?.[0];
+        const showGroup = selectedClass?.dataset.level === '9' || /^Class\s*9$/i.test(selectedClass?.textContent.trim() || '');
+        if (groupFilter) groupFilter.hidden = !showGroup;
+        document.getElementById('student-filter-grid')?.classList.toggle('xl:grid-cols-6', showGroup);
+        document.getElementById('student-filter-grid')?.classList.toggle('xl:grid-cols-5', !showGroup);
+        if (!showGroup && groupSelect) groupSelect.value = '';
+    };
+    classSelect?.addEventListener('change', () => { sectionSelect.value = ''; if (groupSelect) groupSelect.value = ''; syncSections(); syncGroupFilter(); syncStudents(); });
     sectionSelect?.addEventListener('change', syncStudents);
+    groupSelect?.addEventListener('change', syncStudents);
     shiftSelect?.addEventListener('change', syncStudents);
     syncSections();
+    syncGroupFilter();
     syncStudents();
     const inputs = [...document.querySelectorAll('.payment-allocation')];
     const discountInputs = [...document.querySelectorAll('.payment-discount')];

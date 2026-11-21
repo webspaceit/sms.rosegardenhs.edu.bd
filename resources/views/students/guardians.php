@@ -56,7 +56,7 @@ use App\Core\View;
                             <?php endif; ?>
                         </td>
                         <td class="px-5 py-2 text-center">
-                            <form method="post" action="<?= Url::to('/students/guardians/unlink') ?>" onsubmit="return confirm('Unlink this guardian?')">
+                            <form method="post" action="<?= Url::to('/students/guardians/unlink') ?>" data-confirm="Unlink this guardian?" data-no-ajax>
                                 <?= Csrf::field() ?>
                                 <input type="hidden" name="student_id" value="<?= (int) $student['id'] ?>">
                                 <input type="hidden" name="guardian_id" value="<?= (int) $guardian['id'] ?>">

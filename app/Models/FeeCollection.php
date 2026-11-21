@@ -17,6 +17,7 @@ final class FeeCollection
             'singular' => 'fee collection',
             'permission' => 'fees.manage',
             'managePermission' => 'fees.manage',
+            'hideCreate' => true,
             'columns' => [
                 ['name' => 'invoice_no', 'label' => 'Invoice', 'format' => 'muted'],
                 ['name' => 'student_name', 'label' => 'Student'],
