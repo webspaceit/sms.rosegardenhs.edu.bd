@@ -212,7 +212,12 @@ $columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showAcademicGroupFilter ? 1
         const syncGroupFilter = () => {
             const selectedClass = classSelect.selectedOptions[0];
             const normalizedClassName = (selectedClass?.dataset.className || selectedClass?.textContent || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
-            const isClassNineOrTen = ['9', '10'].includes(selectedClass?.dataset.numericLevel || '') || ['9', 'nine', 'class9', 'classnine', '10', 'ten', 'class10', 'classten'].includes(normalizedClassName);
+            const className = normalizedClassName.replace(/^class/, '');
+            const namedLevels = { '1': 1, one: 1, '2': 2, two: 2, '3': 3, three: 3, '4': 4, four: 4, '5': 5, five: 5, '6': 6, six: 6, '7': 7, seven: 7, '8': 8, eight: 8, '9': 9, nine: 9, '10': 10, ten: 10 };
+            const hasNamedLevel = Object.prototype.hasOwnProperty.call(namedLevels, className);
+            const isClassNineOrTen = hasNamedLevel
+                ? [9, 10].includes(namedLevels[className])
+                : ['9', '10'].includes(selectedClass?.dataset.numericLevel || '');
             groupWrap.classList.toggle('hidden', !isClassNineOrTen);
             if (!isClassNineOrTen) groupSelect.value = '';
             filterForm.style.gridTemplateColumns = window.matchMedia('(min-width: 1280px)').matches
