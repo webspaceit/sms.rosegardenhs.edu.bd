@@ -82,18 +82,21 @@ use App\Core\View;
                 <tr>
                     <td class="whitespace-nowrap px-5 py-3 font-mono text-xs text-white"><?= View::escape($start) ?><span class="text-white"> – </span><?= View::escape($end) ?></td>
                     <?php foreach ($days as $day): ?>
-                        <?php $slot = $grid[$day][$start] ?? null; ?>
+                        <?php $slots = $grid[$day][$start] ?? []; ?>
                         <td class="px-2 py-2">
-                            <?php if ($slot === null): ?>
+                            <?php if ($slots === []): ?>
                                 <span class="block rounded-lg border border-dashed border-slate-800 px-2 py-3 text-center text-[10px] text-slate-700">—</span>
                             <?php else: ?>
-                                <span class="block rounded-lg border border-teal-400/15 bg-teal-400/[0.07] px-2 py-2">
+                                <?php foreach ($slots as $slot): ?>
+                                <span class="mb-2 block rounded-lg border border-teal-400/15 bg-teal-400/[0.07] px-2 py-2 last:mb-0">
+                                    <?php if ($sectionId === 0): ?><span class="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-emerald-200/70"><?= View::escape($slot['section_name'] ? 'Section-' . (string) $slot['section_name'] : 'No section') ?></span><?php endif; ?>
                                     <span class="block truncate text-xs font-medium text-teal-100"><?= View::escape((string) $slot['subject_name']) ?></span>
                                     <span class="block truncate text-[10px] text-white"><?= View::escape((string) ($slot['teacher_name'] ?? '—')) ?></span>
                                     <?php if (($slot['room'] ?? '') !== ''): ?>
                                         <span class="block text-[10px] text-slate-500"><?= View::escape((string) $slot['room']) ?></span>
                                     <?php endif; ?>
                                 </span>
+                                <?php endforeach; ?>
                             <?php endif; ?>
                         </td>
                     <?php endforeach; ?>

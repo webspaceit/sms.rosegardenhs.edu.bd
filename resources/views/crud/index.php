@@ -35,16 +35,36 @@ $hasActiveFilters = $selectedFilters !== [];
     <?php endif; ?>
     <?php foreach ($filters as $filter): $filterName = (string) $filter['name']; ?>
         <label class="sr-only" for="filter-<?= View::escape($filterName) ?>"><?= View::escape($filter['label']) ?></label>
-        <select id="filter-<?= View::escape($filterName) ?>" name="<?= View::escape($filterName) ?>" class="min-w-[150px] rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm outline-none focus:border-teal-400">
+        <select id="filter-<?= View::escape($filterName) ?>" name="<?= View::escape($filterName) ?>"<?= !empty($filter['dependsOn']) ? ' data-filter-depends-on="' . View::escape((string) $filter['dependsOn']) . '"' : '' ?> class="min-w-[150px] rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm outline-none focus:border-teal-400 disabled:cursor-not-allowed disabled:opacity-50">
             <option value=""><?= View::escape($filter['allLabel'] ?? ('All ' . $filter['label'] . 's')) ?></option>
             <?php foreach ($filter['options'] as $optionValue => $optionLabel): ?>
-                <option value="<?= View::escape((string) $optionValue) ?>"<?= (string) ($selectedFilters[$filterName] ?? '') === (string) $optionValue ? ' selected' : '' ?>><?= View::escape((string) $optionLabel) ?></option>
+                <option value="<?= View::escape((string) $optionValue) ?>"<?= isset($filter['optionClassIds'][$optionValue]) ? ' data-class-id="' . (int) $filter['optionClassIds'][$optionValue] . '"' : '' ?><?= (string) ($selectedFilters[$filterName] ?? '') === (string) $optionValue ? ' selected' : '' ?>><?= View::escape((string) $optionLabel) ?></option>
             <?php endforeach; ?>
         </select>
     <?php endforeach; ?>
     <button class="rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-medium hover:border-teal-400">Filter</button>
     <?php if ($search !== '' || $hasActiveFilters): ?><a href="<?= Url::to($module['route']) ?>" class="rounded-lg px-4 py-2.5 text-center text-sm text-white hover:text-white">Clear</a><?php endif; ?>
 </form>
+<?php endif; ?>
+
+<?php if (array_filter($filters, static fn (array $filter): bool => !empty($filter['dependsOn'])) !== []): ?>
+<script>
+document.querySelectorAll('select[data-filter-depends-on]').forEach(sectionFilter => {
+    const classFilter = document.getElementById(`filter-${sectionFilter.dataset.filterDependsOn}`);
+    if (!classFilter) return;
+    const updateSections = reset => {
+        const classId = classFilter.value;
+        sectionFilter.disabled = classId === '';
+        for (const option of sectionFilter.options) {
+            if (!option.value) continue;
+            option.hidden = classId === '' || option.dataset.classId !== classId;
+        }
+        if (reset || sectionFilter.selectedOptions[0]?.hidden) sectionFilter.value = '';
+    };
+    classFilter.addEventListener('change', () => updateSections(true));
+    updateSections(false);
+});
+</script>
 <?php endif; ?>
 
 <section class="mt-5 overflow-hidden rounded-2xl border border-green-900/60 bg-[#0b3425]/80">

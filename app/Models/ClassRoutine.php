@@ -17,6 +17,10 @@ final class ClassRoutine
             'singular' => 'routine',
             'permission' => 'classes.manage',
             'managePermission' => 'classes.manage',
+            'filters' => [
+                ['name' => 'class_id', 'label' => 'Class', 'allLabel' => 'All classes', 'column' => 'cr.class_id', 'options' => static fn (): array => Catalogue::classes()],
+                ['name' => 'section_id', 'label' => 'Section', 'allLabel' => 'All sections', 'column' => 'cr.section_id', 'options' => static fn (): array => Catalogue::sectionNames(), 'dependsOn' => 'class_id', 'optionClassIds' => static fn (): array => Catalogue::sectionClassIds()],
+            ],
             'columns' => [
                 ['name' => 'class_name', 'label' => 'Class'],
                 ['name' => 'section_name', 'label' => 'Section', 'format' => 'muted'],

@@ -54,7 +54,10 @@ final class Crud
             $optionsSource = $filter['options'] ?? [];
             $options = is_callable($optionsSource) ? $optionsSource() : $optionsSource;
             if (!is_array($options)) $options = [];
-            $filterDefinitions[] = array_merge($filter, ['options' => $options]);
+            $optionClassIds = $filter['optionClassIds'] ?? [];
+            $optionClassIds = is_callable($optionClassIds) ? $optionClassIds() : $optionClassIds;
+            if (!is_array($optionClassIds)) $optionClassIds = [];
+            $filterDefinitions[] = array_merge($filter, ['options' => $options, 'optionClassIds' => $optionClassIds]);
             $candidate = trim((string) $request->input($name, ''));
             if ($candidate !== '' && array_key_exists($candidate, $options)) {
                 $placeholder = '__filter_' . $name;

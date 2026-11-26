@@ -47,7 +47,8 @@ final class TimetableController
         $periods = [];
 
         if ($classId > 0) {
-            $sql = 'SELECT cr.*, s.name AS subject_name, t.name AS teacher_name FROM class_routines cr'
+            $sql = 'SELECT cr.*, sec.name AS section_name, s.name AS subject_name, t.name AS teacher_name FROM class_routines cr'
+                . ' LEFT JOIN sections sec ON sec.id = cr.section_id AND sec.branch_id=cr.branch_id'
                 . ' JOIN subjects s ON s.id = cr.subject_id AND s.branch_id=cr.branch_id'
                 . ' LEFT JOIN teachers t ON t.id = cr.teacher_id AND t.branch_id=cr.branch_id'
                 . ' WHERE cr.class_id = :class_id AND cr.branch_id=:branch';
@@ -58,13 +59,15 @@ final class TimetableController
                 $bindings['section_id'] = $sectionId;
             }
 
+            $sql .= ' ORDER BY FIELD(cr.day_of_week, "Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"), cr.start_time, cr.section_id, cr.id';
+
             $statement = Database::connection()->prepare($sql);
             $statement->execute($bindings);
 
             foreach ($statement->fetchAll() as $row) {
                 $start = (string) $row['start_time'];
                 $periods[$start] = (string) $row['end_time'];
-                $grid[(string) $row['day_of_week']][$start] = $row;
+                $grid[(string) $row['day_of_week']][$start][] = $row;
             }
         }
 

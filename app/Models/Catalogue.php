@@ -126,6 +126,24 @@ final class Catalogue
         return self::options('SELECT s.id, CONCAT(c.name, " · ", s.name) AS label FROM sections s JOIN classes c ON c.id = s.class_id AND c.branch_id=s.branch_id ORDER BY c.numeric_level, s.name', 'label');
     }
 
+    /** @return array<int, string> id => section name */
+    public static function sectionNames(): array
+    {
+        return self::options('SELECT id, name FROM sections ORDER BY name', 'name');
+    }
+
+    /** @return array<int, int> section id => class id */
+    public static function sectionClassIds(): array
+    {
+        $statement = Database::connection()->prepare('SELECT id, class_id FROM sections WHERE branch_id=:branch');
+        $statement->execute(['branch' => BranchContext::id()]);
+        $map = [];
+        foreach ($statement->fetchAll() as $row) {
+            $map[(int) $row['id']] = (int) $row['class_id'];
+        }
+        return $map;
+    }
+
     /** @return array<int, string> id => label */
     public static function feeHeads(): array
     {
