@@ -336,6 +336,7 @@ CREATE TABLE IF NOT EXISTS teachers (
     name VARCHAR(150) NOT NULL,
     nid VARCHAR(30) NULL,
     department_id BIGINT UNSIGNED NULL,
+    shift_id BIGINT UNSIGNED NULL,
     designation_id BIGINT UNSIGNED NULL,
     phone VARCHAR(20) NULL,
     email VARCHAR(190) NULL,
@@ -355,8 +356,10 @@ CREATE TABLE IF NOT EXISTS teachers (
     KEY teachers_name_index (name),
     KEY teachers_designation_index (designation_id),
     KEY teachers_department_index (department_id),
+    KEY teachers_shift_index (shift_id),
     CONSTRAINT teachers_user_fk FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL,
-    CONSTRAINT teachers_department_fk FOREIGN KEY (department_id) REFERENCES departments (id) ON DELETE SET NULL
+    CONSTRAINT teachers_department_fk FOREIGN KEY (department_id) REFERENCES departments (id) ON DELETE SET NULL,
+    CONSTRAINT teachers_shift_fk FOREIGN KEY (shift_id) REFERENCES shifts (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS designations (

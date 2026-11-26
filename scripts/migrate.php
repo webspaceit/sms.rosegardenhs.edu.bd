@@ -183,6 +183,9 @@ $columns = [
         'address' => 'TEXT NULL AFTER previous_school',
         'archive_reason' => 'TEXT NULL AFTER status',
     ],
+    'teachers' => [
+        'shift_id' => 'BIGINT UNSIGNED NULL AFTER department_id',
+    ],
     'academic_report_marks' => [
         'obtained' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 0 AFTER ca_marks',
     ],

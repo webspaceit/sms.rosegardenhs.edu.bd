@@ -50,6 +50,12 @@ final class Catalogue
     }
 
     /** @return array<int, string> id => label */
+    public static function shifts(): array
+    {
+        return self::options('SELECT id, name FROM shifts ORDER BY name', 'name');
+    }
+
+    /** @return array<int, string> id => label */
     public static function designations(): array
     {
         $branchId = BranchContext::id();
