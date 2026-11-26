@@ -245,7 +245,9 @@ final class Application
         $router->post('/class-teachers', [$classTeachers, 'update']);
         $router->post('/class-teachers/update', [$classTeachers, 'update']);
         $this->crud($router, new Crud(TeacherSubject::module()), '/teacher-subjects');
-        $this->crud($router, new Crud(ClassRoutine::module()), '/class-routines');
+        $classRoutines = new Crud(ClassRoutine::module());
+        $this->crud($router, $classRoutines, '/class-routines');
+        $router->post('/class-routines/delete-selected', [$classRoutines, 'deleteSelected']);
         $router->get('/timetable', [$timetable, 'index']);
 
         // Facilities

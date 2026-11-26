@@ -38,7 +38,17 @@ final class Crud
 
         $search = trim((string) $request->input('q', ''));
         $page = max(1, (int) $request->input('page', 1));
-        $perPage = (int) ($this->module['perPage'] ?? 25);
+        $defaultPerPage = max(1, (int) ($this->module['perPage'] ?? 25));
+        $perPageOptions = array_values(array_unique(array_filter(
+            array_map('intval', $this->module['perPageOptions'] ?? []),
+            static fn (int $value): bool => $value > 0 && $value <= 500
+        )));
+        $perPage = $defaultPerPage;
+        if ($perPageOptions !== []) {
+            if (!in_array($defaultPerPage, $perPageOptions, true)) $defaultPerPage = $perPageOptions[0];
+            $requestedPerPage = (int) $request->input('per_page', $defaultPerPage);
+            $perPage = in_array($requestedPerPage, $perPageOptions, true) ? $requestedPerPage : $defaultPerPage;
+        }
 
         $from = (string) ($this->module['from'] ?? $this->table());
         $select = (string) ($this->module['select'] ?? '*');
@@ -93,6 +103,7 @@ final class Crud
             'selectedFilters' => $selectedFilters,
             'page' => $page,
             'perPage' => $perPage,
+            'perPageOptions' => $perPageOptions,
             'total' => $total,
             'pages' => max(1, (int) ceil($total / $perPage)),
         ]);
@@ -242,6 +253,74 @@ final class Crud
         }
 
         header('Location: ' . Url::to($this->route()));
+        exit;
+    }
+
+    public function deleteSelected(Request $request): void
+    {
+        $this->guardManage();
+        $this->verifyCsrf($request);
+
+        if (empty($this->module['bulkDelete']) || !empty($this->module['hideDelete'])) {
+            http_response_code(404);
+            View::render('errors/404', ['title' => 'Page not found']);
+            return;
+        }
+
+        $rawIds = $request->input('routine_ids', []);
+        $ids = [];
+        if (is_array($rawIds)) {
+            foreach ($rawIds as $rawId) {
+                if (!is_scalar($rawId) || filter_var((string) $rawId, FILTER_VALIDATE_INT) === false || (int) $rawId < 1) {
+                    Toast::flash('The selected routines are invalid. No records were deleted.', 'error');
+                    header('Location: ' . Url::to($this->route()));
+                    exit;
+                }
+                $ids[] = (int) $rawId;
+            }
+        }
+        $ids = array_values(array_unique($ids));
+        if ($ids === [] || count($ids) > 100) {
+            Toast::flash($ids === [] ? 'Select at least one routine to delete.' : 'Select no more than 100 routines at a time.', 'error');
+            header('Location: ' . Url::to($this->route()));
+            exit;
+        }
+
+        $connection = Database::connection();
+        try {
+            $connection->beginTransaction();
+            foreach ($ids as $id) {
+                $existing = $this->find($id);
+                if ($existing === null) continue;
+                $deleteGuard = $this->module['deleteGuard'] ?? null;
+                if (is_callable($deleteGuard)) {
+                    $message = $deleteGuard($id, $existing);
+                    if (is_string($message) && trim($message) !== '') {
+                        throw new \RuntimeException($message);
+                    }
+                }
+                $branch = $this->branchScope($this->table());
+                $sql = 'DELETE FROM ' . $this->table() . ' WHERE id = :id' . ($branch === null ? '' : ' AND branch_id = :__branch_id');
+                $stmt = $connection->prepare($sql);
+                $stmt->execute(['id' => $id] + ($branch === null ? [] : ['__branch_id' => $branch['id']]));
+                if ($stmt->rowCount() > 0) {
+                    AuditLog::record('record.deleted', $this->table(), $id, ['route' => $this->route(), 'bulk' => true]);
+                }
+            }
+            $connection->commit();
+            Toast::flash(count($ids) . ' routine ' . (count($ids) === 1 ? 'was' : 'records were') . ' deleted.');
+        } catch (\Throwable $error) {
+            if ($connection->inTransaction()) $connection->rollBack();
+            error_log((string) $error);
+            Toast::flash($error instanceof \RuntimeException ? $error->getMessage() : 'The selected routines could not be deleted. No changes were saved.', 'error');
+        }
+
+        $query = [];
+        foreach (['q', 'class_id', 'section_id', 'per_page', 'page'] as $key) {
+            $value = $request->input($key);
+            if (is_scalar($value) && (string) $value !== '') $query[$key] = (string) $value;
+        }
+        header('Location: ' . Url::to($this->route() . ($query === [] ? '' : '?' . http_build_query($query))));
         exit;
     }
 
@@ -418,6 +497,13 @@ final class Crud
                         $errors[] = $field['label'] . ' must be a valid date.';
                     }
                     $data[$name] = (string) $value;
+                    break;
+
+                case 'time':
+                    if (!preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', (string) $value)) {
+                        $errors[] = $field['label'] . ' must be a valid time.';
+                    }
+                    $data[$name] = (string) $value . ':00';
                     break;
 
                 case 'select':

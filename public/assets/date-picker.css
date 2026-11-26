@@ -1,0 +1,26 @@
+/* Shared calendar styling for every Flatpickr instance in the school system. */
+.flatpickr-calendar{width:306px!important;border:1px solid #dce5e9!important;border-radius:12px!important;background:#fff!important;box-shadow:0 8px 24px rgba(15,45,60,.12)!important;font-family:inherit!important;overflow:hidden}
+.flatpickr-months{height:38px!important;align-items:center}
+.flatpickr-months .flatpickr-month{height:38px!important;color:#075b4b!important;fill:#075b4b!important}
+.flatpickr-current-month{padding-top:7px!important;font-size:18px!important;font-weight:600!important;color:#075b4b!important}
+.flatpickr-current-month .flatpickr-monthDropdown-months{width:116px!important;height:27px!important;border:1px solid transparent!important;border-radius:6px!important;background:transparent!important;background-color:transparent!important;box-shadow:none!important;padding:1px 13px 1px 5px!important;font-size:15px!important;font-weight:600!important;line-height:1.2!important;color:#075b4b!important}
+.flatpickr-current-month .flatpickr-monthDropdown-months option{background:#fff!important;color:#334155!important;padding:4px 8px!important;font-size:13px!important;line-height:1.2!important}
+.flatpickr-current-month input.cur-year{background:transparent!important;background-color:transparent!important;box-shadow:none!important;font-size:16px!important;font-weight:600!important;color:#075b4b!important}
+.flatpickr-current-month .flatpickr-monthDropdown-months:hover,.flatpickr-current-month input.cur-year:hover{background:transparent!important}
+.flatpickr-months .flatpickr-prev-month,.flatpickr-months .flatpickr-next-month{top:7px!important;color:#64748b!important;fill:#64748b!important}
+.flatpickr-weekdays{height:31px!important;background:#fff!important}
+span.flatpickr-weekday{height:31px!important;line-height:31px!important;background:#fff!important;color:#64748b!important;font-size:13px!important;font-weight:600!important}
+.flatpickr-days,.dayContainer{width:100%!important;min-width:100%!important;max-width:100%!important}
+.dayContainer{padding:0 5px 6px!important}
+.flatpickr-day{flex-basis:14.285714%!important;width:14.285714%!important;max-width:none!important;height:39px!important;line-height:37px!important;border-radius:9px!important;color:#40536d!important;font-size:14px!important}
+.flatpickr-day:hover{background:#f1f8f6!important;border-color:#f1f8f6!important}
+.flatpickr-day.today{border-color:#34b99a!important;color:#40536d!important}
+.flatpickr-day.selected,.flatpickr-day.selected:hover{background:#08785f!important;border-color:#08785f!important;color:#fff!important}
+.flatpickr-day.prevMonthDay,.flatpickr-day.nextMonthDay,.flatpickr-day.flatpickr-disabled{color:#cbd5e1!important}
+.flatpickr-calendar.arrowTop:before,.flatpickr-calendar.arrowTop:after{display:none!important}
+.flatpickr-calendar .flatpickr-monthSelect-months{display:flex!important;flex-wrap:wrap!important;justify-content:center!important;gap:4px!important;padding:10px 6px 12px!important}
+.flatpickr-calendar .flatpickr-monthSelect-month{display:inline-flex!important;width:31%!important;height:48px!important;align-items:center!important;justify-content:center!important;margin:0!important;border:1px solid transparent!important;border-radius:9px!important;background:transparent!important;color:#40536d!important;font-size:14px!important;font-weight:500!important;cursor:pointer!important}
+.flatpickr-calendar .flatpickr-monthSelect-month:hover{border-color:#d9eee8!important;background:#f1f8f6!important;color:#075b4b!important}
+.flatpickr-calendar .flatpickr-monthSelect-month.selected,.flatpickr-calendar .flatpickr-monthSelect-month.selected:hover{border-color:#08785f!important;background:#08785f!important;color:#fff!important}
+input.flatpickr-alt-input{padding-right:2.75rem!important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2308785f' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M16 3v4M8 3v4M3 10h18'/%3E%3C/svg%3E")!important;background-repeat:no-repeat!important;background-position:right 12px center!important;background-size:17px 17px!important;cursor:pointer}
+@media(max-width:360px){.flatpickr-calendar{width:calc(100vw - 24px)!important}.flatpickr-day{height:36px!important;line-height:34px!important}}

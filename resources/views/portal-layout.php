@@ -22,6 +22,9 @@ $portalRole = (string) ($portalUser['role'] ?? '');
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= View::escape($title ?? 'Portal') ?> · WSIT School</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/plugins/monthSelect/style.css">
+    <link rel="stylesheet" href="<?= Url::to('/assets/date-picker.css?v=' . (string) @filemtime(__DIR__ . '/../../public/assets/date-picker.css')) ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -34,6 +37,8 @@ $portalRole = (string) ($portalUser['role'] ?? '');
         .toast-enter{animation:toast-in .2s ease-out}
         @keyframes toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/plugins/monthSelect/index.js" defer></script>
     <script src="<?= Url::to('/assets/app.js?v=' . (string) @filemtime(__DIR__ . '/../../public/assets/app.js')) ?>" defer></script>
 </head>
 <body class="min-h-screen bg-[#06150d] text-emerald-50 antialiased">

@@ -17,6 +17,11 @@ final class ClassRoutine
             'singular' => 'routine',
             'permission' => 'classes.manage',
             'managePermission' => 'classes.manage',
+            'perPage' => 25,
+            'perPageOptions' => [10, 25, 50, 100],
+            'selectableRows' => true,
+            'bulkDelete' => true,
+            'branchScoped' => false,
             'filters' => [
                 ['name' => 'class_id', 'label' => 'Class', 'allLabel' => 'All classes', 'column' => 'cr.class_id', 'options' => static fn (): array => Catalogue::classes()],
                 ['name' => 'section_id', 'label' => 'Section', 'allLabel' => 'All sections', 'column' => 'cr.section_id', 'options' => static fn (): array => Catalogue::sectionNames(), 'dependsOn' => 'class_id', 'optionClassIds' => static fn (): array => Catalogue::sectionClassIds()],
@@ -39,14 +44,20 @@ final class ClassRoutine
                 ]],
                 ['name' => 'subject_id', 'label' => 'Subject', 'type' => 'select', 'required' => true, 'options' => [Catalogue::class, 'subjects']],
                 ['name' => 'teacher_id', 'label' => 'Teacher', 'type' => 'select', 'options' => [Catalogue::class, 'teachers']],
-                ['name' => 'start_time', 'label' => 'Start time', 'type' => 'text', 'required' => true, 'max' => 20, 'hint' => 'For example 08:00.'],
-                ['name' => 'end_time', 'label' => 'End time', 'type' => 'text', 'required' => true, 'max' => 20],
+                ['name' => 'start_time', 'label' => 'Start time', 'type' => 'time', 'required' => true, 'step' => 60, 'timeRole' => 'start', 'hint' => 'Choose the period start time.'],
+                ['name' => 'end_time', 'label' => 'End time', 'type' => 'time', 'required' => true, 'step' => 60, 'timeRole' => 'end', 'hint' => 'Must be later than the start time.'],
                 ['name' => 'room', 'label' => 'Room', 'type' => 'text', 'max' => 50],
             ],
             'search' => ['c.name', 's.name', 'sub.name', 't.name'],
             'order' => 'c.numeric_level ASC, FIELD(cr.day_of_week, "Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"), cr.start_time ASC',
             'select' => 'cr.*, c.name AS class_name, s.name AS section_name, sub.name AS subject_name, t.name AS teacher_name',
             'from' => 'class_routines cr JOIN classes c ON c.id = cr.class_id LEFT JOIN sections s ON s.id = cr.section_id JOIN subjects sub ON sub.id = cr.subject_id LEFT JOIN teachers t ON t.id = cr.teacher_id',
+            'beforeSave' => static function (array $data): array {
+                if (($data['end_time'] ?? '') <= ($data['start_time'] ?? '')) {
+                    throw new \RuntimeException('End time must be later than start time.');
+                }
+                return $data;
+            },
         ];
     }
 }

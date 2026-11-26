@@ -16,6 +16,9 @@ if ($appUser !== null && in_array($appUser['role'] ?? '', ['admin', 'superadmin'
     <title><?= View::escape($title ?? 'School Management') ?> · WSIT School</title>
     <link rel="icon" type="image/png" href="<?= \App\Core\Url::to('/favicon.png') ?>">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/plugins/monthSelect/style.css">
+    <link rel="stylesheet" href="<?= \App\Core\Url::to('/assets/date-picker.css?v=' . (string) @filemtime(__DIR__ . '/../../public/assets/date-picker.css')) ?>">
     <script>tailwind.config={theme:{extend:{fontFamily:{mono:['ui-monospace','SFMono-Regular','Menlo','monospace']}}}}</script>
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -310,6 +313,8 @@ if ($appUser !== null && in_array($appUser['role'] ?? '', ['admin', 'superadmin'
         #sidebar.nav-open{transform:translateX(0)}
         @media (min-width:1024px){#sidebar{transform:none}}
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/plugins/monthSelect/index.js" defer></script>
     <script src="<?= \App\Core\Url::to('/assets/app.js?v=' . (string) @filemtime(__DIR__ . '/../../public/assets/app.js')) ?>" defer></script>
 </head>
 <body class="min-h-screen bg-slate-950 text-slate-100 antialiased">

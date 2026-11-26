@@ -15,21 +15,23 @@ $formColumns = max(1, min(4, (int) ($module['formColumns'] ?? 2)));
 $gridClass = $formColumns >= 4 ? 'grid gap-5 sm:grid-cols-2 xl:grid-cols-4' : ($formColumns >= 3 ? 'grid gap-5 sm:grid-cols-2 xl:grid-cols-3' : 'grid gap-5 sm:grid-cols-2');
 $wideSpan = $formColumns >= 3 ? 'sm:col-span-2 xl:col-span-' . $formColumns : 'sm:col-span-2';
 $hasFormattedDate = count(array_filter($module['fields'], static fn (array $field): bool => ($field['type'] ?? '') === 'date' && ($field['displayFormat'] ?? '') === 'd-F-Y')) > 0;
+$hasRoutineTime = count(array_filter($module['fields'], static fn (array $field): bool => ($field['type'] ?? '') === 'time' && !empty($field['timeRole']))) > 0;
 $value = static function (string $name, mixed $fallback = '') use ($record): mixed {
     return $record !== null && array_key_exists($name, $record) && $record[$name] !== null
         ? $record[$name]
         : $fallback;
 };
 ?>
-<?php if ($hasFormattedDate): ?>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+<?php if ($hasFormattedDate || $hasRoutineTime): ?>
 <style>
+<?php if ($hasFormattedDate): ?>
 .flatpickr-calendar{width:306px!important;border:1px solid #dce5e9!important;border-radius:12px!important;background:#fff!important;box-shadow:0 8px 24px rgba(15,45,60,.12)!important;font-family:inherit!important;overflow:hidden}
 .flatpickr-months{height:38px!important;align-items:center}
 .flatpickr-months .flatpickr-month{height:38px!important;color:#075b4b!important;fill:#075b4b!important}
 .flatpickr-current-month{padding-top:7px!important;font-size:18px!important;font-weight:600!important;color:#075b4b!important}
-.flatpickr-current-month .flatpickr-monthDropdown-months{background:transparent!important;background-color:transparent!important;box-shadow:none!important;font-size:18px!important;font-weight:600!important;color:#075b4b!important}
-.flatpickr-current-month input.cur-year{background:transparent!important;background-color:transparent!important;box-shadow:none!important;font-size:18px!important;font-weight:600!important;color:#075b4b!important}
+.flatpickr-current-month .flatpickr-monthDropdown-months{width:116px!important;height:27px!important;border:1px solid transparent!important;border-radius:6px!important;background:transparent!important;background-color:transparent!important;box-shadow:none!important;padding:1px 13px 1px 5px!important;font-size:15px!important;font-weight:600!important;line-height:1.2!important;color:#075b4b!important}
+.flatpickr-current-month .flatpickr-monthDropdown-months option{background:#fff!important;color:#334155!important;padding:4px 8px!important;font-size:13px!important;line-height:1.2!important}
+.flatpickr-current-month input.cur-year{background:transparent!important;background-color:transparent!important;box-shadow:none!important;font-size:16px!important;font-weight:600!important;color:#075b4b!important}
 .flatpickr-current-month .flatpickr-monthDropdown-months:hover,.flatpickr-current-month input.cur-year:hover{background:transparent!important}
 .flatpickr-months .flatpickr-prev-month,.flatpickr-months .flatpickr-next-month{top:7px!important;color:#64748b!important;fill:#64748b!important}
 .flatpickr-weekdays{height:31px!important;background:#fff!important}
@@ -45,6 +47,36 @@ span.flatpickr-weekday{height:31px!important;line-height:31px!important;backgrou
 .dashboard-shell main form button[data-open-date-picker]:not([class*="text-red-200"]):not([class*="text-rose-200"]){display:grid!important;min-width:2rem!important;width:2rem!important;height:2rem!important;min-height:2rem!important;place-items:center!important;gap:0!important;padding:0!important;border:0!important;border-radius:.5rem!important;background:transparent!important;color:#10a878!important}
 .dashboard-shell main form button[data-open-date-picker]:not([class*="text-red-200"]):not([class*="text-rose-200"])::before,.dashboard-shell main form button[data-open-date-picker]:not([class*="text-red-200"]):not([class*="text-rose-200"])::after{display:none!important;content:none!important}
 .dashboard-shell main form button[data-open-date-picker]:not([class*="text-red-200"]):not([class*="text-rose-200"]):hover{background:rgba(16,168,120,.1)!important;box-shadow:none!important}
+<?php endif; ?>
+<?php if ($hasRoutineTime): ?>
+.routine-time-picker{position:relative}
+.routine-time-popup{position:absolute;z-index:30;top:calc(100% + 7px);left:0;display:flex;width:min(340px,calc(100vw - 32px));flex-direction:column;gap:14px;padding:16px;border:1px solid rgba(94,234,212,.3);border-radius:16px;background:#062F2D;color:#f0fdfa;box-shadow:0 18px 38px rgba(0,0,0,.42)}
+.routine-time-popup[hidden]{display:none}
+.routine-time-popup-head,.routine-time-popup-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.routine-time-popup-head{padding-bottom:10px;border-bottom:1px solid rgba(167,243,208,.14)}
+.routine-time-popup-title{font-size:13px;font-weight:700;letter-spacing:.01em}
+.routine-time-current{border:1px solid rgba(45,212,191,.22);border-radius:999px;background:rgba(13,148,136,.16);padding:4px 9px;color:#99f6e4;font-size:12px;font-variant-numeric:tabular-nums}
+.routine-time-columns{display:grid;grid-template-columns:1fr 1.15fr .9fr;gap:10px}
+.routine-time-column{min-width:0}
+.routine-time-column-label{display:block;margin:0 0 6px;color:#99bcb4;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.routine-time-select{display:block;width:100%;min-width:0;height:42px;border:1px solid rgba(167,243,208,.2);border-radius:9px;background:#082f2d;color:#f0fdfa;padding:0 10px;font-size:14px;font-variant-numeric:tabular-nums;outline:none}
+.routine-time-select:focus{border-color:#2dd4bf;box-shadow:0 0 0 2px rgba(45,212,191,.14)}
+.routine-time-popup-foot{padding-top:10px;border-top:1px solid rgba(167,243,208,.14)}
+.routine-time-hint{color:#86a9a1;font-size:11px}
+.routine-time-actions{display:flex;align-items:center;gap:8px}
+.routine-time-now,.routine-time-done{border:1px solid rgba(94,234,212,.35);border-radius:8px;padding:7px 12px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;transition:background .12s}
+.routine-time-now{background:transparent;color:#99f6e4}
+.routine-time-done{background:#0e766e}
+.routine-time-now:hover{background:rgba(45,212,191,.12)}
+.routine-time-done:hover{background:#119487}
+.dashboard-shell main form .routine-time-picker button[data-time-toggle]{display:flex!important;min-width:0!important;width:100%!important;height:auto!important;min-height:46px!important;justify-content:space-between!important;gap:12px!important;padding:.625rem .75rem!important;border:1px solid rgba(187,247,208,.28)!important;border-radius:.75rem!important;background:#062F2D!important;color:#f0fdfa!important;font-size:.875rem!important;font-weight:500!important}
+.dashboard-shell main form .routine-time-picker button[data-time-toggle]::before,.dashboard-shell main form .routine-time-picker button[data-time-toggle]::after,.dashboard-shell main form button:not([class*="text-red-200"]):not([class*="text-rose-200"]).routine-time-now::before,.dashboard-shell main form button:not([class*="text-red-200"]):not([class*="text-rose-200"]).routine-time-now::after,.dashboard-shell main form button:not([class*="text-red-200"]):not([class*="text-rose-200"]).routine-time-done::before,.dashboard-shell main form button:not([class*="text-red-200"]):not([class*="text-rose-200"]).routine-time-done::after{display:none!important;width:0!important;height:0!important;margin:0!important;padding:0!important;border:0!important;content:none!important;box-shadow:none!important}
+.dashboard-shell main form .routine-time-popup button.routine-time-now,.dashboard-shell main form .routine-time-popup button.routine-time-done{display:inline-flex!important;width:auto!important;min-width:0!important;height:auto!important;min-height:34px!important;align-items:center!important;justify-content:center!important;gap:0!important;margin:0!important;padding:7px 12px!important;border-width:1px!important;border-radius:8px!important;font-size:12px!important;font-weight:700!important}
+.dashboard-shell main form .routine-time-popup button.routine-time-now{background:transparent!important;color:#99f6e4!important}
+.dashboard-shell main form .routine-time-popup button.routine-time-done{background:#0e766e!important;color:#fff!important}
+.dashboard-shell main form .routine-time-popup button.routine-time-now:hover{background:rgba(45,212,191,.12)!important}
+.dashboard-shell main form .routine-time-popup button.routine-time-done:hover{background:#119487!important}
+<?php endif; ?>
 </style>
 <?php endif; ?>
 <div class="<?= !empty($module['formFullWidth']) ? 'w-full max-w-none' : 'mx-auto max-w-3xl' ?>">
@@ -83,6 +115,7 @@ span.flatpickr-weekday{height:31px!important;line-height:31px!important;backgrou
                     // Leave malformed legacy dates blank so they can be corrected.
                 }
             }
+            $inputValue = $type === 'time' && is_string($current) ? substr($current, 0, 5) : (string) $current;
             $wide = (bool) ($field['wide'] ?? in_array($type, ['textarea', 'multiselect'], true));
             ?>
             <div class="<?= $wide ? $wideSpan : '' ?>">
@@ -157,9 +190,37 @@ span.flatpickr-weekday{height:31px!important;line-height:31px!important;backgrou
                         <input id="field-<?= View::escape($name) ?>-value" type="hidden" name="<?= View::escape($name) ?>" value="<?= View::escape($dateIsoValue) ?>" data-date-value="<?= View::escape($name) ?>">
                         <button type="button" aria-label="Choose <?= View::escape(strtolower($label)) ?>" data-open-date-picker="<?= View::escape($name) ?>" class="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md text-teal-200 hover:bg-white/10"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></button>
                     </div>
+                <?php elseif ($type === 'time' && !empty($field['timeRole'])): ?>
+                    <?php
+                    $timeParts = $inputValue !== '' ? explode(':', $inputValue) : ['09', '00'];
+                    $hour24 = (int) ($timeParts[0] ?? 9);
+                    $minute = (int) ($timeParts[1] ?? 0);
+                    $period = $hour24 >= 12 ? 'PM' : 'AM';
+                    $hour12 = $hour24 % 12 ?: 12;
+                    $timeDisplay = sprintf('%02d:%02d %s', $hour12, $minute, $period);
+                    $timeSelectedHour = $inputValue !== '' ? $hour12 : 9;
+                    $timeSelectedMinute = $inputValue !== '' ? $minute : 0;
+                    $timeSelectedPeriod = $inputValue !== '' ? $period : 'AM';
+                    ?>
+                    <div class="routine-time-picker" data-time-picker>
+                        <input type="hidden" id="field-<?= View::escape($name) ?>" name="<?= View::escape($name) ?>" value="<?= View::escape($inputValue) ?>" data-routine-time="<?= View::escape((string) $field['timeRole']) ?>" data-time-value step="<?= (int) ($field['step'] ?? 60) ?>">
+                        <button type="button" class="flex w-full items-center justify-between rounded-lg border border-green-800/80 bg-[#062F2D] px-3 py-2.5 text-left text-sm outline-none focus:border-teal-400" aria-haspopup="listbox" aria-expanded="false" data-time-toggle>
+                            <span data-time-display><?= View::escape($inputValue !== '' ? $timeDisplay : 'Select time…') ?></span>
+                            <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"></circle><path stroke-linecap="round" d="M12 7v5l3 2"></path></svg>
+                        </button>
+                        <div class="routine-time-popup" role="dialog" aria-label="Choose time" hidden data-time-popup>
+                            <div class="routine-time-popup-head"><span class="routine-time-popup-title">Choose time</span><span class="routine-time-current" data-time-current><?= View::escape($inputValue !== '' ? $timeDisplay : '09:00 AM') ?></span></div>
+                            <div class="routine-time-columns">
+                                <label class="routine-time-column"><span class="routine-time-column-label">Hour</span><select class="routine-time-select" data-time-hour aria-label="Hour"><?php for ($hourOption = 1; $hourOption <= 12; $hourOption++): ?><option value="<?= $hourOption ?>"<?= $timeSelectedHour === $hourOption ? ' selected' : '' ?>><?= sprintf('%02d', $hourOption) ?></option><?php endfor; ?></select></label>
+                                <label class="routine-time-column"><span class="routine-time-column-label">Minute</span><select class="routine-time-select" data-time-minute aria-label="Minute"><?php for ($minuteOption = 0; $minuteOption < 60; $minuteOption++): ?><option value="<?= $minuteOption ?>"<?= $timeSelectedMinute === $minuteOption ? ' selected' : '' ?>><?= sprintf('%02d', $minuteOption) ?></option><?php endfor; ?></select></label>
+                                <label class="routine-time-column"><span class="routine-time-column-label">Period</span><select class="routine-time-select" data-time-period aria-label="AM or PM"><option value="AM"<?= $timeSelectedPeriod === 'AM' ? ' selected' : '' ?>>AM</option><option value="PM"<?= $timeSelectedPeriod === 'PM' ? ' selected' : '' ?>>PM</option></select></label>
+                            </div>
+                            <div class="routine-time-popup-foot"><span class="routine-time-hint">12-hour time · 1-minute steps</span><div class="routine-time-actions"><button type="button" class="routine-time-now" data-time-now>Now</button><button type="button" class="routine-time-done" data-time-done>Done</button></div></div>
+                        </div>
+                    </div>
                 <?php else: ?>
                     <?php $isPhone = str_contains(strtolower($name), 'phone') || str_contains(strtolower($name), 'mobile'); ?>
-                    <input id="field-<?= View::escape($name) ?>" name="<?= View::escape($name) ?>" type="<?= $isPhone ? 'tel' : View::escape($type === 'number' ? 'number' : ($type === 'date' ? 'date' : 'text')) ?>" value="<?= View::escape((string) $current) ?>"<?= $required ? ' required' : '' ?><?= $autoGenerated || $readOnly ? ' readonly' : '' ?><?= $isPhone ? ' inputmode="tel" maxlength="14" pattern="(?:\+?88)?01[3-9][0-9]{8}" title="Enter a valid Bangladesh mobile number, e.g. 01712345678 or +8801712345678." placeholder="01XXXXXXXXX or +8801XXXXXXXXX"' : (isset($field['max']) ? ' maxlength="' . (int) $field['max'] . '"' : '') ?><?= isset($field['step']) ? ' step="' . View::escape((string) $field['step']) . '"' : '' ?><?= !$isPhone && isset($field['placeholder']) ? ' placeholder="' . View::escape((string) $field['placeholder']) . '"' : '' ?> class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-teal-400<?= $autoGenerated || $readOnly ? ' cursor-not-allowed opacity-80' : '' ?>">
+                    <input id="field-<?= View::escape($name) ?>" name="<?= View::escape($name) ?>" type="<?= $isPhone ? 'tel' : View::escape(in_array($type, ['number', 'date', 'time'], true) ? $type : 'text') ?>" value="<?= View::escape($inputValue) ?>"<?= $required ? ' required' : '' ?><?= $autoGenerated || $readOnly ? ' readonly' : '' ?><?= $isPhone ? ' inputmode="tel" maxlength="14" pattern="(?:\+?88)?01[3-9][0-9]{8}" title="Enter a valid Bangladesh mobile number, e.g. 01712345678 or +8801712345678." placeholder="01XXXXXXXXX or +8801XXXXXXXXX"' : (isset($field['max']) ? ' maxlength="' . (int) $field['max'] . '"' : '') ?><?= isset($field['step']) ? ' step="' . View::escape((string) $field['step']) . '"' : '' ?><?= !$isPhone && isset($field['placeholder']) ? ' placeholder="' . View::escape((string) $field['placeholder']) . '"' : '' ?><?= !empty($field['timeRole']) ? ' data-routine-time="' . View::escape((string) $field['timeRole']) . '" style="background-color:#062F2D;color-scheme:dark"' : '' ?> class="w-full rounded-lg border border-green-800/80 bg-[#062F2D] px-3 py-2.5 text-sm outline-none focus:border-teal-400<?= $autoGenerated || $readOnly ? ' cursor-not-allowed opacity-80' : '' ?>">
                 <?php endif; ?>
 
                 <?php if ($hint !== ''): ?><p class="mt-1.5 text-xs text-slate-500"><?= View::escape($hint) ?></p><?php endif; ?>
@@ -173,7 +234,6 @@ span.flatpickr-weekday{height:31px!important;line-height:31px!important;backgrou
         </div>
     </form>
 </div>
-<?php if ($hasFormattedDate): ?><script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script><?php endif; ?>
 <script>
 document.querySelectorAll('input[data-image-preview]').forEach(input => {
     const preview = document.getElementById(input.dataset.imagePreview);
@@ -222,7 +282,75 @@ document.querySelectorAll('select[data-other-select]').forEach(select => {
     toggleOtherField();
 });
 
-document.querySelectorAll('input[data-formatted-date]').forEach(display => {
+const routineStartTime = document.querySelector('input[data-routine-time="start"]');
+const routineEndTime = document.querySelector('input[data-routine-time="end"]');
+if (routineStartTime && routineEndTime) {
+    const syncEndTimeMinimum = () => {
+        routineEndTime.min = routineStartTime.value;
+        if (routineEndTime.value && routineEndTime.value <= routineStartTime.value) {
+            routineEndTime.value = '';
+            const endPicker = routineEndTime.closest('[data-time-picker]');
+            const endDisplay = endPicker?.querySelector('[data-time-display]');
+            const endCurrentDisplay = endPicker?.querySelector('[data-time-current]');
+            const endHour = endPicker?.querySelector('[data-time-hour]');
+            const endMinute = endPicker?.querySelector('[data-time-minute]');
+            const endPeriod = endPicker?.querySelector('[data-time-period]');
+            if (endHour) endHour.value = '9';
+            if (endMinute) endMinute.value = '0';
+            if (endPeriod) endPeriod.value = 'AM';
+            if (endDisplay) endDisplay.textContent = 'Select time…';
+            if (endCurrentDisplay) endCurrentDisplay.textContent = 'Select time';
+        }
+    };
+    routineStartTime.addEventListener('input', syncEndTimeMinimum);
+    routineStartTime.addEventListener('change', syncEndTimeMinimum);
+    syncEndTimeMinimum();
+}
+
+document.querySelectorAll('[data-time-picker]').forEach(picker => {
+    const value = picker.querySelector('[data-time-value]');
+    const display = picker.querySelector('[data-time-display]');
+    const currentDisplay = picker.querySelector('[data-time-current]');
+    const toggle = picker.querySelector('[data-time-toggle]');
+    const popup = picker.querySelector('[data-time-popup]');
+    const done = picker.querySelector('[data-time-done]');
+    const hourSelect = picker.querySelector('[data-time-hour]');
+    const minuteSelect = picker.querySelector('[data-time-minute]');
+    const periodSelect = picker.querySelector('[data-time-period]');
+    const nowButton = picker.querySelector('[data-time-now]');
+    if (!value || !display || !toggle || !popup || !hourSelect || !minuteSelect || !periodSelect) return;
+
+    const format = () => `${String(hourSelect.value).padStart(2, '0')}:${String(minuteSelect.value).padStart(2, '0')} ${periodSelect.value}`;
+    const syncValue = () => {
+        const hour12 = Number(hourSelect.value);
+        const hour24 = (hour12 % 12) + (periodSelect.value === 'PM' ? 12 : 0);
+        value.value = `${String(hour24).padStart(2, '0')}:${String(minuteSelect.value).padStart(2, '0')}`;
+        display.textContent = format();
+        if (currentDisplay) currentDisplay.textContent = format();
+        value.dispatchEvent(new Event('input', { bubbles: true }));
+        value.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    const close = () => { popup.hidden = true; toggle.setAttribute('aria-expanded', 'false'); };
+    if (value.value) display.textContent = format();
+    [hourSelect, minuteSelect, periodSelect].forEach(select => select.addEventListener('change', syncValue));
+    nowButton?.addEventListener('click', () => {
+        const now = new Date();
+        const hour24 = now.getHours();
+        hourSelect.value = String(hour24 % 12 || 12);
+        minuteSelect.value = String(now.getMinutes());
+        periodSelect.value = hour24 >= 12 ? 'PM' : 'AM';
+        syncValue();
+    });
+    toggle.addEventListener('click', () => {
+        popup.hidden = !popup.hidden;
+        toggle.setAttribute('aria-expanded', String(!popup.hidden));
+    });
+    done?.addEventListener('click', close);
+    document.addEventListener('click', event => { if (!picker.contains(event.target)) close(); });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') close(); });
+});
+
+const initializeFormattedDatePickers = () => document.querySelectorAll('input[data-formatted-date]').forEach(display => {
     const name = display.dataset.formattedDate;
     const value = document.querySelector(`[data-date-value="${name}"]`);
     if (!window.flatpickr || !value) return;
@@ -257,4 +385,9 @@ document.querySelectorAll('input[data-formatted-date]').forEach(display => {
     display.addEventListener('blur', syncTypedDate);
     document.querySelector(`[data-open-date-picker="${name}"]`)?.addEventListener('click', () => picker.open());
 });
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeFormattedDatePickers, { once: true });
+} else {
+    initializeFormattedDatePickers();
+}
 </script>

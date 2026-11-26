@@ -38,6 +38,34 @@
 
   addMissingSerialColumns();
 
+  function initializeDatePickers(root = document) {
+    if (typeof window.flatpickr !== 'function') return;
+    root.querySelectorAll('input[type="date"],input[type="month"]').forEach((input) => {
+      if (input.dataset.noFlatpickr !== undefined || input.dataset.flatpickrReady === 'true') return;
+      const isMonth = input.type === 'month';
+      if (isMonth && typeof window.monthSelectPlugin !== 'function') return;
+      input.dataset.flatpickrReady = 'true';
+      const picker = window.flatpickr(input, {
+        dateFormat: isMonth ? 'Y-m' : 'Y-m-d',
+        altInput: true,
+        altFormat: isMonth ? 'F Y' : 'd-F-Y',
+        altInputClass: `${input.className} flatpickr-alt-input`,
+        allowInput: true,
+        disableMobile: true,
+        monthSelectorType: 'dropdown',
+        minDate: input.min || undefined,
+        maxDate: input.max || undefined,
+        ...(isMonth ? { plugins: [new window.monthSelectPlugin({ shorthand: false, dateFormat: 'Y-m', altFormat: 'F Y', theme: 'light' })] } : {}),
+      });
+      if (picker.altInput) {
+        picker.altInput.placeholder = isMonth ? 'Month Year' : 'DD-Month-YYYY';
+        picker.altInput.setAttribute('aria-label', input.labels?.[0]?.textContent?.replace('*', '').trim() || input.name || (isMonth ? 'Month' : 'Date'));
+      }
+    });
+  }
+
+  initializeDatePickers();
+
   function setRequiredSelectMessage(field) {
     if (!(field instanceof HTMLSelectElement) || !field.required || !field.validity.valueMissing) return;
     const label = field.labels?.[0];
@@ -225,6 +253,7 @@
     document.body.replaceChildren(...[...nextDocument.body.childNodes].map((node) => document.importNode(node, true)));
     runInsertedScripts(document.body);
     addMissingSerialColumns();
+    initializeDatePickers(document.body);
   }
 
   async function loadPage(url, { method = 'GET', body = undefined, push = true, scroll = true } = {}) {
