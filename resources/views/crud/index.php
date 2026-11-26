@@ -120,11 +120,13 @@ $hasActiveFilters = $selectedFilters !== [];
                             <div class="student-actions-controls hidden flex items-center gap-2">
                                 <?php if (!empty($module['fileField']) && !empty($record[$module['fileField']])): ?><a target="_blank" href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $record[$module['fileField']])) ?>" class="rounded-md border border-green-100/20 px-3 py-1.5 text-xs hover:border-green-300">Open file</a><?php endif; ?>
                                 <a href="<?= Url::to($module['route'] . '/edit?id=' . (int) $record['id']) ?>" class="rounded-md border border-green-100/20 px-3 py-1.5 text-xs hover:border-green-300">Edit</a>
-                                <form method="post" action="<?= Url::to($module['route'] . '/delete') ?>" data-confirm="Delete this <?= View::escape($module['singular']) ?>?" data-no-ajax>
-                                    <?= \App\Core\Csrf::field() ?>
-                                    <input type="hidden" name="id" value="<?= (int) $record['id'] ?>">
-                                    <button class="rounded-md border border-green-100/20 px-3 py-1.5 text-xs text-rose-200 hover:border-rose-400">Delete</button>
-                                </form>
+                                <?php if (empty($module['hideDelete'])): ?>
+                                    <form method="post" action="<?= Url::to($module['route'] . '/delete') ?>" data-confirm="Delete this <?= View::escape($module['singular']) ?>?" data-no-ajax>
+                                        <?= \App\Core\Csrf::field() ?>
+                                        <input type="hidden" name="id" value="<?= (int) $record['id'] ?>">
+                                        <button class="rounded-md border border-green-100/20 px-3 py-1.5 text-xs text-rose-200 hover:border-rose-400">Delete</button>
+                                    </form>
+                                <?php endif; ?>
                             </div>
                         </details>
                     </td>

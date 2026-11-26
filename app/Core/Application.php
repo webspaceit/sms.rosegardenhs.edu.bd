@@ -73,6 +73,7 @@ use App\Models\StudentHouse;
 use App\Models\StudentTransport;
 use App\Models\StudyMaterial;
 use App\Models\Subject;
+use App\Models\SubjectType;
 use App\Models\Teacher;
 use App\Models\TeacherAttendance;
 use App\Models\TeacherSubject;
@@ -194,6 +195,7 @@ final class Application
         $this->crud($router, new Crud(Guardian::module()), '/guardians');
         $this->crud($router, new Crud(StudentHouse::module()), '/student-houses');
         $this->crud($router, new Crud(Subject::module()), '/subjects');
+        $this->crud($router, new Crud(SubjectType::module()), '/subject-types');
         $this->crud($router, new Crud(SchoolClass::module()), '/classes');
         $this->crud($router, new Crud(Shift::module()), '/shifts');
         $this->crud($router, new Crud(Section::module()), '/sections');

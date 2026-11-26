@@ -44,6 +44,12 @@ final class Catalogue
     }
 
     /** @return array<int, string> id => label */
+    public static function subjectTypes(): array
+    {
+        return self::options('SELECT id, name FROM subject_types ORDER BY name', 'name');
+    }
+
+    /** @return array<int, string> id => label */
     public static function teachers(): array
     {
         return self::options('SELECT id, name FROM teachers ORDER BY name', 'name');

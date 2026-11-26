@@ -297,16 +297,27 @@ CREATE TABLE IF NOT EXISTS academic_groups (
 -- Subjects, defined before the tables that reference them
 -- ---------------------------------------------------------------------------
 
+CREATE TABLE IF NOT EXISTS subject_types (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY subject_type_name_unique (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS subjects (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
     code VARCHAR(20) NULL,
     type VARCHAR(30) NOT NULL DEFAULT 'core',
+    type_id BIGINT UNSIGNED NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NULL,
     PRIMARY KEY (id),
     UNIQUE KEY subjects_name_unique (name),
-    UNIQUE KEY subjects_code_unique (code)
+    UNIQUE KEY subjects_code_unique (code),
+    CONSTRAINT subjects_type_fk FOREIGN KEY (type_id) REFERENCES subject_types (id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS class_subject (

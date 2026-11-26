@@ -212,8 +212,24 @@ final class Crud
         $this->guardManage();
         $this->verifyCsrf($request);
 
+        if (!empty($this->module['hideDelete'])) {
+            Toast::flash('These records cannot be deleted.', 'error');
+            header('Location: ' . Url::to($this->route()));
+            exit;
+        }
+
         $id = (int) $request->input('id', 0);
-        if ($this->find($id) !== null) {
+        $existing = $this->find($id);
+        if ($existing !== null) {
+            $deleteGuard = $this->module['deleteGuard'] ?? null;
+            if (is_callable($deleteGuard)) {
+                $message = $deleteGuard($id, $existing);
+                if (is_string($message) && trim($message) !== '') {
+                    Toast::flash($message, 'error');
+                    header('Location: ' . Url::to($this->route()));
+                    exit;
+                }
+            }
             $branch = $this->branchScope($this->table());
             $sql = 'DELETE FROM ' . $this->table() . ' WHERE id = :id' . ($branch === null ? '' : ' AND branch_id = :__branch_id');
             $stmt = Database::connection()->prepare($sql);

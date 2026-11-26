@@ -73,7 +73,7 @@ foreach (['students', 'teachers', 'guardians', 'subjects', 'fee_heads', 'student
 // installations and making the migration safe to repeat.
 $branchTables = [
     'users', 'audit_logs', 'academic_years', 'classes', 'sections', 'students', 'student_enrollment_history', 'academic_groups',
-    'notices', 'holidays', 'events', 'complaints', 'school_settings', 'subjects', 'class_subject',
+    'notices', 'holidays', 'events', 'complaints', 'school_settings', 'subject_types', 'subjects', 'class_subject',
     'teachers', 'designations', 'teacher_subject', 'guardians', 'student_guardian', 'student_houses',
     'shifts', 'departments', 'fee_heads', 'fee_structures', 'fee_collections', 'student_payments', 'student_payment_allocations', 'fee_invoice_discounts', 'fee_discounts', 'fee_carry_forwards',
     'transactions', 'bank_reconciliations', 'salary_structures', 'salary_payments', 'attendances',
@@ -113,6 +113,7 @@ $branchUniqueKeys = [
     'classes' => ['classes_name_unique' => 'name', 'classes_numeric_level_unique' => 'numeric_level'],
     'students' => ['students_student_id_unique' => 'student_id'],
     'school_settings' => ['school_settings_key_unique' => 'key'],
+    'subject_types' => ['subject_type_name_unique' => 'name'],
     'subjects' => ['subjects_name_unique' => 'name', 'subjects_code_unique' => 'code'],
     'teachers' => ['teachers_employee_id_unique' => 'employee_id'],
     'designations' => ['designations_name_unique' => 'name'],
@@ -183,6 +184,9 @@ $columns = [
         'address' => 'TEXT NULL AFTER previous_school',
         'archive_reason' => 'TEXT NULL AFTER status',
     ],
+    'subjects' => [
+        'type_id' => 'BIGINT UNSIGNED NULL AFTER type',
+    ],
     'classes' => [
         'class_teacher_id' => 'BIGINT UNSIGNED NULL AFTER shift',
         'class_teacher_signature' => 'VARCHAR(255) NULL AFTER class_teacher_id',
@@ -212,6 +216,42 @@ foreach ($columns as $table => $tableColumns) {
         $added++;
         echo 'Added column ', $table, '.', $column, PHP_EOL;
     }
+}
+
+// Seed standard subject types and link existing subjects to editable type records.
+$subjectTypeLabels = [
+    'core' => 'Core',
+    'elective' => 'Elective',
+    'skill' => 'Skill based',
+    'extra' => 'Extra curriculum',
+];
+$insertSubjectType = $pdo->prepare(
+    'INSERT INTO subject_types (name, branch_id, created_at) '
+    . 'SELECT :name, :branch, NOW() WHERE NOT EXISTS '
+    . '(SELECT 1 FROM subject_types WHERE name=:existing_name AND branch_id=:existing_branch)'
+);
+$findSubjectType = $pdo->prepare('SELECT id FROM subject_types WHERE name=:name AND branch_id=:branch LIMIT 1');
+$legacySubjectTypes = $pdo->prepare('SELECT DISTINCT type FROM subjects WHERE branch_id=:branch AND type_id IS NULL');
+$linkSubjectType = $pdo->prepare('UPDATE subjects SET type_id=:type_id WHERE branch_id=:branch AND type=:legacy_type AND type_id IS NULL');
+foreach ($pdo->query('SELECT id FROM branches')->fetchAll(PDO::FETCH_COLUMN) as $branchId) {
+    foreach ($subjectTypeLabels as $label) {
+        $insertSubjectType->execute(['name' => $label, 'branch' => $branchId, 'existing_name' => $label, 'existing_branch' => $branchId]);
+    }
+    $legacySubjectTypes->execute(['branch' => $branchId]);
+    foreach ($legacySubjectTypes->fetchAll(PDO::FETCH_COLUMN) as $legacyType) {
+        $legacyType = trim((string) $legacyType);
+        $normalizedType = strtolower($legacyType);
+        $label = $subjectTypeLabels[$normalizedType] ?? ucwords(str_replace(['_', '-'], ' ', $legacyType));
+        if ($label === '') $label = 'Core';
+        $insertSubjectType->execute(['name' => $label, 'branch' => $branchId, 'existing_name' => $label, 'existing_branch' => $branchId]);
+        $findSubjectType->execute(['name' => $label, 'branch' => $branchId]);
+        $typeId = $findSubjectType->fetchColumn();
+        if ($typeId !== false) $linkSubjectType->execute(['type_id' => (int) $typeId, 'branch' => $branchId, 'legacy_type' => $legacyType]);
+    }
+}
+$subjectSchema = $pdo->query('SHOW CREATE TABLE subjects')->fetch(PDO::FETCH_NUM);
+if (!str_contains((string) ($subjectSchema[1] ?? ''), 'subjects_type_fk')) {
+    $pdo->exec('ALTER TABLE subjects ADD CONSTRAINT subjects_type_fk FOREIGN KEY (type_id) REFERENCES subject_types (id) ON DELETE RESTRICT');
 }
 
 // Move existing class-teacher selections to their own class record. This
