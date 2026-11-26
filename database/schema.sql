@@ -53,6 +53,8 @@ CREATE TABLE IF NOT EXISTS classes (
     name VARCHAR(50) NOT NULL,
     numeric_level TINYINT UNSIGNED NOT NULL,
     shift ENUM('Morning','Day','Both') NOT NULL DEFAULT 'Day',
+    class_teacher_id BIGINT UNSIGNED NULL,
+    class_teacher_signature VARCHAR(255) NULL,
     PRIMARY KEY (id),
     UNIQUE KEY classes_name_unique (name),
     UNIQUE KEY classes_numeric_level_unique (numeric_level)

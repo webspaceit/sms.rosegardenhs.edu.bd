@@ -144,8 +144,9 @@ final class AllocationMatrixController
 
         $statement = Database::connection()->prepare(
             'SELECT s.id AS subject_id, s.name AS subject_name, s.code,'
-            . ' ts.id AS assignment_id, ts.teacher_id, ts.is_class_teacher, t.name AS teacher_name'
+            . ' ts.id AS assignment_id, ts.teacher_id, CASE WHEN c.class_teacher_id = ts.teacher_id THEN 1 ELSE 0 END AS is_class_teacher, t.name AS teacher_name'
             . ' FROM class_subject cs JOIN subjects s ON s.id = cs.subject_id AND s.branch_id=cs.branch_id'
+            . ' JOIN classes c ON c.id = cs.class_id AND c.branch_id=cs.branch_id'
             . ' LEFT JOIN teacher_subject ts ON ts.subject_id = s.id AND ts.class_id = cs.class_id AND ts.branch_id=cs.branch_id'
             . ' LEFT JOIN teachers t ON t.id = ts.teacher_id AND t.branch_id=cs.branch_id'
             . ' WHERE cs.class_id = :class_id AND cs.branch_id=:branch ORDER BY cs.sort_order, s.name'

@@ -18,8 +18,8 @@ use App\Models\Catalogue;
 /**
  * Who is in charge of each class.
  *
- * A class teacher is a teacher subject assignment flagged as the class
- * teacher, so the two screens always agree.
+ * The class is the source of truth for its class teacher. Subject assignments
+ * display that status, but do not control whether the class teacher is saved.
  */
 final class ClassTeacherController
 {
@@ -29,11 +29,12 @@ final class ClassTeacherController
 
         $statement = Database::connection()->query(
             'SELECT c.id AS class_id, c.name AS class_name, c.numeric_level,'
-            . ' ts.subject_id, ts.teacher_id, ts.class_teacher_signature, t.name AS teacher_name, s.name AS subject_name'
+            . ' c.class_teacher_id AS teacher_id, c.class_teacher_signature, t.name AS teacher_name,'
+            . ' (SELECT s.name FROM teacher_subject ts JOIN subjects s ON s.id=ts.subject_id AND s.branch_id=ts.branch_id'
+            . ' WHERE ts.class_id=c.id AND ts.teacher_id=c.class_teacher_id AND ts.branch_id=c.branch_id'
+            . ' ORDER BY ts.is_class_teacher DESC, ts.id LIMIT 1) AS subject_name'
             . ' FROM classes c'
-            . ' LEFT JOIN teacher_subject ts ON ts.class_id = c.id AND ts.branch_id=c.branch_id AND ts.is_class_teacher = 1'
-            . ' LEFT JOIN teachers t ON t.id = ts.teacher_id AND t.branch_id=c.branch_id'
-            . ' LEFT JOIN subjects s ON s.id = ts.subject_id AND s.branch_id=c.branch_id'
+            . ' LEFT JOIN teachers t ON t.id = c.class_teacher_id AND t.branch_id=c.branch_id'
             . ' WHERE c.branch_id=' . BranchContext::id()
             . ' ORDER BY c.numeric_level'
         );
@@ -86,9 +87,10 @@ final class ClassTeacherController
         }
 
         $classCheck = Database::connection();
-        $classStatement = $classCheck->prepare('SELECT 1 FROM classes WHERE id=:id AND branch_id=:branch LIMIT 1');
+        $classStatement = $classCheck->prepare('SELECT class_teacher_signature FROM classes WHERE id=:id AND branch_id=:branch LIMIT 1');
         $classStatement->execute(['id' => $classId, 'branch' => BranchContext::id()]);
-        if ($classStatement->fetchColumn() === false) {
+        $classRecord = $classStatement->fetch();
+        if ($classRecord === false) {
             Toast::flash('Choose a class in the active campus.', 'error');
             header('Location: ' . Url::to('/class-teachers'));
             exit;
@@ -116,41 +118,22 @@ final class ClassTeacherController
 
         $db = Database::connection();
         $db->beginTransaction();
-        $oldSignature = null;
+        $oldSignature = (string) ($classRecord['class_teacher_signature'] ?? '');
 
         try {
             $branch = BranchContext::id();
-            $db->prepare('UPDATE teacher_subject SET is_class_teacher = 0 WHERE class_id = :class_id AND branch_id=:branch')->execute(['class_id' => $classId, 'branch' => $branch]);
-
-            if ($teacherId > 0) {
-                $statement = $db->prepare(
-                    'SELECT id FROM teacher_subject WHERE class_id = :class_id AND teacher_id = :teacher_id AND branch_id=:branch LIMIT 1'
-                );
-                $statement->execute(['class_id' => $classId, 'teacher_id' => $teacherId, 'branch' => $branch]);
-                $existing = $statement->fetchColumn();
-
-                if ($existing === false) {
-                    $subject = $db->query(
-                        'SELECT subject_id FROM class_subject WHERE class_id = ' . $classId . ' AND branch_id=' . $branch . ' ORDER BY sort_order LIMIT 1'
-                    )->fetchColumn();
-                    if ($subject !== false) {
-                        $db->prepare(
-                            'INSERT INTO teacher_subject (teacher_id, class_id, subject_id, is_class_teacher, branch_id) VALUES (:teacher_id, :class_id, :subject_id, 1, :branch)'
-                        )->execute(['teacher_id' => $teacherId, 'class_id' => $classId, 'subject_id' => (int) $subject, 'branch' => $branch]);
-                        $assignmentId = (int) $db->lastInsertId();
-                        if ($uploadedSignature !== null) {
-                            $db->prepare('UPDATE teacher_subject SET class_teacher_signature=:signature WHERE id=:id AND branch_id=:branch')->execute(['signature' => $uploadedSignature, 'id' => $assignmentId, 'branch' => $branch]);
-                        }
-                    }
-                } else {
-                    $db->prepare('UPDATE teacher_subject SET is_class_teacher = 1 WHERE id = :id AND branch_id=:branch')->execute(['id' => (int) $existing, 'branch' => $branch]);
-                    if ($uploadedSignature !== null) {
-                        $oldStatement = $db->prepare('SELECT class_teacher_signature FROM teacher_subject WHERE id=:id AND branch_id=:branch');
-                        $oldStatement->execute(['id' => (int) $existing, 'branch' => $branch]);
-                        $oldSignature = (string) ($oldStatement->fetchColumn() ?: '');
-                        $db->prepare('UPDATE teacher_subject SET class_teacher_signature=:signature WHERE id=:id AND branch_id=:branch')->execute(['signature' => $uploadedSignature, 'id' => (int) $existing, 'branch' => $branch]);
-                    }
-                }
+            $signature = $teacherId > 0 ? ($uploadedSignature ?? ($oldSignature !== '' ? $oldSignature : null)) : null;
+            $save = $db->prepare('UPDATE classes SET class_teacher_id=:teacher_id, class_teacher_signature=:signature WHERE id=:class_id AND branch_id=:branch');
+            $save->execute([
+                'teacher_id' => $teacherId > 0 ? $teacherId : null,
+                'signature' => $signature,
+                'class_id' => $classId,
+                'branch' => $branch,
+            ]);
+            if ($save->rowCount() === 0) {
+                $verify = $db->prepare('SELECT id FROM classes WHERE id=:class_id AND branch_id=:branch LIMIT 1');
+                $verify->execute(['class_id' => $classId, 'branch' => $branch]);
+                if ($verify->fetchColumn() === false) throw new \RuntimeException('The class is no longer available in this campus.');
             }
 
             $db->commit();
@@ -165,7 +148,7 @@ final class ClassTeacherController
             exit;
         }
 
-        if ($oldSignature !== null && $oldSignature !== '') Upload::delete($oldSignature);
+        if ($oldSignature !== '' && ($teacherId === 0 || $uploadedSignature !== null)) Upload::delete($oldSignature);
 
         Toast::flash('Class teacher saved.');
         header('Location: ' . Url::to('/class-teachers'));

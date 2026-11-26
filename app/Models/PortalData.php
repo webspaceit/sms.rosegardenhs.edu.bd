@@ -156,10 +156,10 @@ final class PortalData
         $statement = Database::read()->prepare(
             'SELECT DISTINCT c.id, c.name, c.numeric_level,'
             . ' (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id AND s.branch_id=c.branch_id AND s.status = "active") AS student_count'
-            . ' FROM teacher_subject ts JOIN classes c ON c.id = ts.class_id AND c.branch_id=ts.branch_id'
-            . ' WHERE ts.teacher_id = :teacher_id AND ts.branch_id=:branch ORDER BY c.numeric_level'
+            . ' FROM classes c LEFT JOIN teacher_subject ts ON ts.class_id=c.id AND ts.branch_id=c.branch_id AND ts.teacher_id=:assignment_teacher'
+            . ' WHERE c.branch_id=:branch AND (ts.id IS NOT NULL OR c.class_teacher_id=:class_teacher) ORDER BY c.numeric_level'
         );
-        $statement->execute(['teacher_id' => $teacherId, 'branch' => BranchContext::id()]);
+        $statement->execute(['assignment_teacher' => $teacherId, 'class_teacher' => $teacherId, 'branch' => BranchContext::id()]);
         return $statement->fetchAll();
     }
 
@@ -171,8 +171,9 @@ final class PortalData
     public static function teacherSubjects(int $teacherId, int $classId): array
     {
         $statement = Database::read()->prepare(
-            'SELECT ts.subject_id, s.name, ts.is_class_teacher FROM teacher_subject ts'
+            'SELECT ts.subject_id, s.name, CASE WHEN c.class_teacher_id = ts.teacher_id THEN 1 ELSE 0 END AS is_class_teacher FROM teacher_subject ts'
             . ' JOIN subjects s ON s.id = ts.subject_id AND s.branch_id=ts.branch_id'
+            . ' JOIN classes c ON c.id=ts.class_id AND c.branch_id=ts.branch_id'
             . ' WHERE ts.teacher_id = :teacher_id AND ts.class_id = :class_id AND ts.branch_id=:branch ORDER BY s.name'
         );
         $statement->execute(['teacher_id' => $teacherId, 'class_id' => $classId, 'branch' => BranchContext::id()]);

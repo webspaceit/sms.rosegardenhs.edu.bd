@@ -233,7 +233,7 @@ final class BulkMarkController
             $schoolSettings[(string) $setting['key']] = (string) ($setting['value'] ?? '');
         }
         $signatureStatement = Database::connection()->prepare(
-            'SELECT ts.class_teacher_signature FROM teacher_subject ts WHERE ts.class_id=:class_id AND ts.branch_id=:branch AND ts.is_class_teacher=1 LIMIT 1'
+            'SELECT c.class_teacher_signature FROM classes c WHERE c.id=:class_id AND c.branch_id=:branch LIMIT 1'
         );
         $signatureStatement->execute(['class_id' => $classId, 'branch' => BranchContext::id()]);
         $classTeacherSignature = (string) ($signatureStatement->fetchColumn() ?: '');

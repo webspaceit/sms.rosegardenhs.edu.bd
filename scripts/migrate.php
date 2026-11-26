@@ -183,6 +183,10 @@ $columns = [
         'address' => 'TEXT NULL AFTER previous_school',
         'archive_reason' => 'TEXT NULL AFTER status',
     ],
+    'classes' => [
+        'class_teacher_id' => 'BIGINT UNSIGNED NULL AFTER shift',
+        'class_teacher_signature' => 'VARCHAR(255) NULL AFTER class_teacher_id',
+    ],
     'teachers' => [
         'shift_id' => 'BIGINT UNSIGNED NULL AFTER department_id',
     ],
@@ -209,6 +213,17 @@ foreach ($columns as $table => $tableColumns) {
         echo 'Added column ', $table, '.', $column, PHP_EOL;
     }
 }
+
+// Move existing class-teacher selections to their own class record. This
+// keeps them visible after subject assignments are edited independently.
+$pdo->exec(
+    'UPDATE classes c '
+    . 'INNER JOIN (SELECT class_id, branch_id, MIN(id) AS assignment_id FROM teacher_subject WHERE is_class_teacher=1 GROUP BY class_id, branch_id) chosen '
+    . 'ON chosen.class_id=c.id AND chosen.branch_id=c.branch_id '
+    . 'INNER JOIN teacher_subject ts ON ts.id=chosen.assignment_id AND ts.branch_id=chosen.branch_id '
+    . 'SET c.class_teacher_id=ts.teacher_id, c.class_teacher_signature=ts.class_teacher_signature '
+    . 'WHERE c.class_teacher_id IS NULL'
+);
 
 // Link legacy report cards to their exam records when a matching exam exists.
 $reportCols = $pdo->query('SHOW COLUMNS FROM academic_reports')->fetchAll(PDO::FETCH_COLUMN);

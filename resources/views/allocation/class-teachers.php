@@ -11,7 +11,7 @@ use App\Core\View;
 ?>
 <div class="w-full max-w-none">
     <h1 class="text-3xl font-semibold">Class teachers</h1>
-    <p class="mt-1 text-sm text-white">The teacher who is in charge of each class. A class teacher also has a subject assignment in that class.</p>
+    <p class="mt-1 text-sm text-white">Assign one teacher to each class and upload their signature for the result sheet.</p>
 
     <section class="mt-7 overflow-hidden rounded-2xl border border-green-900/60 bg-[#0b3425]/80">
         <div class="overflow-x-auto">
@@ -35,7 +35,7 @@ use App\Core\View;
                         <td class="px-5 py-2">
                             <?php if ((string) $row['teacher_name'] !== ''): ?>
                                 <p class="text-slate-200"><?= View::escape((string) $row['teacher_name']) ?></p>
-                                <p class="mt-0.5 text-xs text-slate-500"><?= View::escape((string) $row['subject_name']) ?></p>
+                                <?php if ((string) $row['subject_name'] !== ''): ?><p class="mt-0.5 text-xs text-slate-500"><?= View::escape((string) $row['subject_name']) ?> subject assignment</p><?php endif; ?>
                             <?php else: ?>
                                 <span class="text-slate-500">Not assigned</span>
                             <?php endif; ?>
