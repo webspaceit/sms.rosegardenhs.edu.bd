@@ -66,7 +66,26 @@ $hasActiveFilters = $selectedFilters !== [];
                     <?php
                     $value = $record[$column['name']] ?? null;
                     $format = $column['format'] ?? 'text';
-                    if ($value !== null && $value !== '' && isset($column['dateFormat'])) {
+                    $ageText = null;
+                    if ($format === 'date_age' && $value !== null && $value !== '') {
+                        try {
+                            $dateOfBirth = DateTimeImmutable::createFromFormat('!Y-m-d', (string) $value);
+                            if ($dateOfBirth !== false) {
+                                $today = new DateTimeImmutable('today');
+                                $value = $dateOfBirth->format('d-m-Y');
+                                if ($dateOfBirth <= $today) {
+                                    $age = $dateOfBirth->diff($today);
+                                    $parts = [];
+                                    foreach ([[$age->y, 'year'], [$age->m, 'month'], [$age->d, 'day']] as [$count, $unit]) {
+                                        if ($count > 0) $parts[] = $count . ' ' . $unit . ($count === 1 ? '' : 's');
+                                    }
+                                    $ageText = $parts !== [] ? 'Age: ' . implode(', ', $parts) : 'Age: 0 days';
+                                }
+                            }
+                        } catch (Throwable) {
+                            // Keep the stored date visible when it cannot be parsed.
+                        }
+                    } elseif ($value !== null && $value !== '' && isset($column['dateFormat'])) {
                         try {
                             $value = (new DateTimeImmutable((string) $value))->format((string) $column['dateFormat']);
                         } catch (Throwable) {
@@ -85,6 +104,9 @@ $hasActiveFilters = $selectedFilters !== [];
                         <?php if ($value): ?><a href="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $value)) ?>" target="_blank" title="View photo"><img src="<?= Url::to('/uploads/file?path=' . rawurlencode((string) $value)) ?>" alt="<?= View::escape($module['singular'] . ' photo') ?>" loading="lazy" class="h-10 w-10 rounded-lg border border-green-100/20 object-cover"></a>
                         <?php elseif (!empty($column['avatarFallback'])): $avatarGender = (string) ($record['gender'] ?? ''); $avatarName = (string) ($record['name'] ?? ucfirst($module['singular'])); $avatarClass = 'h-10 w-10 rounded-lg border border-green-100/20'; require BASE_PATH . '/resources/views/results/partials/student-avatar.php'; ?>
                         <?php else: ?><span class="text-slate-500">—</span><?php endif; ?>
+                    <?php elseif ($format === 'date_age'): ?>
+                        <span class="block text-slate-200"><?= View::escape((string) ($value ?? '—')) ?></span>
+                        <?php if ($ageText !== null): ?><span class="mt-0.5 block text-xs text-slate-400"><?= View::escape($ageText) ?></span><?php endif; ?>
                     <?php else: ?>
                         <span<?= !empty($column['truncate']) ? ' class="block max-w-[220px] truncate ' . ($format === 'muted' ? 'text-white' : 'text-slate-200') . '"' : ' class="' . (!empty($column['wrap']) ? 'block whitespace-normal leading-snug ' : '') . ($format === 'muted' ? 'text-white' : 'text-slate-200') . '"' ?><?= !empty($column['truncate']) ? ' title="' . View::escape((string) ($value ?? '—')) . '"' : '' ?>><?= View::escape((string) ($value ?? '—')) ?></span>
                     <?php endif; ?>

@@ -154,6 +154,7 @@ $designations = [
     ['name' => 'Head Teacher', 'description' => 'Leads the academic and administrative team'],
     ['name' => 'Senior Teacher', 'description' => 'Senior member of the teaching staff'],
     ['name' => 'Assistant Teacher', 'description' => 'Supports the teaching and supervision duties'],
+    ['name' => 'Arabic Teacher', 'description' => 'Teaches Arabic language and related subjects'],
     ['name' => 'Lecturer', 'description' => 'Teaches the secondary and higher classes'],
     ['name' => 'Office Assistant', 'description' => 'Handles front office and records'],
 ];

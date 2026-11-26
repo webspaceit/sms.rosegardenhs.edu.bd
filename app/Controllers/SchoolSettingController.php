@@ -39,6 +39,9 @@ final class SchoolSettingController
                     'school_name' => ['label' => 'School name', 'type' => 'text', 'max' => 150],
                     'school_name_bn' => ['label' => 'School name in Bangla', 'type' => 'text', 'max' => 150],
                     'school_eiin' => ['label' => 'EIIN code', 'type' => 'text', 'max' => 50],
+                    'school_code' => ['label' => 'School Code', 'type' => 'text', 'max' => 50],
+                    'school_primary_code' => ['label' => 'Primary Code', 'type' => 'text', 'max' => 50],
+                    'school_vocational_code' => ['label' => 'Vocational Code', 'type' => 'text', 'max' => 50],
                     'school_established' => ['label' => 'Established', 'type' => 'text', 'max' => 20],
                 ],
             ],
@@ -128,6 +131,25 @@ final class SchoolSettingController
             Toast::flash('School phone must be a valid Bangladeshi mobile number (01XXXXXXXXX or +8801XXXXXXXXX).', 'error');
             header('Location: ' . Url::to('/settings/school'));
             exit;
+        }
+
+        $identityCodes = [
+            'school_code' => 'School Code',
+            'school_primary_code' => 'Primary Code',
+            'school_vocational_code' => 'Vocational Code',
+        ];
+        $findDuplicateCode = Database::read()->prepare(
+            'SELECT 1 FROM school_settings WHERE `key` = :key AND value = :value AND branch_id <> :branch LIMIT 1'
+        );
+        foreach ($identityCodes as $key => $label) {
+            $code = trim((string) $request->input($key, ''));
+            if ($code === '') continue;
+            $findDuplicateCode->execute(['key' => $key, 'value' => $code, 'branch' => BranchContext::id()]);
+            if ($findDuplicateCode->fetchColumn() !== false) {
+                Toast::flash($label . ' is already assigned to another campus. Enter a unique code.', 'error');
+                header('Location: ' . Url::to('/settings/school'));
+                exit;
+            }
         }
 
         $database = Database::connection();

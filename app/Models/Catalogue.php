@@ -25,6 +25,7 @@ final class Catalogue
         'Senior Teacher',
         'Assistant Teacher',
         'Junior Teacher',
+        'Arabic Teacher',
         'Part-time / Guest Teacher',
         'Physical Education Teacher',
         'Co-curricular Instructor',

@@ -82,8 +82,11 @@ foreach ($rows as $row) {
     </div>
 
     <footer class="flex justify-between gap-8 border-t border-slate-200 px-5 py-6 text-xs text-slate-500">
-        <?php foreach (['class_teacher_signature' => 'Class teacher', 'head_teacher_signature' => 'Head teacher', 'principal_signature' => 'Principal'] as $signatureKey => $signatureLabel): ?>
-            <div class="result-signature"><?php if (($signature = $signatureUrl($signatureKey)) !== ''): ?><img src="<?= View::escape($signature) ?>" alt="<?= View::escape($signatureLabel) ?> signature"><?php endif; ?><span><?= View::escape($signatureLabel) ?></span></div>
+        <?php foreach (['class_teacher' => 'Class teacher', 'head_teacher_signature' => 'Head teacher', 'principal_signature' => 'Principal'] as $signatureKey => $signatureLabel): ?>
+            <?php $signature = $signatureKey === 'class_teacher' && trim((string) $classTeacherSignature) !== ''
+                ? Url::to('/uploads/file?path=' . rawurlencode($classTeacherSignature))
+                : ($signatureKey === 'class_teacher' ? $signatureUrl('class_teacher_signature') : $signatureUrl($signatureKey)); ?>
+            <div class="result-signature"><?php if ($signature !== ''): ?><img src="<?= View::escape($signature) ?>" alt="<?= View::escape($signatureLabel) ?> signature"><?php endif; ?><span><?= View::escape($signatureLabel) ?></span></div>
         <?php endforeach; ?>
     </footer>
 </section>

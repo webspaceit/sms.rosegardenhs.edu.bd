@@ -9,7 +9,7 @@ use App\Core\Csrf;
 use App\Core\Url;
 use App\Core\View;
 ?>
-<div class="mx-auto max-w-4xl">
+<div class="w-full max-w-none">
     <h1 class="text-3xl font-semibold">Class teachers</h1>
     <p class="mt-1 text-sm text-white">The teacher who is in charge of each class. A class teacher also has a subject assignment in that class.</p>
 
@@ -20,7 +20,7 @@ use App\Core\View;
                     <tr>
                         <th class="px-5 py-3 font-medium">Class</th>
                         <th class="px-5 py-3 font-medium">Current teacher</th>
-                        <th class="px-5 py-3 font-medium">Change to</th>
+                        <th class="px-5 py-3 font-medium">Class teacher and signature</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-green-900/50">
@@ -41,7 +41,7 @@ use App\Core\View;
                             <?php endif; ?>
                         </td>
                         <td class="px-5 py-2">
-                            <form method="post" action="<?= Url::to('/class-teachers/update') ?>" class="flex items-center gap-2">
+                            <form method="post" enctype="multipart/form-data" action="<?= Url::to('/class-teachers/update') ?>" class="grid gap-3 xl:grid-cols-[minmax(220px,1fr)_minmax(260px,1.4fr)_minmax(200px,1fr)_auto] xl:items-end">
                                 <?= Csrf::field() ?>
                                 <input type="hidden" name="class_id" value="<?= (int) $row['class_id'] ?>">
                                 <label class="sr-only" for="teacher-<?= (int) $row['class_id'] ?>">Class teacher for <?= View::escape((string) $row['class_name']) ?></label>
@@ -51,6 +51,12 @@ use App\Core\View;
                                         <option value="<?= (int) $id ?>"<?= (int) $row['teacher_id'] === (int) $id ? ' selected' : '' ?>><?= View::escape($name) ?></option>
                                     <?php endforeach; ?>
                                 </select>
+                                <label class="block text-xs text-slate-400">Teacher signature (JPG, PNG, WebP; max 2 MB)
+                                    <input type="file" name="class_teacher_signature" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs">
+                                    <?php if ((string) $row['class_teacher_signature'] !== ''): ?>
+                                        <span class="mt-1 block text-teal-300">Signature uploaded</span>
+                                    <?php endif; ?>
+                                </label>
                                 <button class="rounded-lg border border-slate-700 px-3 py-2 text-xs hover:border-teal-400">Save</button>
                             </form>
                         </td>

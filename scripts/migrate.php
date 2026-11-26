@@ -186,6 +186,9 @@ $columns = [
     'academic_report_marks' => [
         'obtained' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 0 AFTER ca_marks',
     ],
+    'teacher_subject' => [
+        'class_teacher_signature' => 'VARCHAR(255) NULL AFTER is_class_teacher',
+    ],
     'academic_reports' => [
         'exam_id' => 'BIGINT UNSIGNED NULL AFTER student_id',
     ],

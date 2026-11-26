@@ -34,7 +34,7 @@ final class Teacher
                 ['name' => 'phone', 'label' => 'Phone', 'format' => 'muted'],
                 ['name' => 'email', 'label' => 'Email', 'format' => 'muted'],
                 ['name' => 'gender', 'label' => 'Gender'],
-                ['name' => 'date_of_birth', 'label' => 'DOB'],
+                ['name' => 'date_of_birth', 'label' => 'Date of Birth / Age', 'format' => 'date_age'],
                 ['name' => 'blood_group', 'label' => 'Blood group'],
                 ['name' => 'qualification', 'label' => 'Qual.', 'format' => 'muted', 'wrap' => true],
                 ['name' => 'joining_date', 'label' => 'Joined', 'dateFormat' => 'd-M-y'],

@@ -232,6 +232,11 @@ final class BulkMarkController
         foreach (Database::connection()->query('SELECT `key`, value FROM school_settings WHERE branch_id=' . BranchContext::id())->fetchAll() as $setting) {
             $schoolSettings[(string) $setting['key']] = (string) ($setting['value'] ?? '');
         }
+        $signatureStatement = Database::connection()->prepare(
+            'SELECT ts.class_teacher_signature FROM teacher_subject ts WHERE ts.class_id=:class_id AND ts.branch_id=:branch AND ts.is_class_teacher=1 LIMIT 1'
+        );
+        $signatureStatement->execute(['class_id' => $classId, 'branch' => BranchContext::id()]);
+        $classTeacherSignature = (string) ($signatureStatement->fetchColumn() ?: '');
 
         $rows = [];
         foreach ($students as $student) {
@@ -258,6 +263,7 @@ final class BulkMarkController
             'examName' => $examName,
             'academicYear' => $academicYear,
             'schoolSettings' => $schoolSettings,
+            'classTeacherSignature' => $classTeacherSignature,
             'subjects' => $subjects,
             'rows' => $rows,
         ]);

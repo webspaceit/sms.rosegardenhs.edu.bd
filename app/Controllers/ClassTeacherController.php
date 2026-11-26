@@ -11,6 +11,7 @@ use App\Core\Guard;
 use App\Core\Request;
 use App\Core\Toast;
 use App\Core\Url;
+use App\Core\Upload;
 use App\Core\View;
 use App\Models\Catalogue;
 
@@ -28,7 +29,7 @@ final class ClassTeacherController
 
         $statement = Database::connection()->query(
             'SELECT c.id AS class_id, c.name AS class_name, c.numeric_level,'
-            . ' ts.subject_id, ts.teacher_id, t.name AS teacher_name, s.name AS subject_name'
+            . ' ts.subject_id, ts.teacher_id, ts.class_teacher_signature, t.name AS teacher_name, s.name AS subject_name'
             . ' FROM classes c'
             . ' LEFT JOIN teacher_subject ts ON ts.class_id = c.id AND ts.branch_id=c.branch_id AND ts.is_class_teacher = 1'
             . ' LEFT JOIN teachers t ON t.id = ts.teacher_id AND t.branch_id=c.branch_id'
@@ -50,6 +51,7 @@ final class ClassTeacherController
                     'teacher_id' => $row['teacher_id'] !== null ? (int) $row['teacher_id'] : 0,
                     'teacher_name' => (string) ($row['teacher_name'] ?? ''),
                     'subject_name' => (string) ($row['subject_name'] ?? ''),
+                    'class_teacher_signature' => (string) ($row['class_teacher_signature'] ?? ''),
                 ];
             }
         }
@@ -75,6 +77,7 @@ final class ClassTeacherController
 
         $classId = (int) $request->input('class_id', 0);
         $teacherId = (int) $request->input('teacher_id', 0);
+        $uploadedSignature = null;
 
         if ($classId <= 0) {
             Toast::flash('Choose a class first.', 'error');
@@ -97,8 +100,23 @@ final class ClassTeacherController
             exit;
         }
 
+        if ($teacherId === 0 && isset($_FILES['class_teacher_signature']) && (int) ($_FILES['class_teacher_signature']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            Toast::flash('Choose a class teacher before uploading a signature.', 'error');
+            header('Location: ' . Url::to('/class-teachers'));
+            exit;
+        }
+
+        try {
+            $uploadedSignature = Upload::store('class_teacher_signature', 'class-teacher-signatures', ['jpg', 'jpeg', 'png', 'webp'], 2097152);
+        } catch (\Throwable $error) {
+            Toast::flash($error->getMessage(), 'error');
+            header('Location: ' . Url::to('/class-teachers'));
+            exit;
+        }
+
         $db = Database::connection();
         $db->beginTransaction();
+        $oldSignature = null;
 
         try {
             $branch = BranchContext::id();
@@ -119,9 +137,19 @@ final class ClassTeacherController
                         $db->prepare(
                             'INSERT INTO teacher_subject (teacher_id, class_id, subject_id, is_class_teacher, branch_id) VALUES (:teacher_id, :class_id, :subject_id, 1, :branch)'
                         )->execute(['teacher_id' => $teacherId, 'class_id' => $classId, 'subject_id' => (int) $subject, 'branch' => $branch]);
+                        $assignmentId = (int) $db->lastInsertId();
+                        if ($uploadedSignature !== null) {
+                            $db->prepare('UPDATE teacher_subject SET class_teacher_signature=:signature WHERE id=:id AND branch_id=:branch')->execute(['signature' => $uploadedSignature, 'id' => $assignmentId, 'branch' => $branch]);
+                        }
                     }
                 } else {
                     $db->prepare('UPDATE teacher_subject SET is_class_teacher = 1 WHERE id = :id AND branch_id=:branch')->execute(['id' => (int) $existing, 'branch' => $branch]);
+                    if ($uploadedSignature !== null) {
+                        $oldStatement = $db->prepare('SELECT class_teacher_signature FROM teacher_subject WHERE id=:id AND branch_id=:branch');
+                        $oldStatement->execute(['id' => (int) $existing, 'branch' => $branch]);
+                        $oldSignature = (string) ($oldStatement->fetchColumn() ?: '');
+                        $db->prepare('UPDATE teacher_subject SET class_teacher_signature=:signature WHERE id=:id AND branch_id=:branch')->execute(['signature' => $uploadedSignature, 'id' => (int) $existing, 'branch' => $branch]);
+                    }
                 }
             }
 
@@ -130,11 +158,14 @@ final class ClassTeacherController
             if ($db->inTransaction()) {
                 $db->rollBack();
             }
+            Upload::delete($uploadedSignature);
             \App\Core\ErrorLog::write($error);
             Toast::flash('The class teacher could not be saved. Please try again.', 'error');
             header('Location: ' . Url::to('/class-teachers'));
             exit;
         }
+
+        if ($oldSignature !== null && $oldSignature !== '') Upload::delete($oldSignature);
 
         Toast::flash('Class teacher saved.');
         header('Location: ' . Url::to('/class-teachers'));

@@ -376,6 +376,7 @@ CREATE TABLE IF NOT EXISTS teacher_subject (
     class_id BIGINT UNSIGNED NOT NULL,
     subject_id BIGINT UNSIGNED NOT NULL,
     is_class_teacher TINYINT(1) NOT NULL DEFAULT 0,
+    class_teacher_signature VARCHAR(255) NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NULL,
     PRIMARY KEY (id),
