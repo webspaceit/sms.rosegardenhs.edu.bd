@@ -239,6 +239,8 @@ final class Application
         $router->get('/allocation-matrix', [$allocation, 'index']);
         $router->post('/allocation-matrix/update', [$allocation, 'update']);
         $router->get('/class-teachers', [$classTeachers, 'index']);
+        // Accept forms rendered before the explicit /update target was added.
+        $router->post('/class-teachers', [$classTeachers, 'update']);
         $router->post('/class-teachers/update', [$classTeachers, 'update']);
         $this->crud($router, new Crud(TeacherSubject::module()), '/teacher-subjects');
         $this->crud($router, new Crud(ClassRoutine::module()), '/class-routines');

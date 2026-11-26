@@ -21,16 +21,15 @@ final class Url
 
         // Some Apache rewrite/alias configurations report SCRIPT_NAME as just
         // /index.php even though the application is opened through its public/
-        // directory URL. Infer that prefix from the request so routes and
-        // redirects keep working from /project/public/ as well.
+        // directory URL. Preserve the public/ prefix for routes and redirects.
         $requestPath = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
-        $publicPosition = strrpos(rtrim($requestPath, '/'), '/public');
+        $normalizedRequestPath = rtrim($requestPath, '/');
+        if (str_ends_with($normalizedRequestPath, '/public')) {
+            return $normalizedRequestPath;
+        }
+        $publicPosition = strrpos($normalizedRequestPath, '/public/');
         if ($publicPosition !== false) {
-            $publicEnd = $publicPosition + strlen('/public');
-            $suffix = substr($requestPath, $publicEnd, 1);
-            if ($suffix === '' || $suffix === '/') {
-                return substr($requestPath, 0, $publicEnd);
-            }
+            return substr($normalizedRequestPath, 0, $publicPosition + strlen('/public'));
         }
         return '';
     }
