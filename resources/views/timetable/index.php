@@ -22,7 +22,7 @@ use App\Core\View;
 <form method="get" action="<?= Url::to('/timetable') ?>" class="mt-7 grid gap-3 rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-4 sm:grid-cols-3">
     <label class="text-sm">
         <span class="mb-1.5 block text-slate-300">Class</span>
-        <select name="class_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm">
+        <select name="class_id" data-timetable-class-filter class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm">
             <option value="0">Select a class</option>
             <?php foreach ($classes as $id => $name): ?>
                 <option value="<?= (int) $id ?>"<?= $classId === (int) $id ? ' selected' : '' ?>><?= View::escape($name) ?></option>
@@ -31,10 +31,10 @@ use App\Core\View;
     </label>
     <label class="text-sm">
         <span class="mb-1.5 block text-slate-300">Section</span>
-        <select name="section_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm">
+        <select name="section_id" data-timetable-section-filter<?= $classId <= 0 ? ' disabled' : '' ?> class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-50">
             <option value="0">All sections</option>
             <?php foreach ($sections as $id => $name): ?>
-                <option value="<?= (int) $id ?>"<?= $sectionId === (int) $id ? ' selected' : '' ?>><?= View::escape($name) ?></option>
+                <option value="<?= (int) $id ?>" data-class-id="<?= (int) ($sectionClassIds[$id] ?? 0) ?>"<?= $sectionId === (int) $id ? ' selected' : '' ?><?= $classId > 0 && ($sectionClassIds[$id] ?? 0) !== $classId ? ' hidden' : '' ?>><?= View::escape($name) ?></option>
             <?php endforeach; ?>
         </select>
     </label>
@@ -42,6 +42,25 @@ use App\Core\View;
         <button class="w-full rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-medium hover:border-teal-400">Show timetable</button>
     </div>
 </form>
+
+<script>
+(() => {
+    const classFilter = document.querySelector('[data-timetable-class-filter]');
+    const sectionFilter = document.querySelector('[data-timetable-section-filter]');
+    if (!classFilter || !sectionFilter) return;
+    const filterSections = (reset = false) => {
+        const classId = classFilter.value;
+        sectionFilter.disabled = classId === '0';
+        for (const option of sectionFilter.options) {
+            if (option.value === '0') continue;
+            option.hidden = classId === '0' || option.dataset.classId !== classId;
+        }
+        if (reset || sectionFilter.selectedOptions[0]?.hidden) sectionFilter.value = '0';
+    };
+    classFilter.addEventListener('change', () => filterSections(true));
+    filterSections();
+})();
+</script>
 
 <?php if ($classId <= 0): ?>
     <div class="mt-6 rounded-2xl border border-dashed border-slate-700 p-10 text-center text-sm text-slate-500">Choose a class to see its timetable.</div>

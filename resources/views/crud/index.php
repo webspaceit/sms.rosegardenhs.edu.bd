@@ -9,6 +9,10 @@ use App\Core\Url;
 use App\Core\View;
 
 $columns = $module['columns'] ?? [];
+$hasSerialColumn = count(array_filter($columns, static fn (array $column): bool => ($column['format'] ?? '') === 'serial' || in_array(strtolower(trim((string) ($column['label'] ?? ''))), ['sl', 'sl.', 's.l.', 'serial', 'serial no.', 'no.', '#'], true))) > 0;
+if (!$hasSerialColumn) {
+    array_unshift($columns, ['name' => '__generated_serial', 'label' => 'Sl.', 'format' => 'serial']);
+}
 $searchable = ($module['search'] ?? []) !== [];
 $filters = $filters ?? [];
 $selectedFilters = $selectedFilters ?? [];
@@ -72,7 +76,7 @@ $hasActiveFilters = $selectedFilters !== [];
                             $dateOfBirth = DateTimeImmutable::createFromFormat('!Y-m-d', (string) $value);
                             if ($dateOfBirth !== false) {
                                 $today = new DateTimeImmutable('today');
-                                $value = $dateOfBirth->format('d-m-Y');
+                                $value = $dateOfBirth->format('d-F-Y');
                                 if ($dateOfBirth <= $today) {
                                     $age = $dateOfBirth->diff($today);
                                     $parts = [];

@@ -142,7 +142,7 @@ $statusClass = [
                     <?php endforeach; ?>
                     <div class="student-reference-row student-reference-group"><strong>Miscellaneous Details</strong></div>
                     <?php foreach ([
-                        'Blood Group' => $student['blood_group'] ?? null, 'House' => $student['house_name'] ?? null,
+                        'B.Group' => $student['blood_group'] ?? null, 'House' => $student['house_name'] ?? null,
                         'Height' => isset($student['height']) && $student['height'] !== null ? $student['height'] . ' cm' : null,
                         'Weight' => isset($student['weight']) && $student['weight'] !== null ? $student['weight'] . ' kg' : null,
                         'Measurement Date' => !empty($student['measurement_date']) ? \App\Core\DateFormatter::format($student['measurement_date']) : null,
@@ -320,7 +320,7 @@ $statusClass = [
                 <tr><th scope="row">Caste</th><td><?= $detailValue($student['caste'] ?? null) ?></td></tr>
                 <tr><th scope="row">Mobile number</th><td><?= $detailValue($student['mobile_number'] ?? null) ?></td></tr>
                 <tr><th scope="row">Email</th><td><?= $detailValue($student['email'] ?? null) ?></td></tr>
-                <tr><th scope="row">Blood group</th><td><?= $detailValue($student['blood_group'] ?? null) ?></td></tr>
+                <tr><th scope="row">B.Group</th><td><?= $detailValue($student['blood_group'] ?? null) ?></td></tr>
                 <tr><th scope="row">Student house</th><td><?= $detailValue($student['house_name'] ?? null) ?></td></tr>
                 <tr><th scope="row">Height</th><td><?= isset($student['height']) && $student['height'] !== null ? View::escape($student['height'] . ' cm') : '—' ?></td></tr>
                 <tr><th scope="row">Weight</th><td><?= isset($student['weight']) && $student['weight'] !== null ? View::escape($student['weight'] . ' kg') : '—' ?></td></tr>

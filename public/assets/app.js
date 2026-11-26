@@ -5,6 +5,39 @@
   let requestNumber = 0;
   const confirmedForms = new WeakSet();
 
+  function addMissingSerialColumns(root = document) {
+    root.querySelectorAll('table').forEach((table) => {
+      const head = table.tHead;
+      const body = table.tBodies[0];
+      if (!head || head.rows.length !== 1 || !body) return;
+
+      const header = head.rows[0];
+      if ([...header.cells].some((cell) => /^(sl\.?|s\.?l\.?|serial(?:\s+no\.?)?|no\.?|#)$/i.test(cell.textContent.trim()))) return;
+      if ([...header.cells].some((cell) => cell.colSpan !== 1 || cell.rowSpan !== 1)) return;
+
+      const rows = [...body.rows].filter((row) => [...row.cells].length > 0 && ![...row.cells].some((cell) => cell.colSpan !== 1 || cell.rowSpan !== 1));
+      if (rows.length === 0) return;
+      const width = rows[0].cells.length;
+      if (rows.some((row) => row.cells.length !== width || [...row.cells].some((cell) => cell.tagName !== 'TD'))) return;
+
+      const heading = document.createElement('th');
+      heading.className = header.cells[0]?.className || 'px-5 py-3 font-medium';
+      heading.scope = 'col';
+      heading.textContent = 'Sl.';
+      header.insertBefore(heading, header.firstElementChild);
+
+      rows.forEach((row, index) => {
+        const cell = document.createElement('td');
+        cell.className = row.cells[0]?.className || 'px-5 py-2 text-slate-300';
+        cell.textContent = String(index + 1);
+        cell.setAttribute('aria-label', `Serial number ${index + 1}`);
+        row.insertBefore(cell, row.firstElementChild);
+      });
+    });
+  }
+
+  addMissingSerialColumns();
+
   function setRequiredSelectMessage(field) {
     if (!(field instanceof HTMLSelectElement) || !field.required || !field.validity.valueMissing) return;
     const label = field.labels?.[0];
@@ -191,6 +224,7 @@
     }
     document.body.replaceChildren(...[...nextDocument.body.childNodes].map((node) => document.importNode(node, true)));
     runInsertedScripts(document.body);
+    addMissingSerialColumns();
   }
 
   async function loadPage(url, { method = 'GET', body = undefined, push = true, scroll = true } = {}) {

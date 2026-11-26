@@ -19,7 +19,7 @@ final class Teacher
             'singular' => 'teacher',
             'createLabel' => 'Add New Teacher',
             'formFullWidth' => true,
-            'formColumns' => 3,
+            'formColumns' => 4,
             'permission' => 'teachers.view',
             'managePermission' => 'teachers.create',
             'from' => 'teachers t LEFT JOIN designations d ON d.id = t.designation_id AND d.branch_id = t.branch_id'
@@ -37,9 +37,9 @@ final class Teacher
                 ['name' => 'email', 'label' => 'Email', 'format' => 'muted'],
                 ['name' => 'gender', 'label' => 'Gender'],
                 ['name' => 'date_of_birth', 'label' => 'DOB/Age', 'format' => 'date_age'],
-                ['name' => 'blood_group', 'label' => 'Blood group'],
+                ['name' => 'blood_group', 'label' => 'B.Group'],
                 ['name' => 'qualification', 'label' => 'Qual.', 'format' => 'muted', 'wrap' => true],
-                ['name' => 'joining_date', 'label' => 'Joined', 'dateFormat' => 'd-M-y'],
+                ['name' => 'joining_date', 'label' => 'Joined', 'dateFormat' => 'd-F-Y'],
                 ['name' => 'photo', 'label' => 'Photo', 'format' => 'image', 'avatarFallback' => true],
             ],
             'fields' => [
@@ -52,6 +52,7 @@ final class Teacher
                     'unique' => true,
                     'uniqueMessage' => 'That Employee ID is already assigned to another teacher.',
                     'autoGenerate' => static fn (): string => self::nextEmployeeId(),
+                    'readOnlyOnEdit' => true,
                     'hint' => 'Generated automatically and kept unique across all campuses.',
                 ],
                 ['name' => 'name', 'label' => 'Full name', 'type' => 'text', 'required' => true, 'max' => 150],
@@ -62,8 +63,8 @@ final class Teacher
                 ['name' => 'phone', 'label' => 'Phone', 'type' => 'tel', 'max' => 14],
                 ['name' => 'email', 'label' => 'Email', 'type' => 'text', 'max' => 190],
                 ['name' => 'gender', 'label' => 'Gender', 'type' => 'select', 'options' => ['Male' => 'Male', 'Female' => 'Female', 'Other' => 'Other']],
-                ['name' => 'date_of_birth', 'label' => 'Date of birth', 'type' => 'date'],
-                ['name' => 'blood_group', 'label' => 'Blood group', 'type' => 'select', 'options' => [
+                ['name' => 'date_of_birth', 'label' => 'Date of birth', 'type' => 'date', 'displayFormat' => 'd-F-Y'],
+                ['name' => 'blood_group', 'label' => 'Blood Group', 'type' => 'select', 'options' => [
                     'A+' => 'A+',
                     'A-' => 'A-',
                     'B+' => 'B+',
@@ -92,7 +93,7 @@ final class Teacher
                     'Other' => 'Other',
                 ]],
                 ['name' => 'experience_years', 'label' => 'Experience (years)', 'type' => 'number', 'default' => 0],
-                ['name' => 'joining_date', 'label' => 'Joining date', 'type' => 'date'],
+                ['name' => 'joining_date', 'label' => 'Joining date', 'type' => 'date', 'displayFormat' => 'd-F-Y'],
                 ['name' => 'address', 'label' => 'Address', 'type' => 'textarea', 'rows' => 2, 'wide' => false],
                 ['name' => 'photo', 'label' => 'Photo', 'type' => 'file', 'image' => true, 'deletable' => true, 'deleteOldOnReplace' => true, 'directory' => 'teacher-photos', 'extensions' => ['jpg', 'jpeg', 'png', 'webp'], 'maxBytes' => 5242880, 'hint' => 'JPG, PNG, or WebP · maximum 5 MB. The original image size is kept.'],
             ],

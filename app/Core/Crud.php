@@ -341,6 +341,9 @@ final class Crud
             $type = (string) ($field['type'] ?? 'text');
             $required = (bool) ($field['required'] ?? false);
             $raw = $request->input($name, null);
+            if ($existing !== null && !empty($field['readOnlyOnEdit'])) {
+                $raw = $existing[$name] ?? null;
+            }
             $autoGenerate = $field['autoGenerate'] ?? null;
             if ($existing === null && is_callable($autoGenerate)) {
                 $raw = $autoGenerate();

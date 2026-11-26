@@ -28,6 +28,21 @@ final class TimetableController
         $classId = (int) $request->input('class_id', 0);
         $sectionId = (int) $request->input('section_id', 0);
 
+        $sectionStatement = Database::connection()->prepare(
+            'SELECT id, class_id, name FROM sections WHERE branch_id=:branch ORDER BY class_id, name'
+        );
+        $sectionStatement->execute(['branch' => BranchContext::id()]);
+        $sections = [];
+        $sectionClassIds = [];
+        foreach ($sectionStatement->fetchAll() as $section) {
+            $id = (int) $section['id'];
+            $sections[$id] = (string) $section['name'];
+            $sectionClassIds[$id] = (int) $section['class_id'];
+        }
+        if ($sectionId > 0 && ($classId <= 0 || ($sectionClassIds[$sectionId] ?? 0) !== $classId)) {
+            $sectionId = 0;
+        }
+
         $grid = [];
         $periods = [];
 
@@ -59,7 +74,8 @@ final class TimetableController
             'title' => 'Weekly timetable',
             'user' => Auth::user(),
             'classes' => Catalogue::classes(),
-            'sections' => Catalogue::sections(),
+            'sections' => $sections,
+            'sectionClassIds' => $sectionClassIds,
             'classId' => $classId,
             'sectionId' => $sectionId,
             'days' => self::DAYS,
