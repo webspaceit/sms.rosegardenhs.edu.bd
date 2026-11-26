@@ -31,7 +31,7 @@ final class StudentController
         $classes = Student::classes();
         $showAcademicGroupFilter = false;
         foreach ($classes as $classOption) {
-            if ((int) $classOption['id'] === $classId) { $showAcademicGroupFilter = $this->isClassNine($classOption); break; }
+            if ((int) $classOption['id'] === $classId) { $showAcademicGroupFilter = $this->hasAcademicGroups($classOption); break; }
         }
         $academicGroups = AcademicGroup::names();
         $academicGroup = trim((string) $request->input('group', ''));
@@ -77,7 +77,7 @@ final class StudentController
         if (!in_array($status, ['', 'active', 'inactive', 'graduated'], true)) $status = '';
         $classIsNine = false;
         foreach (Student::classes() as $classOption) {
-            if ((int) $classOption['id'] === $classId) { $classIsNine = $this->isClassNine($classOption); break; }
+            if ((int) $classOption['id'] === $classId) { $classIsNine = $this->hasAcademicGroups($classOption); break; }
         }
         $academicGroups = $classIsNine ? AcademicGroup::names() : [];
         $academicGroup = trim((string) $request->input('group', ''));
@@ -191,7 +191,7 @@ final class StudentController
                 if (!in_array($shift, ['', 'Morning', 'Day'], true)) $errors[] = 'Select a valid shift.';
                 if (!in_array($gender, ['Male', 'Female', 'Other'], true)) $errors[] = 'Select the student’s gender.';
                 if ($mobileNumber !== '' && !PhoneNumber::isBangladeshiMobile($mobileNumber)) $errors[] = PhoneNumber::ERROR;
-                if (Student::classLevel($classId) === 9 && !in_array(trim((string) $request->input('academic_group', '')), AcademicGroup::names(), true)) $errors[] = 'Select an academic group for Class 9.';
+                if ($this->classHasAcademicGroups($classId) && !in_array(trim((string) $request->input('academic_group', '')), AcademicGroup::names(), true)) $errors[] = 'Select an academic group for Class 9 or 10.';
                 $yearId = (int) $request->input('academic_year_id', 0);
                 if ($classId > 0 && $sectionId > 0 && $yearId > 0 && $roll > 0) {
                     $duplicate = Database::connection()->prepare('SELECT 1 FROM students WHERE class_id = :class_id AND section_id = :section_id AND academic_year_id = :year_id AND shift <=> :shift AND roll_no = :roll_no AND branch_id = :branch_id LIMIT 1');
@@ -720,7 +720,8 @@ final class StudentController
         $validationIssues = [];
         if ($name === '' || $nameLength > 150) $validationIssues[] = 'student name (required, up to 150 characters)';
         if (!$year || !$sectionIsValid) $validationIssues[] = 'class, section, and academic year';
-        if ($classLevel === 9 && !in_array($academicGroup, AcademicGroup::names(), true)) $validationIssues[] = 'Class 9 academic group';
+        $classHasAcademicGroups = $this->classHasAcademicGroups($classId);
+        if ($classHasAcademicGroups && !in_array($academicGroup, AcademicGroup::names(), true)) $validationIssues[] = 'Class 9 or 10 academic group';
         if ($roll < 1 || $roll > 65535) $validationIssues[] = 'roll number (1–65535)';
         if (!in_array($gender, ['', 'Male', 'Female', 'Other'], true)) $validationIssues[] = 'gender';
         if (!in_array($shift, ['', 'Morning', 'Day'], true)) $validationIssues[] = 'shift';
@@ -747,7 +748,7 @@ final class StudentController
             'name' => $name,
             'class_id' => $classId,
             'section_id' => $sectionId,
-            'academic_group' => $classLevel === 9 ? $academicGroup : null,
+            'academic_group' => $classHasAcademicGroups ? $academicGroup : null,
             'shift' => $shift !== '' ? $shift : null,
             'year_id' => $yearId,
             'roll_no' => $roll,
@@ -966,7 +967,7 @@ final class StudentController
         header('Location: ' . Url::to('/students'), true, 419); exit;
     }
 
-    private function isClassNine(array $class): bool
+    private function hasAcademicGroups(array $class): bool
     {
         $name = strtoupper((string) ($class['name'] ?? ''));
         $name = preg_replace('/[^A-Z0-9]+/', '', $name) ?? '';
@@ -979,6 +980,14 @@ final class StudentController
         ];
         if (isset($namedLevels[$name])) return in_array($namedLevels[$name], [9, 10], true);
         return in_array((int) ($class['numeric_level'] ?? 0), [9, 10], true);
+    }
+
+    private function classHasAcademicGroups(int $classId): bool
+    {
+        foreach (Student::classes() as $class) {
+            if ((int) $class['id'] === $classId) return $this->hasAcademicGroups($class);
+        }
+        return false;
     }
 
     private function requireSignIn(): void

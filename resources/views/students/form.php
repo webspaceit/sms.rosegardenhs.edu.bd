@@ -25,8 +25,18 @@ foreach ($sections as $sectionOption) {
     }
 }
 $selectedClassLevel = 0;
+$selectedClassHasAcademicGroup = false;
 foreach ($classes as $classOption) {
-    if ((int) $classOption['id'] === $selectedClassId) { $selectedClassLevel = (int) $classOption['numeric_level']; break; }
+    if ((int) $classOption['id'] === $selectedClassId) {
+        $selectedClassLevel = (int) $classOption['numeric_level'];
+        $normalizedClassName = strtoupper(preg_replace('/[^A-Z0-9]+/', '', (string) $classOption['name']) ?? '');
+        $normalizedClassName = preg_replace('/^CLASS/', '', $normalizedClassName) ?? $normalizedClassName;
+        $knownClassNames = ['1', 'ONE', '2', 'TWO', '3', 'THREE', '4', 'FOUR', '5', 'FIVE', '6', 'SIX', '7', 'SEVEN', '8', 'EIGHT', '9', 'NINE', '10', 'TEN'];
+        $selectedClassHasAcademicGroup = in_array($normalizedClassName, $knownClassNames, true)
+            ? in_array($normalizedClassName, ['9', 'NINE', '10', 'TEN'], true)
+            : in_array($selectedClassLevel, [9, 10], true);
+        break;
+    }
 }
 $nextStudentId = $nextStudentId ?? '';
 $genderOptions = ['Male', 'Female', 'Other'];
@@ -55,9 +65,9 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
             <h2 class="text-lg font-semibold">Student Admission</h2>
             <div class="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
                 <label class="block"><span class="mb-2 block text-sm font-medium">Admission No <span class="text-red-300">*</span></span><input readonly name="student_id" value="<?= View::escape((string) $fieldValue('student_id', $nextStudentId)) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2.5 text-sm text-slate-300"></label>
-                <label class="block"><span class="mb-2 block text-sm font-medium">Class <span class="text-red-300">*</span></span><select required id="student-class-field" name="class_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach ($classes as $class): ?><option value="<?= (int) $class['id'] ?>" data-level="<?= (int) $class['numeric_level'] ?>" data-shift="<?= View::escape((string) ($class['shift'] ?? 'Day')) ?>" <?= $selectedClassId === (int) $class['id'] ? 'selected' : '' ?>><?= View::escape($class['name']) ?></option><?php endforeach; ?></select></label>
+                <label class="block"><span class="mb-2 block text-sm font-medium">Class <span class="text-red-300">*</span></span><select required id="student-class-field" name="class_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach ($classes as $class): ?><option value="<?= (int) $class['id'] ?>" data-level="<?= (int) $class['numeric_level'] ?>" data-class-name="<?= View::escape($class['name']) ?>" data-shift="<?= View::escape((string) ($class['shift'] ?? 'Day')) ?>" <?= $selectedClassId === (int) $class['id'] ? 'selected' : '' ?>><?= View::escape($class['name']) ?></option><?php endforeach; ?></select></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Section <span class="text-red-300">*</span></span><select required id="student-section-field" name="section_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><?php foreach ($sections as $section): ?><option data-class-id="<?= (int) $section['class_id'] ?>" data-next-roll="<?= (int) ($section['next_roll'] ?? 1) ?>" data-next-roll-morning="<?= (int) ($section['next_roll_morning'] ?? 1) ?>" data-next-roll-day="<?= (int) ($section['next_roll_day'] ?? 1) ?>" value="<?= (int) $section['id'] ?>" <?= $selectedSectionId === (int) $section['id'] ? 'selected' : '' ?>><?= View::escape($section['class_name'] . ' · ' . $section['name']) ?></option><?php endforeach; ?></select></label>
-                <label id="student-academic-group-wrap" class="block <?= $selectedClassLevel === 9 ? '' : 'hidden' ?>"><span class="mb-2 block text-sm font-medium">Academic Group <span class="text-red-300">*</span></span><select id="student-academic-group" name="academic_group" <?= $selectedClassLevel === 9 ? 'required' : '' ?> class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select group</option><?php foreach ($academicGroups as $group): ?><option value="<?= View::escape($group) ?>" <?= (string) $fieldValue('academic_group') === $group ? 'selected' : '' ?>><?= View::escape($group) ?></option><?php endforeach; ?></select></label>
+                <label id="student-academic-group-wrap" class="block <?= $selectedClassHasAcademicGroup ? '' : 'hidden' ?>"><span class="mb-2 block text-sm font-medium">Academic Group <span class="text-red-300">*</span></span><select id="student-academic-group" name="academic_group" <?= $selectedClassHasAcademicGroup ? 'required' : '' ?> class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select group</option><?php foreach ($academicGroups as $group): ?><option value="<?= View::escape($group) ?>" <?= (string) $fieldValue('academic_group') === $group ? 'selected' : '' ?>><?= View::escape($group) ?></option><?php endforeach; ?></select></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Shift</span><select id="student-shift-field" name="shift" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><option value="">Select</option><?php foreach (['Morning', 'Day'] as $shiftOpt): ?><option value="<?= $shiftOpt ?>" <?= $selectedShift === $shiftOpt ? 'selected' : '' ?>><?= $shiftOpt ?></option><?php endforeach; ?></select></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Roll Number <span class="text-red-300">*</span></span><input required min="1" max="65535" type="number" id="student-roll-field" data-auto-roll="<?= !$editing ? '1' : '0' ?>" name="roll_no" placeholder="Roll Number" value="<?= View::escape((string) $fieldValue('roll_no', $editing ? '' : $suggestedRoll)) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"><span class="mt-1 block text-xs text-slate-400">Suggested from the next available roll for this class, section, and shift.</span></label>
                 <label class="block"><span class="mb-2 block text-sm font-medium">Student Name <span class="text-red-300">*</span></span><input required maxlength="150" name="name" placeholder="Student Name" value="<?= View::escape((string) $fieldValue('name')) ?>" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm"></label>
@@ -480,11 +490,14 @@ $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo'])
   const syncAcademicGroup = () => {
     if (!classField || !academicGroupWrap || !academicGroupField) return;
     const classOption = classField.selectedOptions[0];
-    const isClassNine = classOption?.dataset.level === '9';
-    academicGroupWrap.classList.toggle('hidden', !isClassNine);
-    academicGroupField.required = isClassNine;
-    studentBehaviourField?.classList.toggle('student-behaviour-class-nine', isClassNine);
-    if (!isClassNine) academicGroupField.value = '';
+    const className = (classOption?.dataset.className || classOption?.textContent || '').replace(/[^a-z0-9]/gi, '').toLowerCase().replace(/^class/, '');
+    const namedLevels = { '1': 1, one: 1, '2': 2, two: 2, '3': 3, three: 3, '4': 4, four: 4, '5': 5, five: 5, '6': 6, six: 6, '7': 7, seven: 7, '8': 8, eight: 8, '9': 9, nine: 9, '10': 10, ten: 10 };
+    const hasNamedLevel = Object.prototype.hasOwnProperty.call(namedLevels, className);
+    const hasAcademicGroup = hasNamedLevel ? [9, 10].includes(namedLevels[className]) : ['9', '10'].includes(classOption?.dataset.level || '');
+    academicGroupWrap.classList.toggle('hidden', !hasAcademicGroup);
+    academicGroupField.required = hasAcademicGroup;
+    studentBehaviourField?.classList.toggle('student-behaviour-class-nine', hasAcademicGroup);
+    if (!hasAcademicGroup) academicGroupField.value = '';
   };
   if (classField && sectionField) {
     const syncSuggestedRoll = () => {

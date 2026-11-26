@@ -9,10 +9,17 @@ use App\Core\View;
 $old = $_SESSION['_student_old'] ?? [];
 $selectedClassId = (int) ($old['class_id'] ?? ($classes[0]['id'] ?? 0));
 $selectedClassLevel = 0;
+$selectedClassHasAcademicGroup = false;
 $selectedClassShift = 'Day';
 foreach ($classes as $classOption) {
     if ((int) $classOption['id'] === $selectedClassId) {
         $selectedClassLevel = (int) $classOption['numeric_level'];
+        $normalizedClassName = strtoupper(preg_replace('/[^A-Z0-9]+/', '', (string) $classOption['name']) ?? '');
+        $normalizedClassName = preg_replace('/^CLASS/', '', $normalizedClassName) ?? $normalizedClassName;
+        $knownClassNames = ['1', 'ONE', '2', 'TWO', '3', 'THREE', '4', 'FOUR', '5', 'FIVE', '6', 'SIX', '7', 'SEVEN', '8', 'EIGHT', '9', 'NINE', '10', 'TEN'];
+        $selectedClassHasAcademicGroup = in_array($normalizedClassName, $knownClassNames, true)
+            ? in_array($normalizedClassName, ['9', 'NINE', '10', 'TEN'], true)
+            : in_array($selectedClassLevel, [9, 10], true);
         $selectedClassShift = in_array($classOption['shift'] ?? '', ['Morning', 'Day'], true) ? (string) $classOption['shift'] : 'Day';
         break;
     }
@@ -58,13 +65,13 @@ $suggestedRoll = $selectedSection === null ? 1 : (int) ($selectedSection['next_r
                     <span class="mb-1.5 block text-sm text-slate-300">Class <span class="text-rose-300">*</span></span>
                     <select id="quick-class" required name="class_id" class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
                         <?php foreach ($classes as $class): ?>
-                        <option value="<?= (int) $class['id'] ?>" data-level="<?= (int) $class['numeric_level'] ?>" data-shift="<?= View::escape((string) ($class['shift'] ?? 'Day')) ?>" <?= $selectedClassId === (int) $class['id'] ? 'selected' : '' ?>><?= View::escape($class['name']) ?></option>
+                        <option value="<?= (int) $class['id'] ?>" data-level="<?= (int) $class['numeric_level'] ?>" data-class-name="<?= View::escape($class['name']) ?>" data-shift="<?= View::escape((string) ($class['shift'] ?? 'Day')) ?>" <?= $selectedClassId === (int) $class['id'] ? 'selected' : '' ?>><?= View::escape($class['name']) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </label>
-                <label id="quick-academic-group-wrap" class="block <?= $selectedClassLevel === 9 ? '' : 'hidden' ?>">
+                <label id="quick-academic-group-wrap" class="block <?= $selectedClassHasAcademicGroup ? '' : 'hidden' ?>">
                     <span class="mb-1.5 block text-sm text-slate-300">Academic group <span class="text-rose-300">*</span></span>
-                    <select id="quick-academic-group" name="academic_group" <?= $selectedClassLevel === 9 ? 'required' : '' ?> class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
+                    <select id="quick-academic-group" name="academic_group" <?= $selectedClassHasAcademicGroup ? 'required' : '' ?> class="w-full rounded-lg border border-green-800/80 bg-[#062f2d] px-3 py-2.5 text-sm outline-none focus:border-emerald-400">
                         <option value="">Select group</option>
                         <?php foreach ($academicGroups as $group): ?><option value="<?= View::escape($group) ?>" <?= ($old['academic_group'] ?? '') === $group ? 'selected' : '' ?>><?= View::escape($group) ?></option><?php endforeach; ?>
                     </select>
@@ -169,11 +176,15 @@ $suggestedRoll = $selectedSection === null ? 1 : (int) ($selectedSection['next_r
   const guardianMode = document.getElementById('guardian-mode');
   if (!form || !classField || !sectionField || !shiftField || !rollField) return;
   const syncAcademicGroup = () => {
-    const isClassNine = classField.selectedOptions[0]?.dataset.level === '9';
-    if (academicGroupWrap) academicGroupWrap.classList.toggle('hidden', !isClassNine);
+    const classOption = classField.selectedOptions[0];
+    const className = (classOption?.dataset.className || classOption?.textContent || '').replace(/[^a-z0-9]/gi, '').toLowerCase().replace(/^class/, '');
+    const namedLevels = { '1': 1, one: 1, '2': 2, two: 2, '3': 3, three: 3, '4': 4, four: 4, '5': 5, five: 5, '6': 6, six: 6, '7': 7, seven: 7, '8': 8, eight: 8, '9': 9, nine: 9, '10': 10, ten: 10 };
+    const hasNamedLevel = Object.prototype.hasOwnProperty.call(namedLevels, className);
+    const hasAcademicGroup = hasNamedLevel ? [9, 10].includes(namedLevels[className]) : ['9', '10'].includes(classOption?.dataset.level || '');
+    if (academicGroupWrap) academicGroupWrap.classList.toggle('hidden', !hasAcademicGroup);
     if (academicGroupField) {
-      academicGroupField.required = isClassNine;
-      if (!isClassNine) academicGroupField.value = '';
+      academicGroupField.required = hasAcademicGroup;
+      if (!hasAcademicGroup) academicGroupField.value = '';
     }
   };
   const syncSuggestedRoll = () => {
