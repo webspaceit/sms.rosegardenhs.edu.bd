@@ -40,7 +40,7 @@ $columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showAcademicGroupFilter ? 1
         <label class="sr-only" for="student-class">Class</label>
         <select id="student-class" name="class_id" class="h-11 min-w-0 rounded-lg border border-green-800/80 bg-[#062f2d] px-2 py-2 text-xs text-slate-100 shadow-inner shadow-black/10 transition hover:border-green-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/15">
             <option value="0">All classes</option>
-            <?php foreach ($classes as $class): ?><option value="<?= (int) $class['id'] ?>" data-numeric-level="<?= (int) $class['numeric_level'] ?>" <?= $selectedClass === (int) $class['id'] ? 'selected' : '' ?>><?= View::escape($class['name']) ?></option><?php endforeach; ?>
+            <?php foreach ($classes as $class): ?><option value="<?= (int) $class['id'] ?>" data-numeric-level="<?= (int) $class['numeric_level'] ?>" data-class-name="<?= View::escape($class['name']) ?>" <?= $selectedClass === (int) $class['id'] ? 'selected' : '' ?>><?= View::escape($class['name']) ?></option><?php endforeach; ?>
         </select>
         <label id="student-group-filter-wrap" class="<?= $showAcademicGroupFilter ? '' : 'hidden' ?> min-w-0"><span class="sr-only">Academic group</span><select id="student-group" name="group" class="h-11 w-full min-w-0 rounded-lg border border-green-800/80 bg-[#062f2d] px-2 py-2 text-xs text-slate-100 shadow-inner shadow-black/10 transition hover:border-green-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/15"><option value="">All groups</option><?php foreach ($academicGroups as $group): ?><option value="<?= View::escape($group) ?>" <?= $selectedAcademicGroup === $group ? 'selected' : '' ?>><?= View::escape($group) ?></option><?php endforeach; ?></select></label>
         <label class="sr-only" for="student-status">Status</label>
@@ -210,7 +210,9 @@ $columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showAcademicGroupFilter ? 1
         const columnsWithoutGroup = 'minmax(140px,1.4fr) minmax(110px,1fr) minmax(105px,.95fr) minmax(115px,1fr) auto auto';
         const columnsWithGroup = 'minmax(140px,1.4fr) minmax(105px,.95fr) minmax(105px,.95fr) minmax(105px,.95fr) minmax(115px,1fr) auto auto';
         const syncGroupFilter = () => {
-            const isClassNine = classSelect.selectedOptions[0]?.dataset.numericLevel === '9';
+            const selectedClass = classSelect.selectedOptions[0];
+            const normalizedClassName = (selectedClass?.dataset.className || selectedClass?.textContent || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+            const isClassNine = selectedClass?.dataset.numericLevel === '9' || ['9', 'nine', 'class9', 'classnine'].includes(normalizedClassName);
             groupWrap.classList.toggle('hidden', !isClassNine);
             if (!isClassNine) groupSelect.value = '';
             filterForm.style.gridTemplateColumns = window.matchMedia('(min-width: 1280px)').matches

@@ -29,11 +29,10 @@ final class StudentController
         $classId = max(0, (int) $request->input('class_id', 0));
         $status = (string) $request->input('status', '');
         $classes = Student::classes();
-        $classLevel = 0;
+        $showAcademicGroupFilter = false;
         foreach ($classes as $classOption) {
-            if ((int) $classOption['id'] === $classId) { $classLevel = (int) $classOption['numeric_level']; break; }
+            if ((int) $classOption['id'] === $classId) { $showAcademicGroupFilter = $this->isClassNine($classOption); break; }
         }
-        $showAcademicGroupFilter = $classLevel === 9;
         $academicGroups = AcademicGroup::names();
         $academicGroup = trim((string) $request->input('group', ''));
         if (!$showAcademicGroupFilter || !in_array($academicGroup, $academicGroups, true)) $academicGroup = '';
@@ -76,11 +75,11 @@ final class StudentController
         $classId = max(0, (int) $request->input('class_id', 0));
         $status = (string) $request->input('status', '');
         if (!in_array($status, ['', 'active', 'inactive', 'graduated'], true)) $status = '';
-        $classLevel = 0;
+        $classIsNine = false;
         foreach (Student::classes() as $classOption) {
-            if ((int) $classOption['id'] === $classId) { $classLevel = (int) $classOption['numeric_level']; break; }
+            if ((int) $classOption['id'] === $classId) { $classIsNine = $this->isClassNine($classOption); break; }
         }
-        $academicGroups = $classLevel === 9 ? AcademicGroup::names() : [];
+        $academicGroups = $classIsNine ? AcademicGroup::names() : [];
         $academicGroup = trim((string) $request->input('group', ''));
         if ($academicGroups === [] || !in_array($academicGroup, $academicGroups, true)) $academicGroup = '';
         $academicYears = Student::academicYears();
@@ -965,6 +964,14 @@ final class StudentController
         http_response_code(419);
         Toast::flash('Your session expired. Please try again.', 'error');
         header('Location: ' . Url::to('/students'), true, 419); exit;
+    }
+
+    private function isClassNine(array $class): bool
+    {
+        if ((int) ($class['numeric_level'] ?? 0) === 9) return true;
+        $name = strtoupper((string) ($class['name'] ?? ''));
+        $name = preg_replace('/[^A-Z0-9]+/', '', $name) ?? '';
+        return in_array($name, ['9', 'NINE', 'CLASS9', 'CLASSNINE'], true);
     }
 
     private function requireSignIn(): void
