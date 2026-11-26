@@ -30,7 +30,7 @@ final class Teacher
                 ['name' => '__serial', 'label' => 'Sl.', 'format' => 'serial'],
                 ['name' => 'employee_id', 'label' => 'Employee ID', 'format' => 'muted'],
                 ['name' => 'name', 'label' => 'Name', 'nowrap' => true],
-                ['name' => 'designation_name', 'label' => 'Designation', 'format' => 'badge'],
+                ['name' => 'designation_name', 'label' => 'Designation', 'format' => 'badge', 'nowrap' => true],
                 ['name' => 'department_name', 'label' => 'Department', 'format' => 'muted'],
                 ['name' => 'shift_name', 'label' => 'Shift', 'format' => 'badge'],
                 ['name' => 'phone', 'label' => 'Phone', 'format' => 'muted'],
