@@ -968,10 +968,10 @@ final class StudentController
 
     private function isClassNine(array $class): bool
     {
-        if ((int) ($class['numeric_level'] ?? 0) === 9) return true;
+        if (in_array((int) ($class['numeric_level'] ?? 0), [9, 10], true)) return true;
         $name = strtoupper((string) ($class['name'] ?? ''));
         $name = preg_replace('/[^A-Z0-9]+/', '', $name) ?? '';
-        return in_array($name, ['9', 'NINE', 'CLASS9', 'CLASSNINE'], true);
+        return in_array($name, ['9', 'NINE', 'CLASS9', 'CLASSNINE', '10', 'TEN', 'CLASS10', 'CLASSTEN'], true);
     }
 
     private function requireSignIn(): void

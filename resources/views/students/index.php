@@ -212,11 +212,11 @@ $columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showAcademicGroupFilter ? 1
         const syncGroupFilter = () => {
             const selectedClass = classSelect.selectedOptions[0];
             const normalizedClassName = (selectedClass?.dataset.className || selectedClass?.textContent || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
-            const isClassNine = selectedClass?.dataset.numericLevel === '9' || ['9', 'nine', 'class9', 'classnine'].includes(normalizedClassName);
-            groupWrap.classList.toggle('hidden', !isClassNine);
-            if (!isClassNine) groupSelect.value = '';
+            const isClassNineOrTen = ['9', '10'].includes(selectedClass?.dataset.numericLevel || '') || ['9', 'nine', 'class9', 'classnine', '10', 'ten', 'class10', 'classten'].includes(normalizedClassName);
+            groupWrap.classList.toggle('hidden', !isClassNineOrTen);
+            if (!isClassNineOrTen) groupSelect.value = '';
             filterForm.style.gridTemplateColumns = window.matchMedia('(min-width: 1280px)').matches
-                ? (isClassNine ? columnsWithGroup : columnsWithoutGroup)
+                ? (isClassNineOrTen ? columnsWithGroup : columnsWithoutGroup)
                 : '';
         };
 
