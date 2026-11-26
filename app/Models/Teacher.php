@@ -53,6 +53,7 @@ final class Teacher
                     'hint' => 'Generated automatically and kept unique across all campuses.',
                 ],
                 ['name' => 'name', 'label' => 'Full name', 'type' => 'text', 'required' => true, 'max' => 150],
+                ['name' => 'nid', 'label' => 'National ID (NID)', 'type' => 'text', 'max' => 30, 'placeholder' => 'Enter NID number', 'hint' => 'Optional. Enter as text to preserve leading zeros.'],
                 ['name' => 'designation_id', 'label' => 'Designation', 'type' => 'select', 'options' => static fn (): array => Catalogue::designations(), 'preserveExisting' => true],
                 ['name' => 'department_id', 'label' => 'Department', 'type' => 'select', 'options' => static fn (): array => Catalogue::departments()],
                 ['name' => 'phone', 'label' => 'Phone', 'type' => 'tel', 'max' => 14],

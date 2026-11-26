@@ -334,6 +334,7 @@ CREATE TABLE IF NOT EXISTS teachers (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     employee_id VARCHAR(30) NOT NULL,
     name VARCHAR(150) NOT NULL,
+    nid VARCHAR(30) NULL,
     department_id BIGINT UNSIGNED NULL,
     designation_id BIGINT UNSIGNED NULL,
     phone VARCHAR(20) NULL,

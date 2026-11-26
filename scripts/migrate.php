@@ -226,6 +226,13 @@ if ($uniqueExam === [] && $duplicateExamLinks === 0) {
 // Normalization migrations: replace denormalized columns with relationships.
 // ---------------------------------------------------------------------------
 
+// teachers.nid: optional national identity number, stored as text to preserve leading zeros.
+$teacherColumns = $pdo->query('SHOW COLUMNS FROM teachers')->fetchAll(PDO::FETCH_COLUMN);
+if (!in_array('nid', $teacherColumns, true)) {
+    $pdo->exec('ALTER TABLE teachers ADD COLUMN nid VARCHAR(30) NULL AFTER name');
+    echo 'Added optional teacher NID field.', PHP_EOL;
+}
+
 // teachers.designation -> designation_id
 $teacherColumns = $pdo->query('SHOW COLUMNS FROM teachers')->fetchAll(PDO::FETCH_COLUMN);
 if (!in_array('designation_id', $teacherColumns, true)) {

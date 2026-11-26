@@ -1,0 +1,1 @@
+http://localhost/wsit-school-management-system/public/teachers/new
