@@ -27,6 +27,24 @@ use App\Models\AcademicGroup;
  */
 final class StudentImportController
 {
+    public function example(Request $request): void
+    {
+        Guard::requirePermission('students.create');
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="new-student-import-template.csv"');
+        header('X-Content-Type-Options: nosniff');
+        $output = fopen('php://output', 'wb');
+        if ($output === false) {
+            http_response_code(500);
+            return;
+        }
+        fputcsv($output, ['name', 'student_id', 'class', 'academic_group', 'section', 'roll_no', 'gender', 'guardian_name', 'guardian_phone', 'status']);
+        fputcsv($output, ['', '', '', '', '', '', '', '', '', '']);
+        fclose($output);
+        exit;
+    }
+
     public function show(Request $request): void
     {
         Guard::requirePermission('students.create');
@@ -193,12 +211,13 @@ final class StudentImportController
             }
 
             $academicGroup = trim((string) ($row['academic_group'] ?? ''));
-            if ((int) ($class['level'] ?? 0) === 9 && !in_array($academicGroup, $academicGroups, true)) {
+            $classHasAcademicGroup = $this->classHasAcademicGroup($class);
+            if ($classHasAcademicGroup && !in_array($academicGroup, $academicGroups, true)) {
                 $skipped++;
-                $problems[] = 'Row ' . $line . ': Class 9 requires academic_group to be Science, Business Studies, Humanities, or S.S.C Vocational.';
+                $problems[] = 'Row ' . $line . ': Class 9 or 10 requires academic_group to be Science, Business Studies, Humanities, or S.S.C Vocational.';
                 continue;
             }
-            if ((int) ($class['level'] ?? 0) !== 9) $academicGroup = '';
+            if (!$classHasAcademicGroup) $academicGroup = '';
 
             $roll = (int) ($row['roll_no'] ?? 0);
             if ($roll < 1) {
@@ -263,5 +282,19 @@ final class StudentImportController
         }
 
         return ['imported' => $imported, 'skipped' => $skipped, 'problems' => array_slice($problems, 0, 50)];
+    }
+
+    private function classHasAcademicGroup(array $class): bool
+    {
+        $name = strtoupper(preg_replace('/[^A-Z0-9]+/', '', (string) ($class['name'] ?? '')) ?? '');
+        $name = preg_replace('/^CLASS/', '', $name) ?? $name;
+        $namedLevels = [
+            '1' => 1, 'ONE' => 1, '2' => 2, 'TWO' => 2, '3' => 3, 'THREE' => 3,
+            '4' => 4, 'FOUR' => 4, '5' => 5, 'FIVE' => 5, '6' => 6, 'SIX' => 6,
+            '7' => 7, 'SEVEN' => 7, '8' => 8, 'EIGHT' => 8, '9' => 9, 'NINE' => 9,
+            '10' => 10, 'TEN' => 10,
+        ];
+        if (isset($namedLevels[$name])) return in_array($namedLevels[$name], [9, 10], true);
+        return in_array((int) ($class['level'] ?? 0), [9, 10], true);
     }
 }

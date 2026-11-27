@@ -168,6 +168,7 @@ final class Application
         $router->post('/students/guardians/primary', [$students, 'setPrimaryGuardian']);
         $router->get('/uploads/file', [$uploads, 'show']);
         $router->get('/students/import', [$import, 'show']);
+        $router->get('/students/import/example', [$import, 'example']);
         $router->post('/students/import', [$import, 'store']);
         $router->get('/academics', [$academics, 'index']);
         $router->post('/academic-years/active', [$academics, 'selectSession']);

@@ -14,6 +14,7 @@ use App\Core\View;
     <a href="<?= Url::to('/students') ?>" class="text-sm text-teal-300 hover:text-teal-200">← Student register</a>
     <h1 class="mt-2 text-3xl font-semibold">Import students</h1>
     <p class="mt-1 text-sm text-white">Upload a CSV file with one student per row.</p>
+        <a href="<?= Url::to('/students/import/example') ?>" class="form-action-button mt-3 inline-flex">Download new-student CSV template</a>
 
     <section class="mt-7 rounded-2xl border border-green-900/60 dashboard-gradient p-5">
         <h2 class="font-semibold">File format</h2>
@@ -23,7 +24,7 @@ use App\Core\View;
                 <code class="rounded-lg border border-green-100/15 bg-emerald-950/35 px-2.5 py-1 font-mono text-xs text-green-100"><?= $column ?></code>
             <?php endforeach; ?>
         </div>
-        <p class="mt-3 text-xs text-slate-500">The class and section must already exist. For Class 9, use Science, Business Studies, Humanities, or S.S.C Vocational. When student_id is left empty one is generated.</p>
+        <p class="mt-3 text-xs text-slate-500">This import creates new student records; it does not update existing students. Use exact class and section names already in the system. Leave student_id blank to generate it automatically. For Class 9 or 10, include the academic group.</p>
     </section>
 
     <form method="post" action="<?= Url::to('/students/import') ?>" enctype="multipart/form-data" class="mt-5 rounded-2xl border border-green-900/60 dashboard-gradient p-5">
