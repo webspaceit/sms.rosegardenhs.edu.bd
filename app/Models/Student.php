@@ -478,9 +478,17 @@ final class Student
 
     public static function nextStudentId(string $year): string
     {
-        $stmt = Database::connection()->prepare('SELECT COUNT(*) + 1 FROM students WHERE academic_year_id = (SELECT id FROM academic_years WHERE name = :name AND branch_id=:year_branch LIMIT 1) AND branch_id=:student_branch');
-        $stmt->execute(['name' => $year, 'year_branch' => BranchContext::id(), 'student_branch' => BranchContext::id()]);
-        return sprintf('STU-%s-%03d', $year, (int) $stmt->fetchColumn());
+        $db = Database::connection();
+        $prefix = 'STU-' . $year . '-';
+        $stmt = $db->prepare("SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(student_id, '-', -1) AS UNSIGNED)), 0) FROM students WHERE student_id LIKE :prefix");
+        $stmt->execute(['prefix' => $prefix . '%']);
+        $serial = (int) $stmt->fetchColumn() + 1;
+        $exists = $db->prepare('SELECT 1 FROM students WHERE student_id = :student_id LIMIT 1');
+        do {
+            $studentId = sprintf('%s%03d', $prefix, $serial++);
+            $exists->execute(['student_id' => $studentId]);
+        } while ($exists->fetchColumn());
+        return $studentId;
     }
 
     public static function nextRollNumber(int $classId, int $sectionId, int $yearId, ?string $shift = null): int
