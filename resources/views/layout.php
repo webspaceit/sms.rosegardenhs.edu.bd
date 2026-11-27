@@ -6,7 +6,7 @@ use App\Core\View;
 $toast = Toast::pull();
 $appUser = Auth::user();
 $pendingRegistrations = ['count' => 0, 'students' => []];
-if ($appUser !== null && in_array($appUser['role'] ?? '', ['admin', 'superadmin'], true)) {
+if ($appUser !== null && (in_array($appUser['role'] ?? '', ['admin', 'superadmin'], true) || \App\Core\Guard::can('students.view'))) {
     try { $pendingRegistrations = \App\Models\DashboardData::pendingStudentRegistrations(); } catch (\Throwable $error) { error_log('Pending student notification unavailable: ' . $error->getMessage()); }
 }
 ?><!doctype html>

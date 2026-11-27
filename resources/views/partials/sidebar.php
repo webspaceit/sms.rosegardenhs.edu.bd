@@ -7,6 +7,16 @@ use App\Core\View;
 
 $path = Nav::currentPath();
 $groups = Nav::visibleGroups();
+$pendingRegistrationCount = (int) ($pendingRegistrations['count'] ?? 0);
+foreach ($groups as &$navGroup) {
+    foreach ($navGroup['items'] as &$navItem) {
+        if (($navItem['href'] ?? '') === '/students/incomplete-registrations') {
+            $navItem['badgeCount'] = $pendingRegistrationCount;
+        }
+    }
+    unset($navItem);
+}
+unset($navGroup);
 ?>
 <div class="sticky top-0 z-30 border-b border-emerald-100/10 bg-emerald-950 px-4 py-3 shadow-lg shadow-black/10 lg:hidden">
     <div class="flex items-center gap-3">

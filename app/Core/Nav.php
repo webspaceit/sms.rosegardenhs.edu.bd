@@ -49,7 +49,7 @@ final class Nav
                 'collapsible' => true,
                 'items' => [
                     self::item('Student Details', '/students', 'users'),
-                    self::item('Incomplete Registrations', '/students/incomplete-registrations', 'users'),
+                    self::item('Incomplete Reg.', '/students/incomplete-registrations', 'users'),
                     self::item('Student Admission', '/students/new', 'upload', ['/students/new', '/students/edit']),
                     self::item('Import Students', '/students/import', 'upload'),
                     self::item('Promote Students', '/students/promote', 'upload'),

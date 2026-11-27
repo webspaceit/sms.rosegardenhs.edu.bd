@@ -15,6 +15,12 @@ $isActive = Nav::isActive($item, $path);
                 <?= Icon::render($item['icon'], 'h-[18px] w-[18px]') ?>
             </span>
             <span class="min-w-0 flex-1 truncate text-[13px] font-medium"><?= View::escape($item['title']) ?></span>
+            <?php if ((int) ($item['badgeCount'] ?? 0) > 0): ?>
+                <span class="relative grid min-w-6 h-6 shrink-0 place-items-center rounded-full border border-amber-200/35 bg-amber-300/15 px-1.5 text-[10px] font-bold tabular-nums text-amber-100" aria-label="<?= (int) $item['badgeCount'] ?> incomplete registrations">
+                    <span class="absolute inset-0 animate-ping rounded-full bg-amber-300/20"></span>
+                    <span class="relative"><?= number_format((int) $item['badgeCount']) ?></span>
+                </span>
+            <?php endif; ?>
             <span class="h-2 w-2 shrink-0 rounded-full bg-red-400 shadow-[0_0_9px_rgba(239,35,60,0.8)] transition-opacity <?= $isActive ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100' ?>"></span>
         </a>
     <?php else: ?>
