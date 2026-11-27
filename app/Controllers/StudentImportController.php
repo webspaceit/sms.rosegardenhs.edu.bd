@@ -188,22 +188,23 @@ final class StudentImportController
         $yearId = (int) ($year['id'] ?? 0);
         $academicGroups = AcademicGroup::names();
 
-        $classIds = [];
-        $classIdsByLevel = [];
+        $classesByName = [];
+        $classesByLevel = [];
         foreach ($db->query('SELECT id, name, numeric_level, shift FROM classes WHERE branch_id=' . BranchContext::id()) as $row) {
             $class = [
                 'id' => (int) $row['id'],
                 'level' => (int) $row['numeric_level'],
                 'shift' => (string) ($row['shift'] ?? ''),
+                'name' => (string) $row['name'],
             ];
-            $classIds[$this->normalizeClassName((string) $row['name'])] = $class;
+            $classesByName[$this->normalizeClassName((string) $row['name'])][] = $class;
             $level = $class['level'];
             if ($level === 0) $level = $this->namedClassLevel((string) $row['name']);
-            if ($level > 0) $classIdsByLevel[$level] = $class;
+            if ($level > 0) $classesByLevel[$level][] = $class;
         }
         $sectionIds = [];
         foreach ($db->query('SELECT s.id, s.class_id, s.name AS section_name FROM sections s WHERE s.branch_id=' . BranchContext::id()) as $row) {
-            $sectionIds[(int) $row['class_id'] . ':' . strtolower(trim((string) $row['section_name']))] = (int) $row['id'];
+            $sectionIds[(int) $row['class_id']][strtolower(trim((string) $row['section_name']))] = (int) $row['id'];
         }
 
         $imported = 0;
@@ -224,13 +225,29 @@ final class StudentImportController
                 continue;
             }
 
-            $class = $classIds[$className] ?? ($classIdsByLevel[$this->namedClassLevel((string) ($row['class'] ?? ''))] ?? null);
+            $classCandidates = array_merge(
+                $classesByName[$className] ?? [],
+                $classesByLevel[$this->namedClassLevel((string) ($row['class'] ?? ''))] ?? []
+            );
+            $classCandidates = array_values(array_reduce($classCandidates, static function (array $unique, array $candidate): array {
+                $unique[(int) $candidate['id']] = $candidate;
+                return $unique;
+            }, []));
+            $class = null;
+            $sectionId = 0;
+            foreach ($classCandidates as $candidate) {
+                $candidateSectionId = $sectionIds[(int) $candidate['id']][$sectionName] ?? 0;
+                if ($candidateSectionId > 0) {
+                    $class = $candidate;
+                    $sectionId = $candidateSectionId;
+                    break;
+                }
+            }
             $classId = (int) ($class['id'] ?? 0);
-            $sectionId = $sectionIds[$classId . ':' . $sectionName] ?? 0;
 
             if ($classId === 0 || $sectionId === 0) {
                 $skipped++;
-                $problems[] = 'Row ' . $line . ': class "' . ($row['class'] ?? '') . '" or section "' . ($row['section'] ?? '') . '" is unknown.';
+                $problems[] = 'Row ' . $line . ': no matching section "' . ($row['section'] ?? '') . '" was found under class "' . ($row['class'] ?? '') . '" in the selected campus.';
                 continue;
             }
 

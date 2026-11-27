@@ -17,6 +17,10 @@ final class Section
             'singular' => 'section',
             'permission' => 'classes.manage',
             'managePermission' => 'classes.manage',
+            'filters' => [
+                ['name' => 'class_id', 'label' => 'Class', 'allLabel' => 'All classes', 'column' => 's.class_id', 'options' => static fn (): array => Catalogue::classes()],
+                ['name' => 'section_id', 'label' => 'Section', 'allLabel' => 'All sections', 'column' => 's.id', 'options' => static fn (): array => Catalogue::sectionNames(), 'dependsOn' => 'class_id', 'optionClassIds' => static fn (): array => Catalogue::sectionClassIds()],
+            ],
             'from' => 'sections s LEFT JOIN classes c ON c.id = s.class_id AND c.branch_id = s.branch_id',
             'select' => 's.*, c.name AS class_name',
             'columns' => [
