@@ -32,6 +32,7 @@ $statusClass = [
             <?php if (($student['registration_status'] ?? 'completed') === 'pending'): ?><div class="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-amber-200/20 bg-amber-950/50 px-4 py-3"><div><p class="text-sm font-semibold text-amber-100">Full registration pending</p><p class="mt-0.5 text-xs text-amber-100/65">Complete this student’s full profile to clear the staff notification.</p></div><a href="<?= Url::to('/students/edit?id=' . (int) $student['id']) ?>" class="rounded-lg border border-amber-100/20 px-3 py-2 text-xs font-semibold text-amber-50 hover:bg-amber-100/10">Complete registration →</a></div><?php endif; ?>
         </div>
         <div class="student-detail-actions flex flex-wrap gap-2">
+            <a href="<?= Url::to('/students/admission-slip?id=' . (int) $student['id']) ?>" class="form-action-button">Admission slip</a>
             <button type="button" class="form-action-button" onclick="window.print()">Print details</button>
             <button type="button" class="form-action-button" onclick="window.print()" title="In the print dialog, choose Save as PDF">Save as PDF</button>
             <a href="<?= Url::to('/students') ?>" class="rounded-lg border border-green-100/20 px-4 py-2.5 text-sm text-green-50/80 hover:border-green-200/40">Back to register</a>

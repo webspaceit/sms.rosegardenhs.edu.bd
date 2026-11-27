@@ -182,6 +182,26 @@ final class StudentController
         ]);
     }
 
+    public function admissionSlip(Request $request): void
+    {
+        $this->requireSignIn();
+        $student = Student::details((int) $request->input('id', 0));
+        if (!$student) {
+            Toast::flash('Student record not found.', 'error');
+            header('Location: ' . Url::to('/students')); exit;
+        }
+        $settings = Database::connection()->prepare('SELECT `key`, value FROM school_settings WHERE branch_id=:branch');
+        $settings->execute(['branch' => BranchContext::id()]);
+        $schoolSettings = [];
+        foreach ($settings->fetchAll() as $setting) $schoolSettings[(string) $setting['key']] = (string) ($setting['value'] ?? '');
+        View::render('students/admission-slip', [
+            'title' => 'Admission slip - ' . (string) $student['name'],
+            'user' => Auth::user(),
+            'student' => $student,
+            'schoolSettings' => $schoolSettings,
+        ]);
+    }
+
     public function create(Request $request): void
     {
         $this->requireSignIn();
@@ -411,8 +431,8 @@ final class StudentController
         }
         unset($_SESSION['_student_wizard']);
         AuditLog::record('student.created', 'students', $studentId);
-        Toast::flash($quickAdmission ? 'Quick admission complete. You can add the remaining details from the student profile.' : 'Student admitted successfully.');
-        header('Location: ' . Url::to($quickAdmission ? '/students/view?id=' . $studentId : '/students')); exit;
+        Toast::flash($quickAdmission ? 'Quick admission complete. Print the admission slip or save it as PDF for the student.' : 'Student admitted successfully.');
+        header('Location: ' . Url::to($quickAdmission ? '/students/admission-slip?id=' . $studentId : '/students')); exit;
     }
 
     public function edit(Request $request): void

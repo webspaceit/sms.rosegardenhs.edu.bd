@@ -144,6 +144,7 @@ final class Application
         $router->get('/students/incomplete-registrations', [$students, 'incompleteRegistrations']);
         $router->get('/students/export', [$students, 'export']);
         $router->get('/students/view', [$students, 'show']);
+        $router->get('/students/admission-slip', [$students, 'admissionSlip']);
         $router->get('/students/new', [$students, 'create']);
         $router->post('/students/wizard-save', [$students, 'saveWizardStep']);
         $router->get('/students/quick-admit', [$students, 'quickCreate']);
