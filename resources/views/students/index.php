@@ -6,6 +6,8 @@ use App\Core\View;
 $paginationUrl = static fn (int $targetPage): string => Url::to('/students') . '?' . http_build_query([
     'q' => $search,
     'class_id' => $selectedClass,
+    'section_id' => $selectedSection,
+    'shift' => $selectedShift,
     'group' => $selectedAcademicGroup,
     'status' => $selectedStatus,
     'year_id' => $selectedYear,
@@ -28,13 +30,13 @@ $columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showAcademicGroupFilter ? 1
             <p class="mt-1 text-sm text-white">Admissions, class placement, and student status</p>
         </div>
         <div class="flex flex-wrap gap-2">
-            <a href="<?= Url::to('/students/export?' . http_build_query(['q' => $search, 'class_id' => $selectedClass, 'group' => $selectedAcademicGroup, 'status' => $selectedStatus, 'year_id' => $selectedYear])) ?>" class="form-action-button">Export CSV</a>
+            <a href="<?= Url::to('/students/export?' . http_build_query(['q' => $search, 'class_id' => $selectedClass, 'section_id' => $selectedSection, 'shift' => $selectedShift, 'group' => $selectedAcademicGroup, 'status' => $selectedStatus, 'year_id' => $selectedYear])) ?>" class="form-action-button">Export CSV</a>
             <a href="<?= Url::to('/students/new') ?>" class="rounded-lg border border-green-100/20 px-4 py-2.5 text-sm text-green-100 hover:border-green-300">Full admission</a>
             <a href="<?= Url::to('/students/quick-admit') ?>" class="form-action-button">Quick admit</a>
         </div>
     </header>
 
-    <form id="student-filters" method="get" action="<?= Url::to('/students') ?>" class="mt-7 grid min-w-0 gap-2 rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-3 sm:grid-cols-2 <?= $showAcademicGroupFilter ? 'xl:grid-cols-[minmax(140px,1.4fr)_minmax(105px,.95fr)_minmax(105px,.95fr)_minmax(105px,.95fr)_minmax(115px,1fr)_auto_auto]' : 'xl:grid-cols-[minmax(140px,1.4fr)_minmax(110px,1fr)_minmax(105px,.95fr)_minmax(115px,1fr)_auto_auto]' ?>">
+    <form id="student-filters" method="get" action="<?= Url::to('/students') ?>" class="mt-7 grid min-w-0 gap-2 rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-3 sm:grid-cols-2 <?= $showAcademicGroupFilter ? 'xl:grid-cols-[minmax(130px,1.3fr)_minmax(95px,.85fr)_minmax(95px,.85fr)_minmax(95px,.85fr)_minmax(95px,.85fr)_minmax(95px,.85fr)_auto_auto]' : 'xl:grid-cols-[minmax(130px,1.3fr)_minmax(100px,.9fr)_minmax(100px,.9fr)_minmax(100px,.9fr)_minmax(100px,.9fr)_auto_auto]' ?>">
         <label class="sr-only" for="student-search">Search students</label>
         <input id="student-search" name="q" value="<?= View::escape($search) ?>" placeholder="Search name, ID, or roll" class="h-11 min-w-0 rounded-lg border border-green-800/80 bg-[#062f2d] px-2.5 py-2 text-xs text-slate-100 shadow-inner shadow-black/10 transition placeholder:text-slate-500 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/15">
         <label class="sr-only" for="student-class">Class</label>
@@ -42,16 +44,21 @@ $columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showAcademicGroupFilter ? 1
             <option value="0">All classes</option>
             <?php foreach ($classes as $class): ?><option value="<?= (int) $class['id'] ?>" data-numeric-level="<?= (int) $class['numeric_level'] ?>" data-class-name="<?= View::escape($class['name']) ?>" <?= $selectedClass === (int) $class['id'] ? 'selected' : '' ?>><?= View::escape($class['name']) ?></option><?php endforeach; ?>
         </select>
+        <label class="sr-only" for="student-section">Section</label>
+        <select id="student-section" name="section_id" <?= $selectedClass > 0 ? '' : 'disabled' ?> class="h-11 min-w-0 rounded-lg border border-green-800/80 bg-[#062f2d] px-2 py-2 text-xs text-slate-100 shadow-inner shadow-black/10 transition hover:border-green-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/15 disabled:cursor-not-allowed disabled:opacity-60">
+            <option value="0"><?= $selectedClass > 0 ? 'All sections' : 'Select class first' ?></option>
+            <?php foreach ($sections as $section): ?><option value="<?= (int) $section['id'] ?>" data-class-id="<?= (int) $section['class_id'] ?>" <?= $selectedSection === (int) $section['id'] ? 'selected' : '' ?>><?= View::escape($section['name']) ?></option><?php endforeach; ?>
+        </select>
+        <label class="sr-only" for="student-shift">Shift</label>
+        <select id="student-shift" name="shift" class="h-11 min-w-0 rounded-lg border border-green-800/80 bg-[#062f2d] px-2 py-2 text-xs text-slate-100 shadow-inner shadow-black/10 transition hover:border-green-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/15">
+            <option value="" <?= $selectedShift === '' ? 'selected' : '' ?>>All shifts</option>
+            <?php foreach (['Morning', 'Day'] as $shiftOption): ?><option value="<?= $shiftOption ?>" <?= $selectedShift === $shiftOption ? 'selected' : '' ?>><?= $shiftOption ?></option><?php endforeach; ?>
+        </select>
         <label id="student-group-filter-wrap" class="<?= $showAcademicGroupFilter ? '' : 'hidden' ?> min-w-0"><span class="sr-only">Academic group</span><select id="student-group" name="group" class="h-11 w-full min-w-0 rounded-lg border border-green-800/80 bg-[#062f2d] px-2 py-2 text-xs text-slate-100 shadow-inner shadow-black/10 transition hover:border-green-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/15"><option value="">All groups</option><?php foreach ($academicGroups as $group): ?><option value="<?= View::escape($group) ?>" <?= $selectedAcademicGroup === $group ? 'selected' : '' ?>><?= View::escape($group) ?></option><?php endforeach; ?></select></label>
         <label class="sr-only" for="student-status">Status</label>
         <select id="student-status" name="status" class="h-11 min-w-0 rounded-lg border border-green-800/80 bg-[#062f2d] px-2 py-2 text-xs text-slate-100 shadow-inner shadow-black/10 transition hover:border-green-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/15">
             <option value="">All statuses</option>
             <?php foreach (['active' => 'Active', 'inactive' => 'Inactive', 'graduated' => 'Graduated'] as $value => $label): ?><option value="<?= $value ?>" <?= $selectedStatus === $value ? 'selected' : '' ?>><?= $label ?></option><?php endforeach; ?>
-        </select>
-        <label class="sr-only" for="student-year">Academic year</label>
-        <select id="student-year" name="year_id" class="h-11 min-w-0 rounded-lg border border-green-800/80 bg-[#062f2d] px-2 py-2 text-xs text-slate-100 shadow-inner shadow-black/10 transition hover:border-green-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/15">
-            <option value="0" <?= $selectedYear === 0 ? 'selected' : '' ?>>All academic years</option>
-            <?php foreach ($academicYears as $academicYear): ?><option value="<?= (int) $academicYear['id'] ?>" <?= $selectedYear === (int) $academicYear['id'] ? 'selected' : '' ?>><?= View::escape($academicYear['name']) ?><?= $academicYear['is_current'] ? ' · Current' : '' ?></option><?php endforeach; ?>
         </select>
         <button class="h-11 rounded-lg border border-slate-700 px-4 text-sm font-medium hover:border-green-400">Filter</button>
         <a href="<?= Url::to('/students') ?>" class="inline-flex h-11 items-center justify-center rounded-lg px-4 text-center text-sm text-white hover:text-white">Clear</a>
@@ -68,6 +75,8 @@ $columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showAcademicGroupFilter ? 1
                     <?= Csrf::field() ?>
                     <input type="hidden" name="q" value="<?= View::escape($search) ?>">
                     <input type="hidden" name="class_id" value="<?= $selectedClass ?>">
+                    <input type="hidden" name="section_id" value="<?= $selectedSection ?>">
+                    <input type="hidden" name="shift" value="<?= View::escape($selectedShift) ?>">
                     <input type="hidden" name="group" value="<?= View::escape($selectedAcademicGroup) ?>">
                     <input type="hidden" name="status" value="<?= View::escape($selectedStatus) ?>">
                     <input type="hidden" name="year_id" value="<?= $selectedYear ?>">
@@ -203,12 +212,25 @@ $columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showAcademicGroupFilter ? 1
     (() => {
         const filterForm = document.getElementById('student-filters');
         const classSelect = document.getElementById('student-class');
+        const sectionSelect = document.getElementById('student-section');
         const groupWrap = document.getElementById('student-group-filter-wrap');
         const groupSelect = document.getElementById('student-group');
-        if (!filterForm || !classSelect || !groupWrap || !groupSelect) return;
+        if (!filterForm || !classSelect || !sectionSelect || !groupWrap || !groupSelect) return;
 
-        const columnsWithoutGroup = 'minmax(140px,1.4fr) minmax(110px,1fr) minmax(105px,.95fr) minmax(115px,1fr) auto auto';
-        const columnsWithGroup = 'minmax(140px,1.4fr) minmax(105px,.95fr) minmax(105px,.95fr) minmax(105px,.95fr) minmax(115px,1fr) auto auto';
+        const columnsWithoutGroup = 'minmax(130px,1.3fr) minmax(100px,.9fr) minmax(100px,.9fr) minmax(100px,.9fr) minmax(100px,.9fr) auto auto';
+        const columnsWithGroup = 'minmax(130px,1.3fr) minmax(95px,.85fr) minmax(95px,.85fr) minmax(95px,.85fr) minmax(95px,.85fr) minmax(95px,.85fr) auto auto';
+        const syncSections = (resetSelection = false) => {
+            const selectedClassId = classSelect.value;
+            const selectedOption = sectionSelect.selectedOptions[0];
+            sectionSelect.disabled = selectedClassId === '0';
+            sectionSelect.options[0].textContent = selectedClassId === '0' ? 'Select class first' : 'All sections';
+            for (const option of Array.from(sectionSelect.options).slice(1)) {
+                option.hidden = option.dataset.classId !== selectedClassId;
+            }
+            if (resetSelection || (selectedOption?.value !== '0' && selectedOption?.dataset.classId !== selectedClassId)) {
+                sectionSelect.value = '0';
+            }
+        };
         const syncGroupFilter = () => {
             const selectedClass = classSelect.selectedOptions[0];
             const normalizedClassName = (selectedClass?.dataset.className || selectedClass?.textContent || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
@@ -225,8 +247,12 @@ $columnCount = 12 + ($canDeleteStudents ? 1 : 0) + ($showAcademicGroupFilter ? 1
                 : '';
         };
 
-        classSelect.addEventListener('change', syncGroupFilter);
+        classSelect.addEventListener('change', () => {
+            syncSections(true);
+            syncGroupFilter();
+        });
         window.addEventListener('resize', syncGroupFilter);
+        syncSections();
         syncGroupFilter();
     })();
     </script>

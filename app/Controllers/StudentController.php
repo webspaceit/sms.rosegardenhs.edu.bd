@@ -27,8 +27,14 @@ final class StudentController
         $this->requireSignIn();
         $search = trim((string) $request->input('q', ''));
         $classId = max(0, (int) $request->input('class_id', 0));
+        $sectionId = max(0, (int) $request->input('section_id', 0));
+        $shift = (string) $request->input('shift', '');
+        if (!in_array($shift, ['', 'Morning', 'Day'], true)) $shift = '';
         $status = (string) $request->input('status', '');
         $classes = Student::classes();
+        $sections = Student::allSections();
+        $classSectionIds = array_map(static fn (array $section): int => (int) $section['id'], array_filter($sections, static fn (array $section): bool => (int) $section['class_id'] === $classId));
+        if ($classId < 1 || !in_array($sectionId, $classSectionIds, true)) $sectionId = 0;
         $showAcademicGroupFilter = false;
         foreach ($classes as $classOption) {
             if ((int) $classOption['id'] === $classId) { $showAcademicGroupFilter = $this->hasAcademicGroups($classOption); break; }
@@ -44,14 +50,15 @@ final class StudentController
         if ($yearId > 0 && !in_array($yearId, $validYearIds, true)) $yearId = (int) ($currentYear['id'] ?? 0);
         $perPageOption = (int) $request->input('per_page', 25);
         $perPage = in_array($perPageOption, [10, 25, 50, 100], true) ? $perPageOption : 25;
-        $totalStudents = Student::countListing($search, $classId, $status, $yearId, $academicGroup);
+        $totalStudents = Student::countListing($search, $classId, $status, $yearId, $academicGroup, $sectionId, $shift);
         $totalPages = max(1, (int) ceil($totalStudents / $perPage));
         $page = min($totalPages, max(1, (int) $request->input('page', 1)));
         View::render('students/index', [
             'title' => 'Students',
             'user' => Auth::user(),
-            'students' => Student::listing($search, $classId, $status, $perPage, ($page - 1) * $perPage, $yearId, $academicGroup),
+            'students' => Student::listing($search, $classId, $status, $perPage, ($page - 1) * $perPage, $yearId, $academicGroup, $sectionId, $shift),
             'classes' => $classes,
+            'sections' => $sections,
             'academicGroups' => $academicGroups,
             'selectedAcademicGroup' => $academicGroup,
             'showAcademicGroupFilter' => $showAcademicGroupFilter,
@@ -59,6 +66,8 @@ final class StudentController
             'selectedYear' => $yearId,
             'search' => $search,
             'selectedClass' => $classId,
+            'selectedSection' => $sectionId,
+            'selectedShift' => $shift,
             'selectedStatus' => $status,
             'perPage' => $perPage,
             'page' => $page,
@@ -73,12 +82,17 @@ final class StudentController
         $this->requireSignIn();
         $search = trim((string) $request->input('q', ''));
         $classId = max(0, (int) $request->input('class_id', 0));
+        $sectionId = max(0, (int) $request->input('section_id', 0));
+        $shift = (string) $request->input('shift', '');
+        if (!in_array($shift, ['', 'Morning', 'Day'], true)) $shift = '';
         $status = (string) $request->input('status', '');
         if (!in_array($status, ['', 'active', 'inactive', 'graduated'], true)) $status = '';
         $classIsNine = false;
         foreach (Student::classes() as $classOption) {
             if ((int) $classOption['id'] === $classId) { $classIsNine = $this->hasAcademicGroups($classOption); break; }
         }
+        $sectionIds = array_map(static fn (array $section): int => (int) $section['id'], Student::sections($classId));
+        if ($classId < 1 || !in_array($sectionId, $sectionIds, true)) $sectionId = 0;
         $academicGroups = $classIsNine ? AcademicGroup::names() : [];
         $academicGroup = trim((string) $request->input('group', ''));
         if ($academicGroups === [] || !in_array($academicGroup, $academicGroups, true)) $academicGroup = '';
@@ -96,6 +110,8 @@ final class StudentController
             . 'JOIN academic_years ay ON ay.id=s.academic_year_id AND ay.branch_id=s.branch_id WHERE s.branch_id=:branch_id';
         $bindings = ['branch_id' => BranchContext::id()];
         if ($classId > 0) { $sql .= ' AND s.class_id=:class_id'; $bindings['class_id'] = $classId; }
+        if ($sectionId > 0) { $sql .= ' AND s.section_id=:section_id'; $bindings['section_id'] = $sectionId; }
+        if ($shift !== '') { $sql .= ' AND s.shift=:shift'; $bindings['shift'] = $shift; }
         if ($academicGroup !== '') { $sql .= ' AND s.academic_group=:academic_group'; $bindings['academic_group'] = $academicGroup; }
         if ($status !== '') { $sql .= ' AND s.status=:status'; $bindings['status'] = $status; }
         if ($yearId > 0) { $sql .= ' AND s.academic_year_id=:year_id'; $bindings['year_id'] = $yearId; }
@@ -107,7 +123,7 @@ final class StudentController
         $statement = Database::connection()->prepare($sql);
         $statement->execute($bindings);
 
-        AuditLog::record('students.exported', 'students', null, ['count' => (int) Student::countListing($search, $classId, $status, $yearId, $academicGroup)]);
+        AuditLog::record('students.exported', 'students', null, ['count' => (int) Student::countListing($search, $classId, $status, $yearId, $academicGroup, $sectionId, $shift)]);
         header('Content-Type: text/csv; charset=UTF-8');
         header('Content-Disposition: attachment; filename="students-' . date('Y-m-d') . '.csv"');
         header('X-Content-Type-Options: nosniff');
@@ -600,6 +616,9 @@ final class StudentController
 
         $search = trim((string) $request->input('q', ''));
         $classId = max(0, (int) $request->input('class_id', 0));
+        $sectionId = max(0, (int) $request->input('section_id', 0));
+        $shift = (string) $request->input('shift', '');
+        if (!in_array($shift, ['', 'Morning', 'Day'], true)) $shift = '';
         $status = (string) $request->input('status', '');
         if (!in_array($status, ['', 'active', 'inactive', 'graduated'], true)) $status = '';
         $perPage = (int) $request->input('per_page', 25);
@@ -612,7 +631,7 @@ final class StudentController
         $validYearIds = array_map(static fn (array $year): int => (int) $year['id'], $academicYears);
         if ($yearId > 0 && !in_array($yearId, $validYearIds, true)) $yearId = (int) ($currentYear['id'] ?? 0);
         $academicGroup = trim((string) $request->input('group', ''));
-        $query = http_build_query(['q' => $search, 'class_id' => $classId, 'group' => $academicGroup, 'status' => $status, 'year_id' => $yearId, 'per_page' => $perPage, 'page' => $page]);
+        $query = http_build_query(['q' => $search, 'class_id' => $classId, 'section_id' => $sectionId, 'shift' => $shift, 'group' => $academicGroup, 'status' => $status, 'year_id' => $yearId, 'per_page' => $perPage, 'page' => $page]);
         header('Location: ' . Url::to('/students?' . $query)); exit;
     }
 

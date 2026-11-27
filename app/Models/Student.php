@@ -209,7 +209,7 @@ final class Student
         return [$where, $params];
     }
 
-    public static function listing(string $search = '', int $classId = 0, string $status = '', int $limit = 25, int $offset = 0, int $yearId = 0, string $academicGroup = ''): array
+    public static function listing(string $search = '', int $classId = 0, string $status = '', int $limit = 25, int $offset = 0, int $yearId = 0, string $academicGroup = '', int $sectionId = 0, string $shift = ''): array
     {
         $sql = 'SELECT s.id, s.student_id, s.name, s.roll_no,'
                 . ' COALESCE(NULLIF(TRIM(s.mobile_number), \'\'),'
@@ -223,7 +223,7 @@ final class Student
                 INNER JOIN sections sec ON sec.id = s.section_id AND sec.branch_id=s.branch_id
                 INNER JOIN academic_years ay ON ay.id = s.academic_year_id AND ay.branch_id=s.branch_id
                 WHERE s.branch_id=:branch_id';
-        [$filters, $params] = self::listingFilters($search, $classId, $status, $yearId, $academicGroup);
+        [$filters, $params] = self::listingFilters($search, $classId, $status, $yearId, $academicGroup, $sectionId, $shift);
         $params['branch_id'] = BranchContext::id();
         $sql .= $filters . ' ORDER BY c.numeric_level, sec.name, s.roll_no, s.name LIMIT :limit OFFSET :offset';
         $stmt = Database::connection()->prepare($sql);
@@ -236,21 +236,21 @@ final class Student
         return $stmt->fetchAll();
     }
 
-    public static function countListing(string $search = '', int $classId = 0, string $status = '', int $yearId = 0, string $academicGroup = ''): int
+    public static function countListing(string $search = '', int $classId = 0, string $status = '', int $yearId = 0, string $academicGroup = '', int $sectionId = 0, string $shift = ''): int
     {
         $sql = 'SELECT COUNT(*) FROM students s'
             . ' INNER JOIN classes c ON c.id = s.class_id AND c.branch_id=s.branch_id'
             . ' INNER JOIN sections sec ON sec.id = s.section_id AND sec.branch_id=s.branch_id'
             . ' INNER JOIN academic_years ay ON ay.id = s.academic_year_id AND ay.branch_id=s.branch_id'
             . ' WHERE s.branch_id=:branch_id';
-        [$filters, $params] = self::listingFilters($search, $classId, $status, $yearId, $academicGroup);
+        [$filters, $params] = self::listingFilters($search, $classId, $status, $yearId, $academicGroup, $sectionId, $shift);
         $params['branch_id'] = BranchContext::id();
         $stmt = Database::connection()->prepare($sql . $filters);
         $stmt->execute($params);
         return (int) $stmt->fetchColumn();
     }
 
-    private static function listingFilters(string $search, int $classId, string $status, int $yearId = 0, string $academicGroup = ''): array
+    private static function listingFilters(string $search, int $classId, string $status, int $yearId = 0, string $academicGroup = '', int $sectionId = 0, string $shift = ''): array
     {
         $filters = '';
         $params = [];
@@ -264,6 +264,14 @@ final class Student
         if ($classId > 0) {
             $filters .= ' AND s.class_id = :class_id';
             $params['class_id'] = $classId;
+        }
+        if ($sectionId > 0 && $classId > 0) {
+            $filters .= ' AND s.section_id = :section_id';
+            $params['section_id'] = $sectionId;
+        }
+        if (in_array($shift, ['Morning', 'Day'], true)) {
+            $filters .= ' AND s.shift = :shift';
+            $params['shift'] = $shift;
         }
         if (in_array($status, ['active', 'inactive', 'graduated'], true)) {
             $filters .= ' AND s.status = :status';
