@@ -13,7 +13,7 @@ use App\Core\View;
 <div class="mx-auto max-w-3xl">
     <a href="<?= Url::to('/students') ?>" class="text-sm text-teal-300 hover:text-teal-200">← Student register</a>
     <h1 class="mt-2 text-3xl font-semibold">Import students</h1>
-    <p class="mt-1 text-sm text-white">Upload a CSV file with one student per row.</p>
+        <p class="mt-1 text-sm text-white">Download the blank template, add at least one student row, then upload the completed CSV.</p>
         <a href="<?= Url::to('/students/import/example') ?>" class="form-action-button mt-3 inline-flex">Download new-student CSV template</a>
 
     <section class="mt-7 rounded-2xl border border-green-900/60 dashboard-gradient p-5">

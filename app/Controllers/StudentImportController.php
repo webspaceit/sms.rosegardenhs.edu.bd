@@ -40,7 +40,6 @@ final class StudentImportController
             return;
         }
         fputcsv($output, ['name', 'student_id', 'class', 'academic_group', 'section', 'roll_no', 'gender', 'guardian_name', 'guardian_phone', 'status']);
-        fputcsv($output, ['', '', '', '', '', '', '', '', '', '']);
         fclose($output);
         exit;
     }
@@ -93,7 +92,7 @@ final class StudentImportController
             exit;
         }
         if ($rows === []) {
-            Toast::flash('The file appears to be empty.', 'error');
+            Toast::flash('The CSV has no student rows yet. Add at least one student row to the template, then upload it again.', 'error');
             header('Location: ' . Url::to('/students/import'));
             exit;
         }
@@ -150,6 +149,9 @@ final class StudentImportController
             $row = [];
             foreach ($header as $index => $column) {
                 $row[$column] = trim((string) ($line[$index] ?? ''));
+            }
+            if (count(array_filter($row, static fn (string $value): bool => $value !== '')) === 0) {
+                continue;
             }
             $rows[] = $row;
         }
