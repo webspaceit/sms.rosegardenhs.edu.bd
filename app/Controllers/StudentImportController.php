@@ -100,7 +100,7 @@ final class StudentImportController
         $_SESSION['_import_report'] = $report;
         AuditLog::record('students.imported', 'students', null, ['count' => (int) $report['imported']]);
 
-        $notice = $report['imported'] . ' student(s) imported, ' . $report['skipped'] . ' skipped.';
+        $notice = $report['imported'] . ' student(s) imported as incomplete registrations, ' . $report['skipped'] . ' skipped.';
         if ($report['roll_adjusted'] > 0) $notice .= ' ' . $report['roll_adjusted'] . ' duplicate roll number(s) reassigned to unique rolls.';
         Toast::flash($notice, ($report['skipped'] > 0 || $report['roll_adjusted'] > 0) ? 'warning' : 'success');
         header('Location: ' . Url::to('/students/import'));
@@ -345,8 +345,8 @@ final class StudentImportController
             try {
                 $db->beginTransaction();
                 $statement = $db->prepare(
-                    'INSERT INTO students (student_id, name, class_id, academic_group, section_id, shift, academic_year_id, roll_no, gender, date_of_birth, birth_registration_no, admission_date, current_address, status, branch_id)'
-                    . ' VALUES (:student_id, :name, :class_id, :academic_group, :section_id, :shift, :academic_year_id, :roll_no, :gender, :date_of_birth, :birth_registration_no, :admission_date, :current_address, :status, :branch_id)'
+                    'INSERT INTO students (student_id, name, class_id, academic_group, section_id, shift, academic_year_id, roll_no, gender, date_of_birth, birth_registration_no, admission_date, current_address, status, registration_status, branch_id)'
+                    . ' VALUES (:student_id, :name, :class_id, :academic_group, :section_id, :shift, :academic_year_id, :roll_no, :gender, :date_of_birth, :birth_registration_no, :admission_date, :current_address, :status, :registration_status, :branch_id)'
                 );
                 $statement->execute([
                     'student_id' => $studentId,
@@ -363,6 +363,7 @@ final class StudentImportController
                     'admission_date' => $admissionDate ?? date('Y-m-d'),
                     'current_address' => $currentAddress !== '' ? $currentAddress : null,
                     'status' => $status,
+                    'registration_status' => 'pending',
                     'branch_id' => BranchContext::id(),
                 ]);
                 $studentRecordId = (int) $db->lastInsertId();

@@ -141,6 +141,7 @@ final class Application
 
         // Students and academics
         $router->get('/students', [$students, 'index']);
+        $router->get('/students/incomplete-registrations', [$students, 'incompleteRegistrations']);
         $router->get('/students/export', [$students, 'export']);
         $router->get('/students/view', [$students, 'show']);
         $router->get('/students/new', [$students, 'create']);

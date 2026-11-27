@@ -77,6 +77,26 @@ final class StudentController
         ]);
     }
 
+    public function incompleteRegistrations(Request $request): void
+    {
+        $this->requireSignIn();
+        $statement = Database::connection()->prepare(
+            "SELECT s.id, s.student_id, s.name, s.roll_no, s.shift, s.created_at, c.name AS class_name, sec.name AS section_name, ay.name AS year_name"
+            . ' FROM students s'
+            . ' JOIN classes c ON c.id=s.class_id AND c.branch_id=s.branch_id'
+            . ' JOIN sections sec ON sec.id=s.section_id AND sec.branch_id=s.branch_id'
+            . ' JOIN academic_years ay ON ay.id=s.academic_year_id AND ay.branch_id=s.branch_id'
+            . " WHERE s.branch_id=:branch AND s.registration_status='pending'"
+            . ' ORDER BY s.created_at DESC, s.id DESC'
+        );
+        $statement->execute(['branch' => BranchContext::id()]);
+        View::render('students/incomplete-registrations', [
+            'title' => 'Incomplete Registrations',
+            'user' => Auth::user(),
+            'students' => $statement->fetchAll(),
+        ]);
+    }
+
     public function export(Request $request): void
     {
         $this->requireSignIn();
