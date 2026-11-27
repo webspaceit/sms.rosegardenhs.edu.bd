@@ -173,6 +173,7 @@ final class Application
         $router->get('/academics', [$academics, 'index']);
         $router->post('/academic-years/active', [$academics, 'selectSession']);
         $router->post('/academics/years', [$academics, 'storeYear']);
+        $router->post('/academics/years/update', [$academics, 'updateYear']);
         $router->post('/academics/years/current', [$academics, 'setCurrentYear']);
         $router->post('/academics/classes', [$academics, 'storeClass']);
         $router->post('/academics/sections', [$academics, 'storeSection']);

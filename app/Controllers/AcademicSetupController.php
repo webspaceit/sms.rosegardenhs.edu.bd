@@ -138,6 +138,31 @@ final class AcademicSetupController
         header('Location: ' . Url::to('/academics')); exit;
     }
 
+    public function updateYear(Request $request): void
+    {
+        $this->requireAdmin();
+        if (!$this->verifyCsrf($request)) { return; }
+        $id = (int) $request->input('id', 0);
+        $name = trim((string) $request->input('name', ''));
+        $start = (string) $request->input('start_date', '');
+        $end = (string) $request->input('end_date', '');
+        $startDate = \DateTimeImmutable::createFromFormat('!Y-m-d', $start);
+        $endDate = \DateTimeImmutable::createFromFormat('!Y-m-d', $end);
+        if ($id < 1 || $name === '' || strlen($name) > 20 || !$startDate || !$endDate
+            || $startDate->format('Y-m-d') !== $start || $endDate->format('Y-m-d') !== $end || $endDate < $startDate) {
+            Toast::flash('Enter a valid academic year name and date range.', 'error');
+            header('Location: ' . Url::to('/academics')); exit;
+        }
+        try {
+            if (AcademicSetup::updateYear($id, $name, $start, $end)) Toast::flash('Academic year updated.');
+            else Toast::flash('Academic year not found.', 'error');
+        } catch (PDOException $error) {
+            error_log((string) $error);
+            Toast::flash('That academic year name already exists or could not be saved.', 'error');
+        }
+        header('Location: ' . Url::to('/academics')); exit;
+    }
+
     public function selectSession(Request $request): void
     {
         $this->requireAdmin();

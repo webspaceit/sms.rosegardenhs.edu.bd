@@ -24,6 +24,18 @@ final class AcademicSetup
         $stmt->execute(['name' => $name, 'start_date' => $startDate, 'end_date' => $endDate, 'branch' => BranchContext::id()]);
     }
 
+    public static function updateYear(int $id, string $name, string $startDate, string $endDate): bool
+    {
+        $db = Database::connection();
+        $exists = $db->prepare('SELECT id FROM academic_years WHERE id=:id AND branch_id=:branch LIMIT 1');
+        $exists->execute(['id' => $id, 'branch' => BranchContext::id()]);
+        if (!$exists->fetchColumn()) return false;
+
+        $stmt = $db->prepare('UPDATE academic_years SET name=:name, start_date=:start_date, end_date=:end_date WHERE id=:id AND branch_id=:branch');
+        $stmt->execute(['name' => $name, 'start_date' => $startDate, 'end_date' => $endDate, 'id' => $id, 'branch' => BranchContext::id()]);
+        return true;
+    }
+
     public static function setCurrentYear(int $id): bool
     {
         $db = Database::connection();
