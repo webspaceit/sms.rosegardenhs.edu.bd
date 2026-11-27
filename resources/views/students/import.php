@@ -4,7 +4,7 @@
  *
  * @var array<int, string> $classes
  * @var array<int, string> $sections
- * @var array{imported: int, skipped: int, problems: array<int, string>}|null $report
+ * @var array{imported: int, skipped: int, roll_adjusted?: int, warnings?: array<int, string>, problems: array<int, string>}|null $report
  */
 use App\Core\Csrf;
 use App\Core\Url;
@@ -18,13 +18,13 @@ use App\Core\View;
 
     <section class="mt-7 rounded-2xl border border-green-900/60 dashboard-gradient p-5">
         <h2 class="font-semibold">File format</h2>
-        <p class="mt-1 text-sm text-white">Use the downloaded column names. Enter date of birth as DD-MM-YYYY (for example, 05-03-2015). Class, section, shift, and guardian details are imported with each student:</p>
+        <p class="mt-1 text-sm text-white">This CSV follows the Quick admit form. Enter dates as DD-MM-YYYY (for example, 05-03-2015):</p>
         <div class="mt-3 flex flex-wrap gap-2">
-            <?php foreach (['Student name', 'Class', 'Section', 'Shift', 'Roll number', 'Gender', 'Date of birth', 'Birth registration number', 'Current Address', 'Guardian name', 'Relation', 'Guardian phone'] as $column): ?>
+            <?php foreach (['Student name', 'Class', 'Academic group', 'Section', 'Shift', 'Roll number', 'Gender', 'Date of birth', 'Birth registration number', 'Admission date', 'Current Address', 'Guardian name', 'Relation', 'Guardian phone'] as $column): ?>
                 <code class="rounded-lg border border-green-100/15 bg-emerald-950/35 px-2.5 py-1 font-mono text-xs text-green-100"><?= $column ?></code>
             <?php endforeach; ?>
         </div>
-        <p class="mt-3 text-xs text-slate-500">This import creates new student records; it does not update existing students. Use exact class and section names already in the system. Shift may be Morning or Day. Guardian name and phone must both be provided together. Student ID is optional and generated automatically when blank. For Class 9 or 10, add the optional academic_group column with the student's group.</p>
+        <p class="mt-3 text-xs text-slate-500">This creates new Active student records for the current academic year; it does not update existing students. Student IDs are generated automatically. Use exact class and section names. Roll number is optional: blank rolls are assigned automatically, and duplicate rolls are changed to the next available unique roll with a notification. Shift may be Morning or Day and defaults to the class shift when blank. Guardian name and phone are required. Gender, dates, address, and academic group can be left blank; admission date defaults to today, and Class 9 or 10 requires an academic group.</p>
     </section>
 
     <form method="post" action="<?= Url::to('/students/import') ?>" enctype="multipart/form-data" class="mt-5 rounded-2xl border border-green-900/60 dashboard-gradient p-5">
@@ -44,6 +44,13 @@ use App\Core\View;
             <p class="mt-1 text-sm text-white">
                 <?= (int) $report['imported'] ?> student(s) imported, <?= (int) $report['skipped'] ?> skipped.
             </p>
+            <?php if (!empty($report['warnings'])): ?>
+                <ul class="mt-3 space-y-1 text-xs text-amber-200">
+                    <?php foreach ($report['warnings'] as $warning): ?>
+                        <li><?= View::escape($warning) ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
             <?php if ($report['problems'] !== []): ?>
                 <ul class="mt-3 space-y-1 text-xs text-amber-200">
                     <?php foreach ($report['problems'] as $problem): ?>

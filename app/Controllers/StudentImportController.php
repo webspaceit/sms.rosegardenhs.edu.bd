@@ -38,7 +38,7 @@ final class StudentImportController
             http_response_code(500);
             return;
         }
-        fputcsv($output, ['Student name', 'Class', 'Section', 'Shift', 'Roll number', 'Gender', 'Date of birth', 'Birth registration number', 'Current Address', 'Guardian name', 'Relation', 'Guardian phone', 'Student ID', 'Academic Group', 'Status']);
+        fputcsv($output, ['Student name', 'Class', 'Academic group', 'Section', 'Shift', 'Roll number', 'Gender', 'Date of birth', 'Birth registration number', 'Admission date', 'Current Address', 'Guardian name', 'Relation', 'Guardian phone']);
         fclose($output);
         exit;
     }
@@ -100,7 +100,9 @@ final class StudentImportController
         $_SESSION['_import_report'] = $report;
         AuditLog::record('students.imported', 'students', null, ['count' => (int) $report['imported']]);
 
-        Toast::flash($report['imported'] . ' student(s) imported, ' . $report['skipped'] . ' skipped.');
+        $notice = $report['imported'] . ' student(s) imported, ' . $report['skipped'] . ' skipped.';
+        if ($report['roll_adjusted'] > 0) $notice .= ' ' . $report['roll_adjusted'] . ' duplicate roll number(s) reassigned to unique rolls.';
+        Toast::flash($notice, ($report['skipped'] > 0 || $report['roll_adjusted'] > 0) ? 'warning' : 'success');
         header('Location: ' . Url::to('/students/import'));
         exit;
     }
@@ -119,29 +121,39 @@ final class StudentImportController
 
         $rows = [];
         $header = null;
+        $headerPositions = [];
 
         while (($line = fgetcsv($handle)) !== false) {
             if ($line === [null] || $line === false) {
                 continue;
             }
             if ($header === null) {
-                $header = array_map(
+                $normalizedHeaders = array_map(
                     static fn (mixed $column): string => preg_replace('/[\s-]+/', '_', strtolower(trim(str_replace("\xEF\xBB\xBF", '', (string) $column)))) ?? '',
                     $line
                 );
                 $aliases = [
                     'student_name' => 'name',
+                    'admission_no' => 'student_id',
+                    'admission_number' => 'student_id',
                     'roll_number' => 'roll_no',
                     'birth_registration_number' => 'birth_registration_no',
+                    'birth_certificate_local_id' => 'birth_registration_no',
                     'relation' => 'guardian_relation',
+                    'guardian_relation' => 'guardian_relation',
+                    'dob' => 'date_of_birth',
                 ];
-                $header = array_map(static fn (string $column): string => $aliases[$column] ?? $column, $header);
-                $allowed = ['name', 'student_id', 'class', 'academic_group', 'section', 'shift', 'roll_no', 'gender', 'date_of_birth', 'birth_registration_no', 'current_address', 'guardian_name', 'guardian_relation', 'guardian_phone', 'status'];
+                foreach ($normalizedHeaders as $index => $column) {
+                    if ($column === '') continue; // Excel often leaves a trailing empty column.
+                    $headerPositions[$index] = $aliases[$column] ?? $column;
+                }
+                $header = array_values($headerPositions);
+                $allowed = ['name', 'student_id', 'class', 'academic_group', 'section', 'shift', 'roll_no', 'gender', 'date_of_birth', 'birth_registration_no', 'admission_date', 'current_address', 'guardian_name', 'guardian_relation', 'guardian_phone', 'status'];
                 if (!in_array('name', $header, true) || !in_array('class', $header, true)
-                    || !in_array('section', $header, true) || !in_array('roll_no', $header, true)
+                    || !in_array('section', $header, true)
                     || array_diff($header, $allowed) !== [] || count($header) !== count(array_unique($header))) {
                     fclose($handle);
-                    throw new \RuntimeException('CSV headers must include Student name, Class, Section and Roll number, with only supported columns.');
+                    throw new \RuntimeException('CSV must include Student name, Class, and Section columns. Check that the downloaded template headers have not been renamed.');
                 }
                 continue;
             }
@@ -149,11 +161,8 @@ final class StudentImportController
                 fclose($handle);
                 throw new \RuntimeException('A single import can contain up to 5,000 student rows.');
             }
-            if (count($line) < count($header)) {
-                continue;
-            }
             $row = [];
-            foreach ($header as $index => $column) {
+            foreach ($headerPositions as $index => $column) {
                 $row[$column] = trim((string) ($line[$index] ?? ''));
             }
             if (count(array_filter($row, static fn (string $value): bool => $value !== '')) === 0) {
@@ -170,7 +179,7 @@ final class StudentImportController
      * Create the students a file describes.
      *
      * @param array<int, array<string, string>> $rows
-     * @return array{imported: int, skipped: int, problems: array<int, string>}
+     * @return array{imported: int, skipped: int, roll_adjusted: int, warnings: array<int, string>, problems: array<int, string>}
      */
     private function import(array $rows): array
     {
@@ -180,26 +189,33 @@ final class StudentImportController
         $academicGroups = AcademicGroup::names();
 
         $classIds = [];
-        foreach ($db->query('SELECT id, name, numeric_level FROM classes WHERE branch_id=' . BranchContext::id()) as $row) {
-            $classIds[strtolower((string) $row['name'])] = [
+        $classIdsByLevel = [];
+        foreach ($db->query('SELECT id, name, numeric_level, shift FROM classes WHERE branch_id=' . BranchContext::id()) as $row) {
+            $class = [
                 'id' => (int) $row['id'],
                 'level' => (int) $row['numeric_level'],
+                'shift' => (string) ($row['shift'] ?? ''),
             ];
+            $classIds[$this->normalizeClassName((string) $row['name'])] = $class;
+            $level = $class['level'];
+            if ($level === 0) $level = $this->namedClassLevel((string) $row['name']);
+            if ($level > 0) $classIdsByLevel[$level] = $class;
         }
-
         $sectionIds = [];
-        foreach ($db->query('SELECT s.id, c.name AS class_name, s.name AS section_name FROM sections s JOIN classes c ON c.id = s.class_id AND c.branch_id=s.branch_id WHERE s.branch_id=' . BranchContext::id()) as $row) {
-            $sectionIds[strtolower((string) $row['class_name'] . ' ' . $row['section_name'])] = (int) $row['id'];
+        foreach ($db->query('SELECT s.id, s.class_id, s.name AS section_name FROM sections s WHERE s.branch_id=' . BranchContext::id()) as $row) {
+            $sectionIds[(int) $row['class_id'] . ':' . strtolower(trim((string) $row['section_name']))] = (int) $row['id'];
         }
 
         $imported = 0;
         $skipped = 0;
+        $rollAdjusted = 0;
+        $warnings = [];
         $problems = [];
 
         foreach ($rows as $number => $row) {
             $line = $number + 2;
             $name = trim((string) ($row['name'] ?? ''));
-            $className = strtolower(trim((string) ($row['class'] ?? '')));
+            $className = $this->normalizeClassName((string) ($row['class'] ?? ''));
             $sectionName = strtolower(trim((string) ($row['section'] ?? '')));
 
             if ($name === '') {
@@ -208,9 +224,9 @@ final class StudentImportController
                 continue;
             }
 
-            $class = $classIds[$className] ?? null;
+            $class = $classIds[$className] ?? ($classIdsByLevel[$this->namedClassLevel((string) ($row['class'] ?? ''))] ?? null);
             $classId = (int) ($class['id'] ?? 0);
-            $sectionId = $sectionIds[$className . ' ' . $sectionName] ?? 0;
+            $sectionId = $sectionIds[$classId . ':' . $sectionName] ?? 0;
 
             if ($classId === 0 || $sectionId === 0) {
                 $skipped++;
@@ -227,29 +243,33 @@ final class StudentImportController
             }
             if (!$classHasAcademicGroup) $academicGroup = '';
 
-            $roll = (int) ($row['roll_no'] ?? 0);
-            if ($roll < 1) {
-                $skipped++;
-                $problems[] = 'Row ' . $line . ': roll number is missing or invalid.';
-                continue;
-            }
-
             $shift = trim((string) ($row['shift'] ?? ''));
-            if (!in_array($shift, ['', 'Morning', 'Day'], true)) {
+            if ($shift === '') $shift = in_array($class['shift'] ?? '', ['Morning', 'Day'], true) ? (string) $class['shift'] : 'Day';
+            if (!in_array($shift, ['Morning', 'Day'], true)) {
                 $skipped++;
-                $problems[] = 'Row ' . $line . ': shift must be Morning, Day, or blank.';
+                $problems[] = 'Row ' . $line . ': shift must be Morning or Day.';
                 continue;
             }
-            $dateOfBirth = trim((string) ($row['date_of_birth'] ?? ''));
-            if ($dateOfBirth !== '') {
-                $date = \DateTimeImmutable::createFromFormat('!d-m-Y', $dateOfBirth);
-                $dateErrors = \DateTimeImmutable::getLastErrors();
-                if ($date === false || ($dateErrors !== false && ($dateErrors['warning_count'] > 0 || $dateErrors['error_count'] > 0)) || $date->format('d-m-Y') !== $dateOfBirth || $date > new \DateTimeImmutable('today')) {
-                    $skipped++;
-                    $problems[] = 'Row ' . $line . ': date of birth must be a valid date in DD-MM-YYYY format and not in the future.';
-                    continue;
-                }
-                $dateOfBirth = $date->format('Y-m-d');
+            $rollValue = trim((string) ($row['roll_no'] ?? ''));
+            if ($rollValue !== '' && (!ctype_digit($rollValue) || (int) $rollValue < 1 || (int) $rollValue > 65535)) {
+                $skipped++;
+                $problems[] = 'Row ' . $line . ': roll number must be a whole number from 1 to 65535, or left blank for automatic assignment.';
+                continue;
+            }
+            $roll = $rollValue === ''
+                ? Student::nextRollNumber($classId, $sectionId, $yearId, $shift)
+                : (int) $rollValue;
+            $dateOfBirth = $this->csvDate((string) ($row['date_of_birth'] ?? ''));
+            if ($dateOfBirth === false || ($dateOfBirth !== null && $dateOfBirth > date('Y-m-d'))) {
+                $skipped++;
+                $problems[] = 'Row ' . $line . ': date of birth must use DD-MM-YYYY and cannot be in the future.';
+                continue;
+            }
+            $admissionDate = $this->csvDate((string) ($row['admission_date'] ?? ''));
+            if ($admissionDate === false) {
+                $skipped++;
+                $problems[] = 'Row ' . $line . ': admission date must use DD-MM-YYYY.';
+                continue;
             }
             $birthRegistrationNo = trim((string) ($row['birth_registration_no'] ?? ''));
             if (strlen($birthRegistrationNo) > 50) {
@@ -259,13 +279,15 @@ final class StudentImportController
             }
             $currentAddress = trim((string) ($row['current_address'] ?? ''));
 
-            $studentId = trim((string) ($row['student_id'] ?? ''));
-            if ($studentId === '') {
-                $studentId = Student::nextStudentId((string) ($year['name'] ?? date('Y')));
+            $studentId = Student::nextStudentId((string) ($year['name'] ?? date('Y')));
+            if (strlen($studentId) > 40 || strlen($name) > 150) {
+                $skipped++;
+                $problems[] = 'Row ' . $line . ': student name must be 150 characters or fewer and Student ID must be 40 characters or fewer.';
+                continue;
             }
 
             $gender = trim((string) ($row['gender'] ?? ''));
-            $status = trim((string) ($row['status'] ?? 'active'));
+            $status = 'active';
             if (!in_array($gender, ['', 'Male', 'Female', 'Other'], true)) {
                 $gender = '';
             }
@@ -273,11 +295,41 @@ final class StudentImportController
                 $status = 'active';
             }
 
+            $guardianName = trim((string) ($row['guardian_name'] ?? ''));
+            $guardianPhone = trim((string) ($row['guardian_phone'] ?? ''));
+            $guardianRelation = trim((string) ($row['guardian_relation'] ?? 'Guardian'));
+            preg_match_all('/./us', $guardianName, $guardianCharacters);
+            $guardianLength = isset($guardianCharacters[0]) ? count($guardianCharacters[0]) : strlen($guardianName);
+            if ($guardianName === '' || $guardianPhone === '') {
+                $skipped++;
+                $problems[] = 'Row ' . $line . ': Quick admit requires both Guardian name and Guardian phone.';
+                continue;
+            }
+            if (!PhoneNumber::isBangladeshiMobile($guardianPhone) || $guardianLength > 150) {
+                $skipped++;
+                $problems[] = 'Row ' . $line . ': enter a valid Bangladesh guardian mobile number and a guardian name of 150 characters or fewer.';
+                continue;
+            }
+            if (!in_array($guardianRelation, ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'Other'], true)) {
+                $skipped++;
+                $problems[] = 'Row ' . $line . ': Relation must be Father, Mother, Guardian, Grandparent, Sibling, or Other.';
+                continue;
+            }
+
+            $duplicateRoll = $db->prepare('SELECT 1 FROM students WHERE class_id=:class_id AND section_id=:section_id AND academic_year_id=:year_id AND shift <=> :shift AND roll_no=:roll_no AND branch_id=:branch_id LIMIT 1');
+            $duplicateRoll->execute(['class_id' => $classId, 'section_id' => $sectionId, 'year_id' => $yearId, 'shift' => $shift, 'roll_no' => $roll, 'branch_id' => BranchContext::id()]);
+            if ($duplicateRoll->fetchColumn()) {
+                $previousRoll = $roll;
+                $roll = Student::nextRollNumber($classId, $sectionId, $yearId, $shift);
+                $rollAdjusted++;
+                $warnings[] = 'Row ' . $line . ': duplicate roll number ' . $previousRoll . ' was reassigned to ' . $roll . '.';
+            }
+
             try {
                 $db->beginTransaction();
                 $statement = $db->prepare(
-                    'INSERT INTO students (student_id, name, class_id, academic_group, section_id, shift, academic_year_id, roll_no, gender, date_of_birth, birth_registration_no, current_address, status, branch_id)'
-                    . ' VALUES (:student_id, :name, :class_id, :academic_group, :section_id, :shift, :academic_year_id, :roll_no, :gender, :date_of_birth, :birth_registration_no, :current_address, :status, :branch_id)'
+                    'INSERT INTO students (student_id, name, class_id, academic_group, section_id, shift, academic_year_id, roll_no, gender, date_of_birth, birth_registration_no, admission_date, current_address, status, branch_id)'
+                    . ' VALUES (:student_id, :name, :class_id, :academic_group, :section_id, :shift, :academic_year_id, :roll_no, :gender, :date_of_birth, :birth_registration_no, :admission_date, :current_address, :status, :branch_id)'
                 );
                 $statement->execute([
                     'student_id' => $studentId,
@@ -291,38 +343,45 @@ final class StudentImportController
                     'gender' => $gender !== '' ? $gender : null,
                     'date_of_birth' => $dateOfBirth !== '' ? $dateOfBirth : null,
                     'birth_registration_no' => $birthRegistrationNo !== '' ? $birthRegistrationNo : null,
+                    'admission_date' => $admissionDate ?? date('Y-m-d'),
                     'current_address' => $currentAddress !== '' ? $currentAddress : null,
                     'status' => $status,
                     'branch_id' => BranchContext::id(),
                 ]);
                 $studentRecordId = (int) $db->lastInsertId();
-                $guardianName = trim((string) ($row['guardian_name'] ?? ''));
-                $guardianPhone = trim((string) ($row['guardian_phone'] ?? ''));
-                $guardianRelation = trim((string) ($row['guardian_relation'] ?? 'Guardian'));
-                if (!in_array($guardianRelation, ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'Other'], true)) {
-                    throw new \RuntimeException('Guardian relation is invalid.');
-                }
-                preg_match_all('/./us', $guardianName, $guardianCharacters);
-                $guardianLength = isset($guardianCharacters[0]) ? count($guardianCharacters[0]) : strlen($guardianName);
-                if (($guardianName === '') !== ($guardianPhone === '') || ($guardianPhone !== '' && !PhoneNumber::isBangladeshiMobile($guardianPhone)) || $guardianLength > 150) {
-                    throw new \RuntimeException('Guardian name and phone must both be present, with a valid Bangladesh mobile number (01XXXXXXXXX or +8801XXXXXXXXX).');
-                }
-                if ($guardianName !== '') {
-                    $guardian = $db->prepare('INSERT INTO guardians (name,phone,relation,created_at,branch_id) VALUES (:name,:phone,:relation,NOW(),:branch)');
-                    $guardian->execute(['name' => $guardianName, 'phone' => $guardianPhone, 'relation' => $guardianRelation, 'branch' => BranchContext::id()]);
-                    $link = $db->prepare('INSERT INTO student_guardian (student_id,guardian_id,is_primary,created_at,branch_id) VALUES (:student,:guardian,1,NOW(),:branch)');
-                    $link->execute(['student' => $studentRecordId, 'guardian' => (int) $db->lastInsertId(), 'branch' => BranchContext::id()]);
-                }
+                $guardian = $db->prepare('INSERT INTO guardians (name,phone,relation,created_at,branch_id) VALUES (:name,:phone,:relation,NOW(),:branch)');
+                $guardian->execute(['name' => $guardianName, 'phone' => $guardianPhone, 'relation' => $guardianRelation, 'branch' => BranchContext::id()]);
+                $link = $db->prepare('INSERT INTO student_guardian (student_id,guardian_id,is_primary,created_at,branch_id) VALUES (:student,:guardian,1,NOW(),:branch)');
+                $link->execute(['student' => $studentRecordId, 'guardian' => (int) $db->lastInsertId(), 'branch' => BranchContext::id()]);
                 $db->commit();
                 $imported++;
             } catch (\Throwable $error) {
                 if ($db->inTransaction()) $db->rollBack();
                 $skipped++;
-                $problems[] = 'Row ' . $line . ': could not be saved. Check the student ID, roll number, and guardian details.';
+                $message = strtolower($error->getMessage());
+                if (str_contains($message, 'students_roll_unique')) {
+                    $reason = 'roll number is already used in this class, section, shift, and academic year.';
+                } else {
+                    $reason = 'could not be saved. Check that the class, section, academic group, and student details match the system.';
+                }
+                $problems[] = 'Row ' . $line . ': ' . $reason;
             }
         }
 
-        return ['imported' => $imported, 'skipped' => $skipped, 'problems' => array_slice($problems, 0, 50)];
+        return ['imported' => $imported, 'skipped' => $skipped, 'roll_adjusted' => $rollAdjusted, 'warnings' => array_slice($warnings, 0, 50), 'problems' => array_slice($problems, 0, 50)];
+    }
+
+    /** Parse the DD-MM-YYYY date format used by the Quick admit form. */
+    private function csvDate(string $value): string|false|null
+    {
+        $value = trim($value);
+        if ($value === '') return null;
+        $date = \DateTimeImmutable::createFromFormat('!d-m-Y', $value);
+        $errors = \DateTimeImmutable::getLastErrors();
+        if ($date === false || ($errors !== false && ($errors['warning_count'] > 0 || $errors['error_count'] > 0)) || $date->format('d-m-Y') !== $value) {
+            return false;
+        }
+        return $date->format('Y-m-d');
     }
 
     private function classHasAcademicGroup(array $class): bool
@@ -337,5 +396,18 @@ final class StudentImportController
         ];
         if (isset($namedLevels[$name])) return in_array($namedLevels[$name], [9, 10], true);
         return in_array((int) ($class['level'] ?? 0), [9, 10], true);
+    }
+
+    private function normalizeClassName(string $name): string
+    {
+        $name = strtolower(preg_replace('/[^a-z0-9]+/', '', trim($name)) ?? '');
+        return preg_replace('/^class/', '', $name) ?? $name;
+    }
+
+    private function namedClassLevel(string $name): int
+    {
+        $key = $this->normalizeClassName($name);
+        $levels = ['1' => 1, 'one' => 1, '2' => 2, 'two' => 2, '3' => 3, 'three' => 3, '4' => 4, 'four' => 4, '5' => 5, 'five' => 5, '6' => 6, 'six' => 6, '7' => 7, 'seven' => 7, '8' => 8, 'eight' => 8, '9' => 9, 'nine' => 9, '10' => 10, 'ten' => 10];
+        return $levels[$key] ?? 0;
     }
 }
