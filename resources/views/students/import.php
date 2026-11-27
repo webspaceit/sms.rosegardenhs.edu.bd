@@ -18,7 +18,7 @@ use App\Core\View;
 
     <section class="mt-7 rounded-2xl border border-green-900/60 dashboard-gradient p-5">
         <h2 class="font-semibold">File format</h2>
-        <p class="mt-1 text-sm text-white">Use the downloaded column names. Date of birth must use YYYY-MM-DD. Class, section, shift, and guardian details are imported with each student:</p>
+        <p class="mt-1 text-sm text-white">Use the downloaded column names. Enter date of birth as DD-MM-YYYY (for example, 05-03-2015). Class, section, shift, and guardian details are imported with each student:</p>
         <div class="mt-3 flex flex-wrap gap-2">
             <?php foreach (['Student name', 'Class', 'Section', 'Shift', 'Roll number', 'Gender', 'Date of birth', 'Birth registration number', 'Current Address', 'Guardian name', 'Relation', 'Guardian phone'] as $column): ?>
                 <code class="rounded-lg border border-green-100/15 bg-emerald-950/35 px-2.5 py-1 font-mono text-xs text-green-100"><?= $column ?></code>

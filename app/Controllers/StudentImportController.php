@@ -242,13 +242,14 @@ final class StudentImportController
             }
             $dateOfBirth = trim((string) ($row['date_of_birth'] ?? ''));
             if ($dateOfBirth !== '') {
-                $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $dateOfBirth);
+                $date = \DateTimeImmutable::createFromFormat('!d-m-Y', $dateOfBirth);
                 $dateErrors = \DateTimeImmutable::getLastErrors();
-                if ($date === false || ($dateErrors !== false && ($dateErrors['warning_count'] > 0 || $dateErrors['error_count'] > 0)) || $date->format('Y-m-d') !== $dateOfBirth || $dateOfBirth > date('Y-m-d')) {
+                if ($date === false || ($dateErrors !== false && ($dateErrors['warning_count'] > 0 || $dateErrors['error_count'] > 0)) || $date->format('d-m-Y') !== $dateOfBirth || $date > new \DateTimeImmutable('today')) {
                     $skipped++;
-                    $problems[] = 'Row ' . $line . ': date of birth must be a valid date in YYYY-MM-DD format and not in the future.';
+                    $problems[] = 'Row ' . $line . ': date of birth must be a valid date in DD-MM-YYYY format and not in the future.';
                     continue;
                 }
+                $dateOfBirth = $date->format('Y-m-d');
             }
             $birthRegistrationNo = trim((string) ($row['birth_registration_no'] ?? ''));
             if (strlen($birthRegistrationNo) > 50) {
