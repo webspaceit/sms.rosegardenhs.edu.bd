@@ -40,9 +40,11 @@ $suggestedRoll = $selectedSection === null ? 1 : (int) ($selectedSection['next_r
             <h1 class="text-3xl font-semibold">Quick student admission</h1>
             <p class="mt-1 text-sm text-white">Register the essentials now. Complete the full profile later.</p>
         </div>
-        <a href="<?= Url::to('/students/new') ?>" class="rounded-lg border border-green-100/20 px-4 py-2.5 text-sm text-green-100 hover:border-green-300">Full admission form</a>
-        <a href="<?= Url::to('/students/import/example') ?>" class="form-action-button">Download CSV import template</a>
-        <a href="<?= Url::to('/students/import') ?>" class="form-action-button">Import students by CSV</a>
+        <div class="flex flex-wrap gap-2">
+            <a href="<?= Url::to('/students/new') ?>" class="rounded-lg border border-green-100/20 px-4 py-2.5 text-sm text-green-100 hover:border-green-300">Full admission form</a>
+            <a href="<?= Url::to('/students/import/example') ?>" class="form-action-button">Download CSV import template</a>
+            <a href="<?= Url::to('/students/import') ?>" class="form-action-button">Import students by CSV</a>
+        </div>
     </div>
 
     <form id="quick-admission-form" method="post" enctype="multipart/form-data" action="<?= Url::to('/students/quick-admit') ?>" class="mt-6 rounded-2xl border border-green-900/60 bg-[#0b3425]/80 p-5 sm:p-7">

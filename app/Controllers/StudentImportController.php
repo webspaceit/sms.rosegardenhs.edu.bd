@@ -20,9 +20,8 @@ use App\Models\AcademicGroup;
 /**
  * Bulk student import from a CSV file.
  *
- * The file needs a header row. The recognised columns are name, student_id,
- * class, academic_group, section, roll_no, gender, guardian_name, guardian_phone
- * and status. Anything that cannot be read is reported back to the
+ * The file needs a header row. The recognised columns cover the student,
+ * placement, and guardian details used by the CSV template. Anything that cannot be read is reported back to the
  * administrator rather than silently dropped.
  */
 final class StudentImportController
@@ -39,7 +38,7 @@ final class StudentImportController
             http_response_code(500);
             return;
         }
-        fputcsv($output, ['name', 'student_id', 'class', 'academic_group', 'section', 'roll_no', 'gender', 'guardian_name', 'guardian_phone', 'status']);
+        fputcsv($output, ['Student name', 'Class', 'Section', 'Shift', 'Roll number', 'Gender', 'Date of birth', 'Birth registration number', 'Current Address', 'Guardian name', 'Relation', 'Guardian phone', 'Student ID', 'Academic Group', 'Status']);
         fclose($output);
         exit;
     }
@@ -130,12 +129,19 @@ final class StudentImportController
                     static fn (mixed $column): string => preg_replace('/[\s-]+/', '_', strtolower(trim(str_replace("\xEF\xBB\xBF", '', (string) $column)))) ?? '',
                     $line
                 );
-                $allowed = ['name', 'student_id', 'class', 'academic_group', 'section', 'roll_no', 'gender', 'guardian_name', 'guardian_phone', 'status'];
+                $aliases = [
+                    'student_name' => 'name',
+                    'roll_number' => 'roll_no',
+                    'birth_registration_number' => 'birth_registration_no',
+                    'relation' => 'guardian_relation',
+                ];
+                $header = array_map(static fn (string $column): string => $aliases[$column] ?? $column, $header);
+                $allowed = ['name', 'student_id', 'class', 'academic_group', 'section', 'shift', 'roll_no', 'gender', 'date_of_birth', 'birth_registration_no', 'current_address', 'guardian_name', 'guardian_relation', 'guardian_phone', 'status'];
                 if (!in_array('name', $header, true) || !in_array('class', $header, true)
                     || !in_array('section', $header, true) || !in_array('roll_no', $header, true)
                     || array_diff($header, $allowed) !== [] || count($header) !== count(array_unique($header))) {
                     fclose($handle);
-                    throw new \RuntimeException('CSV headers must include name, class, section and roll_no, with only supported columns.');
+                    throw new \RuntimeException('CSV headers must include Student name, Class, Section and Roll number, with only supported columns.');
                 }
                 continue;
             }
@@ -228,6 +234,30 @@ final class StudentImportController
                 continue;
             }
 
+            $shift = trim((string) ($row['shift'] ?? ''));
+            if (!in_array($shift, ['', 'Morning', 'Day'], true)) {
+                $skipped++;
+                $problems[] = 'Row ' . $line . ': shift must be Morning, Day, or blank.';
+                continue;
+            }
+            $dateOfBirth = trim((string) ($row['date_of_birth'] ?? ''));
+            if ($dateOfBirth !== '') {
+                $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $dateOfBirth);
+                $dateErrors = \DateTimeImmutable::getLastErrors();
+                if ($date === false || ($dateErrors !== false && ($dateErrors['warning_count'] > 0 || $dateErrors['error_count'] > 0)) || $date->format('Y-m-d') !== $dateOfBirth || $dateOfBirth > date('Y-m-d')) {
+                    $skipped++;
+                    $problems[] = 'Row ' . $line . ': date of birth must be a valid date in YYYY-MM-DD format and not in the future.';
+                    continue;
+                }
+            }
+            $birthRegistrationNo = trim((string) ($row['birth_registration_no'] ?? ''));
+            if (strlen($birthRegistrationNo) > 50) {
+                $skipped++;
+                $problems[] = 'Row ' . $line . ': birth registration number must be 50 characters or fewer.';
+                continue;
+            }
+            $currentAddress = trim((string) ($row['current_address'] ?? ''));
+
             $studentId = trim((string) ($row['student_id'] ?? ''));
             if ($studentId === '') {
                 $studentId = Student::nextStudentId((string) ($year['name'] ?? date('Y')));
@@ -245,8 +275,8 @@ final class StudentImportController
             try {
                 $db->beginTransaction();
                 $statement = $db->prepare(
-                    'INSERT INTO students (student_id, name, class_id, academic_group, section_id, academic_year_id, roll_no, gender, status, branch_id)'
-                    . ' VALUES (:student_id, :name, :class_id, :academic_group, :section_id, :academic_year_id, :roll_no, :gender, :status, :branch_id)'
+                    'INSERT INTO students (student_id, name, class_id, academic_group, section_id, shift, academic_year_id, roll_no, gender, date_of_birth, birth_registration_no, current_address, status, branch_id)'
+                    . ' VALUES (:student_id, :name, :class_id, :academic_group, :section_id, :shift, :academic_year_id, :roll_no, :gender, :date_of_birth, :birth_registration_no, :current_address, :status, :branch_id)'
                 );
                 $statement->execute([
                     'student_id' => $studentId,
@@ -254,23 +284,31 @@ final class StudentImportController
                     'class_id' => $classId,
                     'academic_group' => $academicGroup !== '' ? $academicGroup : null,
                     'section_id' => $sectionId,
+                    'shift' => $shift !== '' ? $shift : null,
                     'academic_year_id' => $yearId,
                     'roll_no' => $roll,
                     'gender' => $gender !== '' ? $gender : null,
+                    'date_of_birth' => $dateOfBirth !== '' ? $dateOfBirth : null,
+                    'birth_registration_no' => $birthRegistrationNo !== '' ? $birthRegistrationNo : null,
+                    'current_address' => $currentAddress !== '' ? $currentAddress : null,
                     'status' => $status,
                     'branch_id' => BranchContext::id(),
                 ]);
                 $studentRecordId = (int) $db->lastInsertId();
                 $guardianName = trim((string) ($row['guardian_name'] ?? ''));
                 $guardianPhone = trim((string) ($row['guardian_phone'] ?? ''));
+                $guardianRelation = trim((string) ($row['guardian_relation'] ?? 'Guardian'));
+                if (!in_array($guardianRelation, ['Father', 'Mother', 'Guardian', 'Grandparent', 'Sibling', 'Other'], true)) {
+                    throw new \RuntimeException('Guardian relation is invalid.');
+                }
                 preg_match_all('/./us', $guardianName, $guardianCharacters);
                 $guardianLength = isset($guardianCharacters[0]) ? count($guardianCharacters[0]) : strlen($guardianName);
                 if (($guardianName === '') !== ($guardianPhone === '') || ($guardianPhone !== '' && !PhoneNumber::isBangladeshiMobile($guardianPhone)) || $guardianLength > 150) {
                     throw new \RuntimeException('Guardian name and phone must both be present, with a valid Bangladesh mobile number (01XXXXXXXXX or +8801XXXXXXXXX).');
                 }
                 if ($guardianName !== '') {
-                    $guardian = $db->prepare('INSERT INTO guardians (name,phone,relation,created_at,branch_id) VALUES (:name,:phone,\'Guardian\',NOW(),:branch)');
-                    $guardian->execute(['name' => $guardianName, 'phone' => $guardianPhone, 'branch' => BranchContext::id()]);
+                    $guardian = $db->prepare('INSERT INTO guardians (name,phone,relation,created_at,branch_id) VALUES (:name,:phone,:relation,NOW(),:branch)');
+                    $guardian->execute(['name' => $guardianName, 'phone' => $guardianPhone, 'relation' => $guardianRelation, 'branch' => BranchContext::id()]);
                     $link = $db->prepare('INSERT INTO student_guardian (student_id,guardian_id,is_primary,created_at,branch_id) VALUES (:student,:guardian,1,NOW(),:branch)');
                     $link->execute(['student' => $studentRecordId, 'guardian' => (int) $db->lastInsertId(), 'branch' => BranchContext::id()]);
                 }

@@ -48,9 +48,20 @@ $wizardDocumentNames = (array) ($_SESSION['_student_wizard']['original_names'] ?
 $studentPhotoRequired = empty($student['photo']) && empty($wizardFiles['photo']);
 ?>
 <div class="w-full min-w-0">
-    <a href="<?= Url::to('/students') ?>" class="text-sm text-green-300 hover:text-green-200">← Student register</a>
-    <h1 class="mt-2 text-3xl font-semibold"><?= $editing ? 'Edit Student' : 'Student Admission' ?></h1>
-    <p class="mt-1 text-sm text-white"><?= $editing ? 'Update the student record.' : 'Enter the full admission details for the student.' ?></p>
+    <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+            <a href="<?= Url::to('/students') ?>" class="text-sm text-green-300 hover:text-green-200">← Student register</a>
+            <h1 class="mt-2 text-3xl font-semibold"><?= $editing ? 'Edit Student' : 'Student Admission' ?></h1>
+            <p class="mt-1 text-sm text-white"><?= $editing ? 'Update the student record.' : 'Enter the full admission details for the student.' ?></p>
+        </div>
+        <?php if (!$editing): ?>
+            <div class="flex flex-wrap gap-2">
+                <a href="<?= Url::to('/students/export') ?>" class="form-action-button">Export CSV</a>
+                <a href="<?= Url::to('/students/new') ?>" class="rounded-lg border border-green-100/20 px-4 py-2.5 text-sm text-green-100 hover:border-green-300">Full admission</a>
+                <a href="<?= Url::to('/students/quick-admit') ?>" class="form-action-button">Quick admit</a>
+            </div>
+        <?php endif; ?>
+    </div>
 
     <?php if (!$editing): ?><div id="student-wizard-progress" class="mt-6 grid grid-cols-4 gap-2" aria-label="Admission steps"><?php foreach (['Student', 'Parent / Guardian', 'More details', 'Documents'] as $stepIndex => $stepTitle): ?><div class="student-wizard-indicator rounded-lg border px-3 py-2 text-center text-xs font-semibold" data-step-indicator="<?= $stepIndex + 1 ?>"><?= ($stepIndex + 1) . '. ' . View::escape($stepTitle) ?></div><?php endforeach; ?></div><?php endif; ?>
     <form id="student-registration-form" method="post" enctype="multipart/form-data" action="<?= Url::to($editing ? '/students/update' : '/students') ?>" data-no-ajax class="mt-7 space-y-5">
