@@ -48,6 +48,7 @@ use App\Core\View;
                                 <td class="px-4 py-3">
                                     <div class="flex flex-wrap gap-2">
                                         <a href="<?= Url::to('/students/view?id=' . (int) $student['id']) ?>" class="rounded-lg border border-green-100/20 px-3 py-2 text-xs text-green-100 hover:border-green-300">Details</a>
+                                        <a href="<?= Url::to('/students/admission-slip?id=' . (int) $student['id']) ?>" class="rounded-lg border border-green-100/20 px-3 py-2 text-xs text-green-100 hover:border-green-300">Admission slip</a>
                                         <a href="<?= Url::to('/students/edit?id=' . (int) $student['id']) ?>" class="form-action-button">Complete registration</a>
                                     </div>
                                 </td>
